@@ -1,0 +1,49 @@
+.container {
+    height: 100vh;
+    display: flex;
+    position: absolute;
+    background-color: transparent;
+    top: 40px;
+    left: 0;
+    width: 80px; /* Largeur du menu */
+    height: calc(100% - 80px); /* Hauteur de la fenêtre moins la barre de navigation */
+}
+
+mat-icon {
+    color: #464646;
+    font-size: 20px;
+}
+
+button {
+    background-color: #dbdbdb;
+    border: none;
+    width: 38px;
+    height: 37px;
+}
+
+.sidenav {
+  position: absolute;
+  top: 40px;
+  left: 0;
+  width: 80px; /* Largeur du menu */
+  height: calc(100% - 80px); /* Hauteur de la fenêtre moins la barre de navigation */
+  background-color: rgba(255, 255, 255, 0.6); /* Fond semi-transparent */
+  color: white;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 20px;
+  z-index: 10; /* S'assurer qu'il est au-dessus de la carte */
+}
+
+.sidebar-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.orange-logo {
+  width: 40px;
+  height: 40px;
+}

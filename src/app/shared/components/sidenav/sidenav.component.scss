@@ -5,7 +5,7 @@
     background-color: transparent;
     top: 40px;
     left: 0;
-    width: 80px; /* Largeur du menu */
+    width: 60px; /* Largeur du menu */
     height: calc(100% - 80px); /* Hauteur de la fenêtre moins la barre de navigation */
 }
 
@@ -25,7 +25,7 @@ button {
   position: absolute;
   top: 40px;
   left: 0;
-  width: 80px; /* Largeur du menu */
+  width: 60px; /* Largeur du menu */
   height: calc(100% - 80px); /* Hauteur de la fenêtre moins la barre de navigation */
   background-color: rgba(255, 255, 255, 0.6); /* Fond semi-transparent */
   color: white;

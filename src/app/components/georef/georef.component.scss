@@ -1,0 +1,36 @@
+.georef-container {
+    position: absolute;
+    top: 0;
+    right: 0;
+    height: 100vh;
+    background-color: #f8f9fa;
+    box-shadow: -2px 0 5px rgba(0, 0, 0, 0.2);
+    overflow: hidden;
+    transition: width 2.5s ease-in-out;
+}
+
+/* Section d'importation de l'image */
+.import-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    padding: 20px;
+    background-color: white;
+    border-left: 2px solid #ddd;
+
+    h2 {
+        margin-bottom: 20px;
+        font-size: 1.5rem;
+        color: #333;
+    }
+
+    input[type="file"] {
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        cursor: pointer;
+    }
+}

@@ -1,1 +1,9 @@
-<p>upload works!</p>
+<mat-card class="import-section" (dragover)="onDragOver($event)" (dragleave)="onDragLeave($event)"
+    (drop)="onDrop($event)">
+    <label for="file-upload" class="upload-box" [class.dragging]="isDragging">
+        <mat-icon class="upload-icon">cloud_upload</mat-icon>
+        <p>Déposez votre image ici ou cliquez pour importer</p>
+        <span>Formats acceptés : JPG, PNG, TIFF</span>
+        <input id="file-upload" type="file" accept="image/PNG, image/JPG, image/tiff" (change)="onFileSelected($event)">
+    </label>
+</mat-card>

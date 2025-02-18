@@ -12,6 +12,6 @@ export class MapComponent implements AfterViewInit {
   constructor(private mapService: MapService) {}
 
   ngAfterViewInit(): void {
-    this.mapService.initializeMap('map');
+    this.mapService.initMap('map');
   }
 }

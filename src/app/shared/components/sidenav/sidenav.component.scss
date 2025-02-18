@@ -15,7 +15,7 @@ mat-icon {
 }
 
 button {
-    background-color: #dbdbdb;
+    background-color: #dedede;
     border: none;
     width: 38px;
     height: 37px;
@@ -27,7 +27,8 @@ button {
   left: 0;
   width: 60px; /* Largeur du menu */
   height: calc(100% - 80px); /* Hauteur de la fenêtre moins la barre de navigation */
-  background-color: rgba(255, 255, 255, 0.6); /* Fond semi-transparent */
+  background-color: white;
+  opacity: 0.8;
   color: white;
   display: flex;
   flex-direction: column;

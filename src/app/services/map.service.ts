@@ -17,7 +17,7 @@ export class MapService {
   private mapSubject = new BehaviorSubject<Map | null>(null);
   public map$ = this.mapSubject.asObservable();
 
-  initializeMap(target: string): void {
+  initMap(target: string): void {
     if (!this.map) { // Empêche la réinitialisation si la carte existe déjà
       this.map = new Map({
         target: target,

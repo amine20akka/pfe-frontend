@@ -1,11 +1,10 @@
 @if (isGeorefActive) {
 <div class="georef-container" [@toggleContent]="isGeorefActive ? 'open' : 'closed'">
-
-    <!-- Partie droite (importation de l’image) -->
-    <div class="import-section">
-        <h2>Importation de l'image</h2>
-        <input type="file" accept="image/*">
-    </div>
-
+    @if (!isImageLoaded) {
+    <app-upload></app-upload>
+    } @else {
+    <app-image></app-image>
+    }
 </div>
+
 }

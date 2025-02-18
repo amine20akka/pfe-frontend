@@ -1,0 +1,55 @@
+.import-section {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+    width: 100%;
+}
+
+.upload-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border: 2px dashed #ccc;
+    padding: 20px;
+    width: 60%;
+    height: 50%;
+    text-align: center;
+    background: #f9f9f9;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.1s ease-in-out;
+}
+
+.upload-box:hover {
+    border-color: #ff792b;
+    background: #ffe9dc;
+}
+
+.upload-icon {
+    font-size: 24px;
+    color: #ff8914;
+    margin-bottom: 10px;
+}
+
+.upload-box p {
+    font-size: 14px;
+    color: #333;
+    margin: 5px 0;
+}
+
+.upload-box span {
+    font-size: 12px;
+    color: #666;
+}
+
+#file-upload {
+    display: none;
+}
+
+.upload-box.dragging {
+    border-color: #ff792b;
+    background: #ffe9dc;
+}

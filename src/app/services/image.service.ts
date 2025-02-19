@@ -13,12 +13,13 @@ import { Projection } from 'ol/proj';
 })
 export class ImageService {
   map!: Map;
-  imageUrl: string = '';
-  isImageLoaded = false;
   isDragging = false;
+  isImageLoaded = false;
 
+  private imageUrl: string = '';
   private imageWidth = 1000; // Valeurs par défaut avant chargement
   private imageHeight = 1000;
+  private extent = [0, 0, this.imageWidth, this.imageHeight];
 
   onDragOver(event: DragEvent) {
     event.preventDefault();
@@ -68,10 +69,8 @@ export class ImageService {
       img.onload = () => {
         this.imageWidth = img.width;
         this.imageHeight = img.height;
+        this.extent = [0, 0, this.imageWidth, this.imageHeight];
         console.log(`Dimensions de l'image: ${this.imageWidth}x${this.imageHeight}`);
-
-        // Initialiser OpenLayers après l'obtention des dimensions
-        setTimeout(() => this.initImageLayer(), 0);
       };
       img.src = this.imageUrl;
     };
@@ -79,31 +78,28 @@ export class ImageService {
     reader.readAsDataURL(file);
   }
 
-  initImageLayer() {
-    const extent = [0, 0, this.imageWidth, this.imageHeight]; // Adapter aux dimensions réelles
-
-    this.map = new Map({
-      target: 'image-map',
-      interactions: defaultInteractions(),
-      view: new View({
-        projection: new Projection({ code: 'PIXEL', units: 'pixels', extent: extent }),
-        extent: extent,
-        center: getCenter(extent), // Centrer l'image
-        zoom: 1
-      }),
-      layers: [
-        new ImageLayer({
-          source: new Static({
-            url: this.imageUrl,
-            imageExtent: extent,
-            projection: new Projection({ code: 'PIXEL', units: 'pixels', extent: extent })
+  initImageLayer() {  
+    setTimeout(() => {  
+      this.map = new Map({
+        target: 'image-map',
+        interactions: defaultInteractions(),
+        view: new View({
+          projection: new Projection({ code: 'PIXEL', units: 'pixels', extent: this.extent }),
+          extent: this.extent,
+          center: getCenter(this.extent),
+          zoom: 1
+        }),
+        layers: [
+          new ImageLayer({
+            source: new Static({
+              url: this.imageUrl,
+              imageExtent: this.extent,
+              projection: new Projection({ code: 'PIXEL', units: 'pixels', extent: this.extent })
+            })
           })
-        })
-      ],
-      controls: defaultControls({ zoom: false, attribution: false, rotate: false }),
-    });
-
-    // Ajuster la vue à l'image
-    this.map.getView().fit(extent, { size: this.map.getSize() });
+        ],
+        controls: defaultControls({ zoom: true, attribution: false, rotate: false })
+      });
+    }, 100); // Petit délai pour s'assurer que le DOM est prêt
   }
 }

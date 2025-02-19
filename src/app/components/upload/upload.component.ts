@@ -16,14 +16,6 @@ export class UploadComponent {
   
   constructor(private imageService: ImageService) { }
 
-  get isImageLoaded() {
-    return this.imageService.isImageLoaded;
-  }
-
-  get imageUrl() {
-    return this.imageService.imageUrl;
-  }
-
   get isDragging() {
     return this.imageService.isDragging;
   }

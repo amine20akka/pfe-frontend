@@ -20,7 +20,7 @@ import { ImageService } from '../../services/image.service';
   animations: [
     trigger('toggleContent', [
       state('closed', style({ width: '0' })),
-      state('open', style({ width: '48%' })),
+      state('open', style({ width: '45%' })),
       transition('* => *', animate('500ms ease-in-out')),
     ])
   ]

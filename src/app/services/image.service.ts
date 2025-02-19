@@ -7,6 +7,7 @@ import { defaults as defaultInteractions } from 'ol/interaction';
 import { getCenter } from 'ol/extent';
 import Static from 'ol/source/ImageStatic';
 import { Projection } from 'ol/proj';
+import { BehaviorSubject } from 'rxjs';
 
 @Injectable({
   providedIn: 'root'
@@ -15,6 +16,7 @@ export class ImageService {
   map!: Map;
   isDragging = false;
   isImageLoaded = false;
+  cursorCoordinates = new BehaviorSubject<{ x: number; y: number }>({ x: 0, y: 0 });
 
   private imageUrl: string = '';
   private imageWidth = 1000; // Valeurs par défaut avant chargement
@@ -100,6 +102,13 @@ export class ImageService {
         ],
         controls: defaultControls({ zoom: true, attribution: false, rotate: false })
       });
+
+      this.map.on('pointermove', (event) => {
+        const coords = event.coordinate;
+        const invertedY = this.imageHeight - Math.round(coords[1]); // 🔹 Inversion de Y
+        this.cursorCoordinates.next({ x: Math.round(coords[0]), y: invertedY });
+      });
+
     }, 100); // Petit délai pour s'assurer que le DOM est prêt
   }
 }

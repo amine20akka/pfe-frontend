@@ -34,6 +34,7 @@ export class MapService {
           })
         ],
         view: new View({
+          projection: 'EPSG:4326',  // Projection par défaut
           center: [0, 0],
           zoom: 3,
           rotation: 0

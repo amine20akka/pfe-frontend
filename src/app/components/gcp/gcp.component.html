@@ -1,0 +1,79 @@
+<div class="table-container" [@toggleContent]="isGeorefActive ? 'open' : 'closed'">
+    <table mat-table [dataSource]="dataSource" class="mat-elevation-z8">
+
+        <!-- Checkbox Column -->
+        <ng-container matColumnDef="select">
+            <th mat-header-cell *matHeaderCellDef>
+                <mat-checkbox (change)="$event ? toggleAllRows() : null"
+                    [checked]="selection.hasValue() && isAllSelected()"
+                    [indeterminate]="selection.hasValue() && !isAllSelected()" [aria-label]="checkboxLabel()">
+                </mat-checkbox>
+            </th>
+            <td mat-cell *matCellDef="let row">
+                <mat-checkbox (click)="$event.stopPropagation()" (change)="$event ? selection.toggle(row) : null"
+                    [checked]="selection.isSelected(row)" [aria-label]="checkboxLabel(row)">
+                </mat-checkbox>
+            </td>
+        </ng-container>
+
+        <!-- Index Column -->
+        <ng-container matColumnDef="index">
+            <th mat-header-cell *matHeaderCellDef> ID </th>
+            <td mat-cell *matCellDef="let gcp"> {{ gcp.index }} </td>
+        </ng-container>
+
+        <!-- Source X Column -->
+        <ng-container matColumnDef="sourceX">
+            <th mat-header-cell *matHeaderCellDef> Source X </th>
+            <td mat-cell *matCellDef="let gcp"> {{ gcp.sourceX }} </td>
+        </ng-container>
+
+        <!-- Source Y Column -->
+        <ng-container matColumnDef="sourceY">
+            <th mat-header-cell *matHeaderCellDef> Source Y </th>
+            <td mat-cell *matCellDef="let gcp"> {{ gcp.sourceY }} </td>
+        </ng-container>
+
+        <!-- Map X Column -->
+        <ng-container matColumnDef="mapX">
+            <th mat-header-cell *matHeaderCellDef> Destination X </th>
+            <td mat-cell *matCellDef="let gcp"> {{ gcp.mapX | number:'1.4-4' }} </td>
+        </ng-container>
+
+        <!-- Map Y Column -->
+        <ng-container matColumnDef="mapY">
+            <th mat-header-cell *matHeaderCellDef> Destination Y </th>
+            <td mat-cell *matCellDef="let gcp"> {{ gcp.mapY | number:'1.4-4' }} </td>
+        </ng-container>
+
+        <!-- Residual Column -->
+        <ng-container matColumnDef="residual">
+            <th mat-header-cell *matHeaderCellDef> Résidu </th>
+            <td mat-cell *matCellDef="let gcp"> {{ gcp.residual | number:'1.2-2' }} </td>
+        </ng-container>
+
+        <!-- Edit Column -->
+        <ng-container matColumnDef="edit">
+            <th mat-header-cell *matHeaderCellDef> Modifier </th>
+            <td mat-cell *matCellDef="let gcp">
+                <button mat-icon-button color="primary" (click)="editGCP(gcp)">
+                    <mat-icon>edit</mat-icon>
+                </button>
+            </td>
+        </ng-container>
+
+        <!-- Delete Column -->
+        <ng-container matColumnDef="delete">
+            <th mat-header-cell *matHeaderCellDef> Supprimer </th>
+            <td mat-cell *matCellDef="let gcp">
+                <button mat-icon-button color="warn" (click)="deleteGCP(gcp.id)">
+                    <mat-icon>delete</mat-icon>
+                </button>
+            </td>
+        </ng-container>
+
+        <!-- Table Headers & Rows -->
+        <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedColumns; trackBy: trackByFn"></tr>
+    </table>
+</div>

@@ -1,0 +1,60 @@
+.table-container {
+    position: relative;
+    max-height: 36%;
+    overflow-y: auto;
+    overflow-x: hidden;
+    border: 1px solid #ddd;
+    width: 97%;
+    justify-self: center;
+    align-self: center;
+    top: 45px;
+}
+
+table {
+    overflow-y: auto;
+    overflow-x: hidden;
+    max-height: 36%;
+    min-width: 97%;
+    width: 100%;
+    justify-content: center;
+    align-items: center;
+    border-collapse: collapse;
+}
+
+th {
+    overflow-y: auto;
+    overflow-x: hidden;
+    background: #f5f5f5;
+    color: #333;
+    font-weight: bold;
+    font-size: x-small;
+    padding: 1px;
+    text-align: center;
+}
+
+mat-checkbox {
+    transform: scale(0.7);
+}
+
+tr {
+    overflow-x: hidden;
+    height: 26px;
+    font-size: x-small;
+    text-align: center;
+    background-color: #fff2e7;
+}
+
+td {
+    overflow-x: hidden;
+    padding: 1px;
+    text-align: center;
+    font-size: x-small;
+}
+
+button {
+    font-size: large;
+}
+
+mat-icon {
+    font-size: large;
+}

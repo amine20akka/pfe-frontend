@@ -5,8 +5,6 @@ import { Injectable } from '@angular/core';
 })
 export class GeorefService {
 
-  constructor() { }
-
   isGeorefActive = false; // Gère l'affichage de la partie droite
   
   toggleGeoref() {

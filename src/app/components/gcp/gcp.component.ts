@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -40,7 +40,7 @@ const gcps: GCP[] = [
   animations: [
     trigger('toggleContent', [
       state('closed', style({ width: '0' })),
-      state('open', style({ width: '97%' })),
+      state('open', style({ width: '100%' })),
       transition('* => *', animate('500ms ease-in-out')),
     ]),
   ]
@@ -57,18 +57,6 @@ export class GcpComponent {
   get isGeorefActive() {
     return this.georefService.isGeorefActive;
   }
-
-  editGCP(gcp: GCP) {
-    console.log('Edit GCP:', gcp);
-    // Open a modal or navigate to an edit form
-  }
-
-  deleteGCP(id: number) {
-    // console.log('Delete GCP ID:', id);
-    // this.gcps = gcps.filter(g => g.index !== id);
-    // this.dataSource.data = [...this.gcps]; // Refresh table
-  }
-
 
   /** Whether the number of selected elements matches the total number of rows. */
   isAllSelected() {

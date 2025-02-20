@@ -1,0 +1,52 @@
+.toolbar {
+    display: flex;
+    flex-direction: row;
+    justify-content: end;
+    align-items: center;
+    height: 10%;
+    overflow: hidden;
+}
+
+.toolbar-section {
+    display: flex;
+}
+
+#georef-button {
+    overflow: hidden;
+    background-color: rgb(238, 116, 34);
+    color: rgb(255, 255, 255);
+    margin-left: 10px;
+    margin-top: 2px;
+    height: 34px;    
+    font-size: small;
+}
+
+#close-button {
+    overflow: hidden;
+    display: flex;
+    flex-direction: row;
+    justify-self: start;
+    margin-right: 126px;
+}
+
+#georef-icon {
+    overflow: hidden;
+    margin-top: 8px;
+    margin-right: 4px;
+}
+
+button {
+    overflow: hidden;
+    font-size: large;
+}
+
+mat-icon {
+    overflow: hidden;
+    font-size: larger;
+}
+
+mat-divider {
+    overflow: hidden;
+    height: 32px;
+    margin: 0 12px;
+}

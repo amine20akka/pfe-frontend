@@ -3,10 +3,14 @@
     position: relative;
     justify-self: center;
     align-self: center;
-    width: 97%;
+    width: 100%;
     height: 50%;
-    top: 8%;
+    top: 0;
     border: 1px solid #ddd;
+}
+
+.image-map-container.adding-gcp {
+    cursor: crosshair; /* Curseur en croix pour indiquer qu'on est en mode ajout */
 }
 
 // #image-map .ol-control {

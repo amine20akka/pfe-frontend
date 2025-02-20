@@ -1,5 +1,4 @@
 import { Component, AfterViewInit } from '@angular/core';
-import Map from 'ol/Map';
 import { MapService } from '../../services/map.service';
 
 @Component({

@@ -3,6 +3,15 @@
     @if (!isImageLoaded) {
     <app-upload></app-upload>
     } @else {
+        <app-toolbar 
+        (addGCP)="handleAddGCP()" 
+        (exportGCPs)="handleExportGCPs()" 
+        (importGCPs)="handleImportGCPs()" 
+        (openSettings)="handleOpenSettings()" 
+        (validateAndProcess)="handleProcessing()" 
+        (resetImage)="handleResetImage()">
+    </app-toolbar>
+    
     <app-image></app-image>
     <app-gcp></app-gcp>
     <div class="cursor-coordinates">

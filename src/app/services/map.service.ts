@@ -6,11 +6,15 @@ import { defaults as defaultControls } from 'ol/control';
 import { defaults as defaultInteractions, DblClickDragZoom, DragRotateAndZoom } from 'ol/interaction';
 import TileLayer from 'ol/layer/Tile';
 import OSM from 'ol/source/OSM';
+import { GcpService } from './gcp.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class MapService {
+
+  constructor(private gcpService: GcpService) { }
+
   private map!: Map;
   
   // Utilisation de BehaviorSubject pour suivre l'état de la carte
@@ -34,7 +38,7 @@ export class MapService {
           })
         ],
         view: new View({
-          projection: 'EPSG:4326',  // Projection par défaut
+          projection: 'EPSG:3857',  // Projection Web Mercator
           center: [0, 0],
           zoom: 3,
           rotation: 0
@@ -55,4 +59,18 @@ export class MapService {
   getMap(): Map | null {
     return this.mapSubject.getValue(); // Récupération de l'état actuel
   }
+
+  enableMapSelection() {
+    console.log("Sélection sur la carte activée !");
+    
+    this.map.on('click', (event) => {
+      const coords = event.coordinate;
+      const x = Math.round(coords[0]);
+      const y = Math.round(coords[1]);
+  
+      console.log(`GCP ajouté sur la carte : (${x}, ${y})`);
+      this.gcpService.addGCP(x, y);
+    });
+  }
+  
 }

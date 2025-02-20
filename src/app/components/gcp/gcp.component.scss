@@ -1,13 +1,12 @@
 .table-container {
     position: relative;
-    max-height: 36%;
+    max-height: 35%;
     overflow-y: auto;
     overflow-x: hidden;
     border: 1px solid #ddd;
-    width: 97%;
+    width: 100%;
     justify-self: center;
     align-self: center;
-    top: 45px;
 }
 
 table {
@@ -41,7 +40,7 @@ tr {
     height: 26px;
     font-size: x-small;
     text-align: center;
-    background-color: #fff2e7;
+    background-color: #f3f3f3;
 }
 
 td {

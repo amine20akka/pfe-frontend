@@ -1,0 +1,44 @@
+<mat-toolbar color="primary" class="toolbar">
+    
+    <div id="close-button">
+        <button mat-icon-button matTooltip="Fermer" (click)="toggleGeoref()">
+            <mat-icon>arrow_forward</mat-icon>
+        </button>
+    </div>
+
+    <!-- Section Image -->
+    <div class="toolbar-section">
+        <button mat-icon-button matTooltip="Réinitialiser l'image" (click)="resetImage()">
+            <mat-icon>refresh</mat-icon>
+        </button>
+    </div>
+
+    <mat-divider vertical></mat-divider>
+    
+    <!-- Section Points -->
+    <div class="toolbar-section">
+        <button mat-icon-button matTooltip="Charger des GCPs" (click)="importPoints()">
+            <mat-icon>upload</mat-icon>
+        </button>
+        <button mat-icon-button matTooltip="Exporter les GCPs" (click)="exportPoints()">
+            <mat-icon>save_alt</mat-icon>
+        </button>
+        <button mat-icon-button matTooltip="Ajouter un GCP" (click)="startAddingGcp()">
+            <mat-icon>control_point</mat-icon>
+        </button>
+    </div>
+    
+    <mat-divider vertical></mat-divider>
+
+    <!-- Section Paramètres -->
+    <div class="toolbar-section">
+        <button mat-icon-button matTooltip="Paramètres">
+            <mat-icon>settings</mat-icon>
+        </button>
+        <button mat-fab extended id="georef-button">
+            <mat-icon id="georef-icon">play_arrow</mat-icon>
+            Géoréférencer
+          </button>
+    </div>
+
+</mat-toolbar>

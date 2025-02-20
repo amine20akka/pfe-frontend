@@ -1,3 +1,7 @@
-<div id="image-map" class="image-map-container" 
-    [@toggleContent]="isGeorefActive ? 'open' : 'closed'">
+<div #imageContainer id="image-map" class="image-map-container" 
+    [ngClass]="{'adding-gcp': isAddingGCP}" 
+    (click)="onImageClick()"
+    (keydown)="onImageKeydown($event)"
+    [@toggleContent]="isGeorefActive ? 'open' : 'closed'"
+    tabindex="0">
 </div>

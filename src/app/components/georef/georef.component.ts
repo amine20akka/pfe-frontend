@@ -8,7 +8,7 @@ import { ImageComponent } from '../image/image.component';
 import { ImageService } from '../../services/image.service';
 import { Subscription } from 'rxjs';
 import { GcpComponent } from "../gcp/gcp.component";
-import { GCP } from '../../interfaces/gcp';
+import { ToolbarComponent } from '../toolbar/toolbar.component';
 
 @Component({
   selector: 'app-georef',
@@ -19,8 +19,9 @@ import { GCP } from '../../interfaces/gcp';
     MatCardModule,
     UploadComponent,
     ImageComponent,
-    GcpComponent
-  ],
+    GcpComponent,
+    ToolbarComponent
+],
   animations: [
     trigger('toggleContent', [
       state('closed', style({ width: '0' })),
@@ -31,8 +32,8 @@ import { GCP } from '../../interfaces/gcp';
 })
 export class GeorefComponent implements AfterViewInit, OnDestroy {
 
-  cursorX: number = 0;
-  cursorY: number = 0;
+  cursorX = 0;
+  cursorY = 0;
   private coordSub!: Subscription;
 
   constructor(
@@ -66,4 +67,35 @@ export class GeorefComponent implements AfterViewInit, OnDestroy {
   toggleGeoref() {
     this.georefService.toggleGeoref();
   }
+
+  handleAddGCP() {
+    console.log("Ajout d'un point GCP");
+    // Ajouter un GCP sur la carte
+  }
+  
+  handleExportGCPs() {
+    console.log("Export des GCPs en fichier");
+    // Fonction pour exporter les points
+  }
+  
+  handleImportGCPs() {
+    console.log("Import des GCPs depuis un fichier");
+    // Fonction pour importer les points
+  }
+  
+  handleOpenSettings() {
+    console.log("Ouverture des paramètres");
+    // Ouvrir une boîte de dialogue ou un panneau de configuration
+  }
+  
+  handleProcessing() {
+    console.log("Lancement du traitement de géoréférencement");
+    // Validation et traitement des données
+  }
+  
+  handleResetImage() {
+    console.log("Réinitialisation de l'image");
+    // Réinitialiser l'image chargée
+  }
+  
 }

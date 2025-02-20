@@ -18,9 +18,9 @@ export class ImageService {
   isImageLoaded = false;
   cursorCoordinates = new BehaviorSubject<{ x: number; y: number }>({ x: 0, y: 0 });
 
-  private imageUrl: string = '';
-  private imageWidth = 1000; // Valeurs par défaut avant chargement
-  private imageHeight = 1000;
+  private imageUrl = '';
+  imageWidth = 1000; // Valeurs par défaut avant chargement
+  imageHeight = 1000;
   private extent = [0, 0, this.imageWidth, this.imageHeight];
 
   onDragOver(event: DragEvent) {
@@ -53,6 +53,16 @@ export class ImageService {
     }
   }
 
+  resetImage() {
+    this.isImageLoaded = false;
+    this.imageUrl = '';
+    this.imageWidth = 1000;
+    this.imageHeight = 1000;
+    this.extent = [0, 0, this.imageWidth, this.imageHeight];
+    this.map.setTarget('');
+    this.cursorCoordinates.next({ x: 0, y: 0 });
+  }
+
   private handleFile(file: File) {
     if (!file.type.startsWith('image/')) {
       console.error('Format non supporté');
@@ -62,7 +72,7 @@ export class ImageService {
     this.isImageLoaded = true;
     const reader = new FileReader();
 
-    reader.onload = (event: any) => {
+    reader.onload = () => {
       this.imageUrl = URL.createObjectURL(file);
       console.log('URL créée :', this.imageUrl);
 
@@ -105,7 +115,7 @@ export class ImageService {
 
       this.map.on('pointermove', (event) => {
         const coords = event.coordinate;
-        const invertedY = this.imageHeight - Math.round(coords[1]); // 🔹 Inversion de Y
+        const invertedY = this.imageHeight - Math.round(coords[1]); // Inversion de Y
         this.cursorCoordinates.next({ x: Math.round(coords[0]), y: invertedY });
       });
 

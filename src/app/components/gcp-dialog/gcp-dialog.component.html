@@ -1,0 +1,27 @@
+<h2 mat-dialog-title class="dialog-title">Méthode d'ajout d'un GCP</h2>
+
+<mat-dialog-content class="dialog-content">
+    <mat-radio-group [(ngModel)]="selection" class="radio-group">
+        <mat-radio-button value="click">Sélectionner sur l'image</mat-radio-button>
+        <mat-radio-button value="manual">Saisie manuelle</mat-radio-button>
+    </mat-radio-group>
+
+    @if (selection === 'manual') {
+    <div class="manual-input">
+        <mat-form-field appearance="outline">
+            <mat-label>X</mat-label>
+            <input matInput type="number" placeholder="Coordonnée X" [(ngModel)]="x">
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+            <mat-label>Y</mat-label>
+            <input matInput type="number" placeholder="Coordonnée Y" [(ngModel)]="y">
+        </mat-form-field>
+    </div>
+    }
+</mat-dialog-content>
+
+<mat-dialog-actions align="end" class="dialog-actions">
+    <button mat-button (click)="onCancel()" class="cancel-button">Annuler</button>
+    <button mat-button color="primary" class="confirm-button" (click)="onConfirm()">Confirmer</button>
+</mat-dialog-actions>

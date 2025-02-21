@@ -4,7 +4,8 @@ import { GcpService } from '../../services/gcp.service';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatRadioModule } from '@angular/material/radio';
-import { MatFormField, MatLabel } from '@angular/material/form-field';
+import { MatFormFieldModule, MatLabel } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
 import { FormsModule } from '@angular/forms';
 
 @Component({
@@ -16,9 +17,10 @@ import { FormsModule } from '@angular/forms';
     MatButtonModule,
     MatIconModule,
     MatRadioModule,
-    MatFormField,
+    MatFormFieldModule,
     FormsModule,
     MatLabel,
+    MatInputModule,
   ]
 })
 export class GcpDialogComponent {
@@ -35,12 +37,14 @@ export class GcpDialogComponent {
     if (this.selection === 'manual' && this.x !== undefined && this.y !== undefined) {
       this.gcpService.addGCP(this.x, this.y);
     } else if (this.selection === 'click') {
-      this.gcpService.handleStartAddingGCP();
+      // this.gcpService.handleStartAddingGCP();
     }
+    this.gcpService.isAddingGCP = false;
     this.dialogRef.close();
   }
 
   onCancel() {
+    this.gcpService.isAddingGCP = false;
     this.dialogRef.close();
   }
 }

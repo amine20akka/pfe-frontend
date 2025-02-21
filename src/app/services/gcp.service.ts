@@ -7,11 +7,15 @@ import { BehaviorSubject } from 'rxjs';
 })
 export class GcpService {
 
-  isAddingGCP = false; // Gère l'ajout de points de contrôle
+
   private gcps: GCP[] = [];
   private gcpsSubject = new BehaviorSubject<GCP[]>(this.gcps);
+  newGcp: GCP = { index: 0, sourceX: 0, sourceY: 0 };
+  x!: number;
+  y!: number;
 
   gcps$ = this.gcpsSubject.asObservable(); // Observable pour suivre les changements
+  isAddingGCP = false; // Gère l'ajout de points de contrôle
 
   addGCP(x: number, y: number) {
     const newGCP: GCP = {
@@ -30,9 +34,17 @@ export class GcpService {
     return this.gcps;
   }
 
-  handleStartAddingGCP() {
-    this.isAddingGCP = true;
-    console.log("Mode d'ajout de GCP activé. Cliquez sur l'image pour fixer un point.");
+  toggleAddingGcp() {
+    this.isAddingGCP = !this.isAddingGCP;
+    if (this.isAddingGCP) {
+      this.isAddingGCP = true;
+      console.log("Mode d'ajout de GCP activé. Cliquez sur l'image pour fixer un point.");
+    }
   }
-  
+
+  addGcpToTable(gcp: GCP) {
+    this.gcps.push(gcp);
+    this.gcpsSubject.next(this.gcps);
+  } 
+
 }

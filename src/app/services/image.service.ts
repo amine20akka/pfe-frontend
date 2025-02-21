@@ -6,8 +6,17 @@ import { defaults as defaultControls } from 'ol/control';
 import { defaults as defaultInteractions } from 'ol/interaction';
 import { getCenter } from 'ol/extent';
 import Static from 'ol/source/ImageStatic';
-import { Projection } from 'ol/proj';
+import { fromLonLat, Projection } from 'ol/proj';
 import { BehaviorSubject } from 'rxjs';
+import VectorLayer from 'ol/layer/Vector';
+import VectorSource from 'ol/source/Vector';
+import Feature from 'ol/Feature';
+import { Point } from 'ol/geom';
+import Style from 'ol/style/Style';
+import CircleStyle from 'ol/style/Circle';
+import Fill from 'ol/style/Fill';
+import Stroke from 'ol/style/Stroke';
+import Text from 'ol/style/Text';
 
 @Injectable({
   providedIn: 'root'
@@ -17,11 +26,40 @@ export class ImageService {
   isDragging = false;
   isImageLoaded = false;
   cursorCoordinates = new BehaviorSubject<{ x: number; y: number }>({ x: 0, y: 0 });
-
-  private imageUrl = '';
   imageWidth = 1000; // Valeurs par défaut avant chargement
   imageHeight = 1000;
+
+  private newGcpLayer!: VectorLayer<VectorSource>; // Couche OpenLayers pour les points de contrôle
+  private imageUrl = '';
   private extent = [0, 0, this.imageWidth, this.imageHeight];
+
+  zoomIn() {
+    const view = this.map.getView();
+    view.animate({
+      zoom: view.getZoom()! + 1,  // Augmente le zoom
+      duration: 300 // Durée de l'animation (500ms)
+    });
+  }
+  
+  zoomOut() {
+    const view = this.map.getView();
+    view.animate({
+      zoom: view.getZoom()! - 1,  // Diminue le zoom
+      duration: 300 // Durée de l'animation (500ms)
+    });
+  }  
+
+  resetView() {
+    if (this.map) {
+      const view = this.map.getView();
+      view.animate({
+        center: getCenter(this.extent), // Recentre sur l’image
+        zoom: 1, // Zoom initial
+        duration: 300 // Animation fluide
+      });
+    }
+  }
+  
 
   onDragOver(event: DragEvent) {
     event.preventDefault();
@@ -90,14 +128,14 @@ export class ImageService {
     reader.readAsDataURL(file);
   }
 
-  initImageLayer() {  
-    setTimeout(() => {  
+  initImageLayer() {
+    setTimeout(() => {
       this.map = new Map({
         target: 'image-map',
         interactions: defaultInteractions(),
         view: new View({
           projection: new Projection({ code: 'PIXEL', units: 'pixels', extent: this.extent }),
-          extent: this.extent,
+          showFullExtent: true,
           center: getCenter(this.extent),
           zoom: 1
         }),
@@ -110,7 +148,7 @@ export class ImageService {
             })
           })
         ],
-        controls: defaultControls({ zoom: true, attribution: false, rotate: false })
+        controls: defaultControls({ zoom: false, attribution: false, rotate: false })
       });
 
       this.map.on('pointermove', (event) => {
@@ -120,5 +158,41 @@ export class ImageService {
       });
 
     }, 100); // Petit délai pour s'assurer que le DOM est prêt
+  }
+
+  private getGcpStyle(index: number) {
+    return new Style({
+      image: new CircleStyle({
+        radius: 6,
+        fill: new Fill({ color: 'red' }),
+        stroke: new Stroke({ color: 'white', width: 2 })
+      }),
+      text: new Text({
+        text: index.toString(),
+        font: '8px Arial',
+        fill: new Fill({ color: 'black' }),
+        stroke: new Stroke({ color: 'white', width: 2 }),
+        offsetY: -12
+      })
+    });
+  }
+
+  createGcpLayer(index: number): VectorLayer {
+    const feature = new Feature({
+      geometry: new Point(fromLonLat([this.cursorCoordinates.getValue().x, this.cursorCoordinates.getValue().y])),
+      id: index
+    });
+
+    this.newGcpLayer = new VectorLayer({
+      source: new VectorSource(
+        { features: [feature] }
+      ),
+      style: this.getGcpStyle(index)
+    });
+    return this.newGcpLayer;
+  }
+
+  addGcpLayer(index: number) {
+    this.map.addLayer(this.createGcpLayer(index));
   }
 }

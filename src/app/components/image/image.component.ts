@@ -7,11 +7,17 @@ import { CommonModule } from '@angular/common';
 import { GcpDialogComponent } from '../gcp-dialog/gcp-dialog.component';
 import { MatDialog } from '@angular/material/dialog';
 import { MapService } from '../../services/map.service';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
+import { MatTooltipModule } from '@angular/material/tooltip';
 
 @Component({
   selector: 'app-image',
   imports: [
-    CommonModule
+    CommonModule,
+    MatButtonModule,
+    MatIconModule,
+    MatTooltipModule,
   ],
   templateUrl: './image.component.html',
   styleUrl: './image.component.scss',
@@ -26,6 +32,7 @@ import { MapService } from '../../services/map.service';
 export class ImageComponent implements AfterViewInit {
 
   @ViewChild('imageContainer', { static: false }) imageContainer!: ElementRef;
+  length = 0;
   x = 0;
   y = 0;
 
@@ -35,7 +42,11 @@ export class ImageComponent implements AfterViewInit {
     private gcpService: GcpService,
     private mapService: MapService,
     private dialog: MatDialog,
-  ) { }
+  ) {
+    gcpService.gcps$.subscribe((gcps) => {
+      this.length = gcps.length;
+    });
+   }
 
   get isGeorefActive() {
     return this.georefService.isGeorefActive;
@@ -55,6 +66,18 @@ export class ImageComponent implements AfterViewInit {
     });
   }
 
+  zoomIn() {
+    this.imageService.zoomIn();
+  }
+  
+  zoomOut() {
+    this.imageService.zoomOut();
+  }
+  
+  resetView() {
+    this.imageService.resetView();
+  }
+
   onImageKeydown(event: KeyboardEvent) {
     if (event.key === 'a') {
       console.log('🟢 Ajout de GCP activé');
@@ -63,6 +86,8 @@ export class ImageComponent implements AfterViewInit {
 
   onImageClick() {
     if (!this.isAddingGCP) return;
+
+    this.imageService.addGcpLayer(this.length + 1);
 
     // Ouvrir le dialogue pour la sélection de la méthode
     const dialogRef = this.dialog.open(GcpDialogComponent, {

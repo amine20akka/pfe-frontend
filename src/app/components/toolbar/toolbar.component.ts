@@ -35,16 +35,20 @@ export class ToolbarComponent {
   @Output() validateAndProcess = new EventEmitter<void>();
   // @Output() resetImage = new EventEmitter<void>();
 
+  get isAddingGCP() {
+    return this.gcpService.isAddingGCP;
+  }
+
   toggleGeoref() {
     this.georefService.toggleGeoref();
   }
 
+  toggleAddingGCP() {
+    this.gcpService.toggleAddingGcp();
+  }
+
   resetImage() {
     this.imageService.resetImage();
-  }
-  
-  startAddingGcp() {
-    this.gcpService.handleStartAddingGCP();
   }
 
   exportPoints() {

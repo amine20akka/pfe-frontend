@@ -10,20 +10,36 @@
 }
 
 .image-map-container.adding-gcp {
-    cursor: crosshair; /* Curseur en croix pour indiquer qu'on est en mode ajout */
+    /* Curseur en croix pour indiquer qu'on est en mode ajout */
+    cursor: crosshair;
 }
 
-// #image-map .ol-control {
-//     position: absolute;
-//     top: 1em;
-//     right: 1em;
-//     display: flex;
-//     flex-direction: column;
-// }
+.zoom-controls {
+    position: absolute;
+    top: 11%;
+    right: 1%;
+    display: flex;
+    flex-direction: column;
+    gap: 4px; /* Espace entre les boutons */
+    z-index: 1000;
+}
 
-// #image-map .ol-zoom {
-//     position: static;
-//     margin-bottom: 5px;
-//     display: block;
-// }
-  
+.zoom-controls button {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 28px;
+    height: 28px;
+    cursor: pointer;
+    border-radius: 22%;
+    background-color: rgb(238, 116, 34);
+    color: #ffffff;
+}
+
+mat-icon {
+    display: flex;
+    top: 16%;
+    justify-content: center;
+    justify-content: center;
+    font-size: 14px;
+}

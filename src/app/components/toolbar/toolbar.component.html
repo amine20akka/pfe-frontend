@@ -23,8 +23,8 @@
         <button mat-icon-button matTooltip="Exporter les GCPs" (click)="exportPoints()">
             <mat-icon>save_alt</mat-icon>
         </button>
-        <button mat-icon-button matTooltip="Ajouter un GCP" (click)="startAddingGcp()">
-            <mat-icon>control_point</mat-icon>
+        <button mat-icon-button [matTooltip]="isAddingGCP ? 'Annuler':'Ajouter un GCP'" (click)="toggleAddingGCP()">
+            <mat-icon [fontIcon]="isAddingGCP ? 'close':'control_point'"></mat-icon>
         </button>
     </div>
     

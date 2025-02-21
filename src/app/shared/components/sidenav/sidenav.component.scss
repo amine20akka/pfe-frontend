@@ -1,32 +1,33 @@
 .container {
-    height: 100vh;
-    display: flex;
-    position: absolute;
-    background-color: transparent;
-    top: 40px;
-    left: 0;
-    width: 60px; /* Largeur du menu */
-    height: calc(100% - 80px); /* Hauteur de la fenêtre moins la barre de navigation */
+  height: 100vh;
+  display: flex;
+  position: absolute;
+  background-color: transparent;
+  top: 0;
+  left: 0;
+  width: 60px;
+  /* Largeur du menu */
+  height: 100%;
 }
 
 mat-icon {
-    color: #464646;
-    font-size: 20px;
+  color: #464646;
+  font-size: 20px;
 }
 
 button {
-    background-color: #dedede;
-    border: none;
-    width: 38px;
-    height: 37px;
+  border: none;
+  width: 38px;
+  height: 37px;
 }
 
 .sidenav {
+  border-radius: 0;
   position: absolute;
-  top: 40px;
   left: 0;
-  width: 60px; /* Largeur du menu */
-  height: calc(100% - 80px); /* Hauteur de la fenêtre moins la barre de navigation */
+  width: 60px;
+  /* Largeur du menu */
+  height: 100%;
   background-color: white;
   opacity: 0.95;
   color: white;
@@ -34,7 +35,8 @@ button {
   flex-direction: column;
   align-items: center;
   padding-top: 20px;
-  z-index: 10; /* S'assurer qu'il est au-dessus de la carte */
+  z-index: 10;
+  /* S'assurer qu'il est au-dessus de la carte */
 }
 
 .sidebar-content {

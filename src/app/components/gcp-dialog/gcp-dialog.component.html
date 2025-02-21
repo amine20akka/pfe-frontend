@@ -1,8 +1,8 @@
-<h2 mat-dialog-title class="dialog-title">Méthode d'ajout d'un GCP</h2>
+<h2 mat-dialog-title class="dialog-title">Ajouter un GCP sur la carte</h2>
 
 <mat-dialog-content class="dialog-content">
     <mat-radio-group [(ngModel)]="selection" class="radio-group">
-        <mat-radio-button value="click">Sélectionner sur l'image</mat-radio-button>
+        <mat-radio-button value="click">Sélectionner à partir de la carte</mat-radio-button>
         <mat-radio-button value="manual">Saisie manuelle</mat-radio-button>
     </mat-radio-group>
 
@@ -10,12 +10,12 @@
     <div class="manual-input">
         <mat-form-field appearance="outline">
             <mat-label>X</mat-label>
-            <input matInput type="number" placeholder="Coordonnée X" [(ngModel)]="x">
+            <input matInput type="number" [(ngModel)]="x">
         </mat-form-field>
 
         <mat-form-field appearance="outline">
             <mat-label>Y</mat-label>
-            <input matInput type="number" placeholder="Coordonnée Y" [(ngModel)]="y">
+            <input matInput type="number" [(ngModel)]="y">
         </mat-form-field>
     </div>
     }

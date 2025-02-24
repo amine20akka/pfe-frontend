@@ -69,7 +69,6 @@ export class MapService {
       const y = Math.round(coords[1]);
   
       console.log(`GCP ajouté sur la carte : (${x}, ${y})`);
-      this.gcpService.addGCP(x, y);
     });
   }
   

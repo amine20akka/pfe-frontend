@@ -9,6 +9,7 @@ import { ImageService } from '../../services/image.service';
 import { Subscription } from 'rxjs';
 import { GcpComponent } from "../gcp/gcp.component";
 import { ToolbarComponent } from '../toolbar/toolbar.component';
+import { GcpService } from '../../services/gcp.service';
 
 @Component({
   selector: 'app-georef',
@@ -38,12 +39,13 @@ export class GeorefComponent implements AfterViewInit, OnDestroy {
 
   constructor(
     private georefService: GeorefService,
-    private imageService: ImageService
+    private imageService: ImageService,
+    private gcpService: GcpService,
   ) { }
 
   ngAfterViewInit(): void {
     // S'abonner aux coordonnées du curseur
-    this.coordSub = this.imageService.cursorCoordinates.subscribe(coords => {
+    this.coordSub = this.gcpService.cursorCoordinates.subscribe(coords => {
       this.cursorX = coords.x;
       this.cursorY = coords.y;
     });

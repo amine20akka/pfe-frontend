@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { AfterViewInit, Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -9,21 +9,10 @@ import { SelectionModel } from '@angular/cdk/collections';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { trigger, transition, style, animate, state } from '@angular/animations';
 import { GeorefService } from '../../services/georef.service';
-
-const gcps: GCP[] = [
-  { index: 1, sourceX: 100, sourceY: 200, mapX: 50.12, mapY: 32.55, residual: 0.5 },
-  { index: 1, sourceX: 100, sourceY: 200, mapX: 50.12, mapY: 32.55, residual: 0.5 },
-  { index: 1, sourceX: 100, sourceY: 200, mapX: 50.12, mapY: 32.55, residual: 0.5 },
-  { index: 1, sourceX: 100, sourceY: 200, mapX: 50.12, mapY: 32.55, residual: 0.5 },
-  { index: 1, sourceX: 100, sourceY: 200, mapX: 50.12, mapY: 32.55, residual: 0.5 },
-  { index: 1, sourceX: 100, sourceY: 200, mapX: 50.12, mapY: 32.55, residual: 0.5 },
-  { index: 1, sourceX: 100, sourceY: 200, mapX: 50.12, mapY: 32.55, residual: 0.5 },
-  { index: 1, sourceX: 100, sourceY: 200, mapX: 50.12, mapY: 32.55, residual: 0.5 },
-  { index: 1, sourceX: 100, sourceY: 200, mapX: 50.12, mapY: 32.55, residual: 0.5 },
-  { index: 1, sourceX: 100, sourceY: 200, mapX: 50.12, mapY: 32.55, residual: 0.5 },
-  { index: 1, sourceX: 100, sourceY: 200, mapX: 50.12, mapY: 32.55, residual: 0.5 },
-  { index: 2, sourceX: 300, sourceY: 150, mapX: 49.87, mapY: 32.42, residual: 0.8 }
-];
+import { GcpService } from '../../services/gcp.service';
+import { ImageService } from '../../services/image.service';
+import VectorLayer from 'ol/layer/Vector';
+import VectorSource from 'ol/source/Vector';
 
 @Component({
   selector: 'app-gcp',
@@ -46,44 +35,96 @@ const gcps: GCP[] = [
   ]
 })
 
-export class GcpComponent {
+export class GcpComponent implements AfterViewInit {
 
-  constructor(private georefService: GeorefService) { }
+  constructor(
+    private georefService: GeorefService,
+    private gcpService: GcpService,
+    private imageService: ImageService,
+  ) { }
 
   displayedColumns: string[] = ['select', 'index', 'sourceX', 'sourceY', 'mapX', 'mapY', 'residual', 'edit', 'delete'];
-  dataSource = new MatTableDataSource<GCP>(gcps);
+  dataSource = new MatTableDataSource<GCP>();
   selection = new SelectionModel<GCP>(true, []);
+  isDeleting = false;
+  private gcpLayers: Map<number, VectorLayer<VectorSource>> = new Map<number, VectorLayer<VectorSource>>();
+
+  ngAfterViewInit() {
+    this.gcpService.gcps$.subscribe((gcps) => {
+      this.dataSource.data = gcps;
+      // Sélectionner automatiquement les nouveaux GCPs et les rendre visibles
+      if (gcps.length > 0 && !this.isDeleting) {
+        this.selection.select(gcps[gcps.length - 1]);
+      }
+      this.isDeleting = false;
+      this.updateGcpLayerVisibility();
+      console.log('GCPs Data : ', gcps);
+      console.log('GCPs Selection : ', this.selection);
+    });
+    this.imageService.gcpLayers$.subscribe((gcpLayers) => {
+      this.gcpLayers = gcpLayers;
+      console.log('GCPs Layers : ', gcpLayers);
+    });
+  }
 
   get isGeorefActive() {
     return this.georefService.isGeorefActive;
   }
 
-  /** Whether the number of selected elements matches the total number of rows. */
+  /** Vérifie si tous les éléments sont sélectionnés */
   isAllSelected() {
-    const numSelected = this.selection.selected.length;
-    const numRows = this.dataSource.data.length;
-    return numSelected === numRows;
+    return this.selection.selected.length === this.dataSource.data.length;
   }
 
-  /** Selects all rows if they are not all selected; otherwise clear selection. */
+  /** Sélectionne tous les éléments ou les désélectionne */
   toggleAllRows() {
-    if (this.isAllSelected()) {
-      this.selection.clear();
-      return;
+    const allSelected = this.isAllSelected();
+
+    this.selection.clear();  // Clear selection
+
+    if (!allSelected) {
+      this.selection.select(...this.dataSource.data);  // Select all GCPs
     }
 
-    this.selection.select(...this.dataSource.data);
+    this.updateGcpLayerVisibility();
   }
 
-  /** The label for the checkbox on the passed row */
-  checkboxLabel(row?: GCP): string {
-    if (!row) {
-      return `${this.isAllSelected() ? 'deselect' : 'select'} all`;
-    }
-    return `${this.selection.isSelected(row) ? 'deselect' : 'select'} row ${row.index + 1}`;
+  /** Sélectionne ou désélectionne un point GCP et met à jour la visibilité */
+  toggleRow(row: GCP) {
+    this.selection.toggle(row);
+    this.updateGcpLayerVisibility();
+  }
+
+  /** Met à jour la visibilité des couches de GCP */
+  updateGcpLayerVisibility() {
+    if (!this.gcpLayers) return; // No GCP layers
+
+    this.gcpLayers.forEach((layer, index) => {
+      const isVisible = this.selection.selected.some(gcp => gcp.index === index);
+      layer.setVisible(isVisible);
+    });
+  }
+
+  deleteGcp(index: number) {
+    this.isDeleting = true;
+    this.selection.deselect(this.dataSource.data.find(gcp => gcp.index === index)!);
+    this.gcpService.deleteGcpData(index);
+    this.imageService.deleteGcpLayer(index);
+    this.updateGcpLayerVisibility();
   }
 
   trackByFn(item: GCP): number {
     return item.index;
   }
+
+  getFillColor(index: number): string {
+    const colors = ['red', 'blue', 'green', 'yellow', 'purple', 'orange', 'pink', 'brown', 'cyan', 'magenta'];
+    return colors[(index - 1) % colors.length]; // S'assurer de ne pas dépasser la liste
+  }
+
+  getTextColor(index: number): string {
+    const textColors = ['white', 'white', 'white', 'black', 'white', 'black', 'black', 'white', 'black', 'white'];
+    return textColors[(index - 1) % textColors.length];
+  }
+
 }

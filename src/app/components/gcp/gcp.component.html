@@ -6,12 +6,12 @@
             <th mat-header-cell *matHeaderCellDef>
                 <mat-checkbox (change)="$event ? toggleAllRows() : null"
                     [checked]="selection.hasValue() && isAllSelected()"
-                    [indeterminate]="selection.hasValue() && !isAllSelected()" [aria-label]="checkboxLabel()">
+                    [indeterminate]="selection.hasValue() && !isAllSelected()">
                 </mat-checkbox>
             </th>
             <td mat-cell *matCellDef="let row">
-                <mat-checkbox (click)="$event.stopPropagation()" (change)="$event ? selection.toggle(row) : null"
-                    [checked]="selection.isSelected(row)" [aria-label]="checkboxLabel(row)">
+                <mat-checkbox (click)="$event.stopPropagation()" (change)="toggleRow(row)"
+                    [checked]="selection.isSelected(row)">
                 </mat-checkbox>
             </td>
         </ng-container>
@@ -19,8 +19,14 @@
         <!-- Index Column -->
         <ng-container matColumnDef="index">
             <th mat-header-cell *matHeaderCellDef> ID </th>
-            <td mat-cell *matCellDef="let gcp"> {{ gcp.index }} </td>
+            <td mat-cell *matCellDef="let gcp">
+                <span
+                    [ngStyle]="{'color': getTextColor(gcp.index), 'background-color': getFillColor(gcp.index), 'padding': '3px 6px', 'border-radius': '50%'}">
+                    {{ gcp.index }}
+                </span>
+            </td>
         </ng-container>
+
 
         <!-- Source X Column -->
         <ng-container matColumnDef="sourceX">
@@ -66,7 +72,7 @@
         <ng-container matColumnDef="delete">
             <th mat-header-cell *matHeaderCellDef> Supprimer </th>
             <td mat-cell *matCellDef="let gcp">
-                <button mat-icon-button color="warn">
+                <button mat-icon-button color="warn" (click)="deleteGcp(gcp.index)">
                     <mat-icon>delete</mat-icon>
                 </button>
             </td>

@@ -4,7 +4,7 @@ import { trigger, state, style, transition, animate } from '@angular/animations'
 import { GeorefService } from '../../services/georef.service';
 import { GcpService } from '../../services/gcp.service';
 import { CommonModule } from '@angular/common';
-import { GcpDialogComponent } from '../gcp-dialog/gcp-dialog.component';
+// import { GcpDialogComponent } from '../gcp-dialog/gcp-dialog.component';
 import { MatDialog } from '@angular/material/dialog';
 import { MapService } from '../../services/map.service';
 import { MatButtonModule } from '@angular/material/button';
@@ -42,11 +42,7 @@ export class ImageComponent implements AfterViewInit {
     private gcpService: GcpService,
     private mapService: MapService,
     private dialog: MatDialog,
-  ) {
-    gcpService.gcps$.subscribe((gcps) => {
-      this.length = gcps.length;
-    });
-   }
+  ) { }
 
   get isGeorefActive() {
     return this.georefService.isGeorefActive;
@@ -58,12 +54,15 @@ export class ImageComponent implements AfterViewInit {
 
   ngAfterViewInit() {
     this.imageService.initImageLayer();
-    this.imageService.cursorCoordinates.subscribe((coords) => {
+    this.gcpService.cursorCoordinates.subscribe((coords) => {
       if (this.isAddingGCP) {
         this.x = coords.x;
         this.y = coords.y;
       }
     });
+    this.gcpService.gcps$.subscribe((gcps) => {
+      this.length = gcps.length;
+    })
   }
 
   zoomIn() {
@@ -90,21 +89,21 @@ export class ImageComponent implements AfterViewInit {
     this.imageService.addGcpLayer(this.length + 1);
 
     // Ouvrir le dialogue pour la sélection de la méthode
-    const dialogRef = this.dialog.open(GcpDialogComponent, {
-      width: '400px',
-      data: { x: this.x, y: this.y }
-    });
+    // const dialogRef = this.dialog.open(GcpDialogComponent, {
+    //   width: '400px',
+    //   data: { x: this.x, y: this.y }
+    // });
 
-    dialogRef.afterClosed().subscribe(result => {
-      if (result) {
-        if (result.selection === 'map') {
-          this.mapService.enableMapSelection();
-        } else {
-          // Ajouter le GCP via le service
-          this.gcpService.addGCP(result.gcp.x, result.gcp.y);
-        }
-      }
-    });
+    // dialogRef.afterClosed().subscribe(result => {
+    //   if (result) {
+    //     if (result.selection === 'map') {
+    //       this.mapService.enableMapSelection();
+    //     } else {
+    //       // Ajouter le GCP via le service
+    //       this.gcpService.addGCP(result.gcp.x, result.gcp.y);
+    //     }
+    //   }
+    // });
   }
 
 }

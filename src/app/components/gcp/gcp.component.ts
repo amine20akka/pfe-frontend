@@ -1,4 +1,4 @@
-import { AfterViewInit, Component } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -35,49 +35,61 @@ import VectorSource from 'ol/source/Vector';
   ]
 })
 
-export class GcpComponent implements AfterViewInit {
+export class GcpComponent implements OnInit, OnDestroy {
 
   constructor(
     private georefService: GeorefService,
     private gcpService: GcpService,
     private imageService: ImageService,
   ) { }
-
+  
   displayedColumns: string[] = ['select', 'index', 'sourceX', 'sourceY', 'mapX', 'mapY', 'residual', 'edit', 'delete'];
   dataSource = new MatTableDataSource<GCP>();
   selection = new SelectionModel<GCP>(true, []);
   isDeleting = false;
   private gcpLayers: Map<number, VectorLayer<VectorSource>> = new Map<number, VectorLayer<VectorSource>>();
-
-  ngAfterViewInit() {
+  
+  ngOnInit() {
     this.gcpService.gcps$.subscribe((gcps) => {
       this.dataSource.data = gcps;
       // Sélectionner automatiquement les nouveaux GCPs et les rendre visibles
       if (gcps.length > 0 && !this.isDeleting) {
         this.selection.select(gcps[gcps.length - 1]);
+        this.isDeleting = false;
       }
-      this.isDeleting = false;
+      // Update residual values
+      if (gcps.length >= 3) {
+        this.gcpService.updateGcpsAndResiduals();
+      } else {
+        this.dataSource.data.forEach((gcp) => {
+          gcp.residual = undefined;
+        })
+      }
       this.updateGcpLayerVisibility();
       console.log('GCPs Data : ', gcps);
       console.log('GCPs Selection : ', this.selection);
     });
-    this.imageService.gcpLayers$.subscribe((gcpLayers) => {
-      this.gcpLayers = gcpLayers;
-      console.log('GCPs Layers : ', gcpLayers);
+    this.imageService.imageLayers$.subscribe((imageLayers) => {
+      this.gcpLayers = imageLayers;
+      console.log('GCPs Layers : ', imageLayers);
     });
   }
 
-  get isGeorefActive() {
+  ngOnDestroy(): void {
+    this.gcpService.isAddingGCP = false;
+  }
+  
+  get isGeorefActive(): boolean {
     return this.georefService.isGeorefActive;
   }
 
   /** Vérifie si tous les éléments sont sélectionnés */
-  isAllSelected() {
+  isAllSelected(): boolean {
     return this.selection.selected.length === this.dataSource.data.length;
   }
 
   /** Sélectionne tous les éléments ou les désélectionne */
-  toggleAllRows() {
+  toggleAllRows(): void {
     const allSelected = this.isAllSelected();
 
     this.selection.clear();  // Clear selection
@@ -90,13 +102,13 @@ export class GcpComponent implements AfterViewInit {
   }
 
   /** Sélectionne ou désélectionne un point GCP et met à jour la visibilité */
-  toggleRow(row: GCP) {
+  toggleRow(row: GCP): void {
     this.selection.toggle(row);
     this.updateGcpLayerVisibility();
   }
 
   /** Met à jour la visibilité des couches de GCP */
-  updateGcpLayerVisibility() {
+  updateGcpLayerVisibility(): void {
     if (!this.gcpLayers) return; // No GCP layers
 
     this.gcpLayers.forEach((layer, index) => {
@@ -105,7 +117,9 @@ export class GcpComponent implements AfterViewInit {
     });
   }
 
-  deleteGcp(index: number) {
+  deleteGcp(index: number): void {
+    const deletedGcp = this.gcpService.getGCPs()[index - 1];
+    console.log(deletedGcp);
     this.isDeleting = true;
     this.selection.deselect(this.dataSource.data.find(gcp => gcp.index === index)!);
     this.gcpService.deleteGcpData(index);
@@ -113,9 +127,9 @@ export class GcpComponent implements AfterViewInit {
     this.updateGcpLayerVisibility();
   }
 
-  trackByFn(item: GCP): number {
-    return item.index;
-  }
+  trackByFn(index: number): number {
+    return index;
+}
 
   getFillColor(index: number): string {
     const colors = ['red', 'blue', 'green', 'yellow', 'purple', 'orange', 'pink', 'brown', 'cyan', 'magenta'];

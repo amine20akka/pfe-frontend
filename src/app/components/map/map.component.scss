@@ -5,3 +5,19 @@
   left: 0;
   position: relative;
 }
+
+.map-container.map-selection {
+  /* Curseur en croix pour indiquer qu'on est en mode ajout */
+  cursor: crosshair;
+}
+
+.cursor-coordinates {
+  position: absolute;
+  bottom: 1%;
+  left: 5%;
+  background: rgba(0, 0, 0, 0.6);
+  color: white;
+  padding: 3px 6px;
+  border-radius: 5px;
+  font-size: 10px;
+}

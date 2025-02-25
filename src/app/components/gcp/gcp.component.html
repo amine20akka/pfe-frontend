@@ -1,5 +1,5 @@
 <div class="table-container" [@toggleContent]="isGeorefActive ? 'open' : 'closed'">
-    <table mat-table bgColor="primary" [dataSource]="dataSource" class="mat-elevation-z8">
+    <table mat-table bgColor="primary" [dataSource]="dataSource" [trackBy]="trackByFn" class="mat-elevation-z8">
 
         <!-- Checkbox Column -->
         <ng-container matColumnDef="select">
@@ -80,6 +80,6 @@
 
         <!-- Table Headers & Rows -->
         <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
-        <tr mat-row *matRowDef="let row; columns: displayedColumns; trackBy: trackByFn"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
     </table>
 </div>

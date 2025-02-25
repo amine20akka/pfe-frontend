@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Output } from '@angular/core';
+import { Component } from '@angular/core';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatToolbarModule } from '@angular/material/toolbar';
@@ -28,13 +28,6 @@ export class ToolbarComponent {
     private gcpService: GcpService,
   ) { }
 
-  // @Output() addGCP = new EventEmitter<void>();
-  @Output() exportGCPs = new EventEmitter<void>();
-  @Output() importGCPs = new EventEmitter<void>();
-  // @Output() openSettings = new EventEmitter<void>();
-  @Output() validateAndProcess = new EventEmitter<void>();
-  // @Output() resetImage = new EventEmitter<void>();
-
   get isAddingGCP() {
     return this.gcpService.isAddingGCP;
   }
@@ -50,24 +43,4 @@ export class ToolbarComponent {
   resetImage() {
     this.imageService.resetImage();
   }
-
-  exportPoints() {
-    this.exportGCPs.emit();
-  }
-
-  importPoints() {
-    this.importGCPs.emit();
-  }
-
-  // openSettings() {
-  //   this.openSettings.emit();
-  // }
-
-  startProcessing() {
-    this.validateAndProcess.emit();
-  }
-
-  // resetImage() {
-  //   this.resetImage.emit();
-  // }
 }

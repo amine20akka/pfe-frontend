@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, OnDestroy } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { trigger, state, style, animate, transition } from '@angular/animations';
 import { GeorefService } from '../../services/georef.service';
 import { MatIconModule } from '@angular/material/icon';
@@ -10,19 +10,21 @@ import { Subscription } from 'rxjs';
 import { GcpComponent } from "../gcp/gcp.component";
 import { ToolbarComponent } from '../toolbar/toolbar.component';
 import { GcpService } from '../../services/gcp.service';
+import { CommonModule } from '@angular/common';
 
 @Component({
   selector: 'app-georef',
   templateUrl: './georef.component.html',
   styleUrls: ['./georef.component.scss'],
   imports: [
+    CommonModule,
     MatIconModule,
     MatCardModule,
     UploadComponent,
     ImageComponent,
     GcpComponent,
     ToolbarComponent
-],
+  ],
   animations: [
     trigger('toggleContent', [
       state('closed', style({ width: '0' })),
@@ -31,7 +33,7 @@ import { GcpService } from '../../services/gcp.service';
     ])
   ]
 })
-export class GeorefComponent implements AfterViewInit, OnDestroy {
+export class GeorefComponent implements OnInit, OnDestroy {
 
   cursorX = 0;
   cursorY = 0;
@@ -43,11 +45,11 @@ export class GeorefComponent implements AfterViewInit, OnDestroy {
     private gcpService: GcpService,
   ) { }
 
-  ngAfterViewInit(): void {
+  ngOnInit(): void {
     // S'abonner aux coordonnées du curseur
     this.coordSub = this.gcpService.cursorCoordinates.subscribe(coords => {
-      this.cursorX = coords.x;
-      this.cursorY = coords.y;
+      this.cursorX = parseFloat(coords.x.toFixed(4));
+      this.cursorY = parseFloat(coords.y.toFixed(4));
     });
   }
 
@@ -66,38 +68,8 @@ export class GeorefComponent implements AfterViewInit, OnDestroy {
     return this.imageService.isImageLoaded;
   }
 
-  toggleGeoref() {
+  toggleGeoref(): void {
     this.georefService.toggleGeoref();
   }
 
-  handleAddGCP() {
-    console.log("Ajout d'un point GCP");
-    // Ajouter un GCP sur la carte
-  }
-  
-  handleExportGCPs() {
-    console.log("Export des GCPs en fichier");
-    // Fonction pour exporter les points
-  }
-  
-  handleImportGCPs() {
-    console.log("Import des GCPs depuis un fichier");
-    // Fonction pour importer les points
-  }
-  
-  handleOpenSettings() {
-    console.log("Ouverture des paramètres");
-    // Ouvrir une boîte de dialogue ou un panneau de configuration
-  }
-  
-  handleProcessing() {
-    console.log("Lancement du traitement de géoréférencement");
-    // Validation et traitement des données
-  }
-  
-  handleResetImage() {
-    console.log("Réinitialisation de l'image");
-    // Réinitialiser l'image chargée
-  }
-  
 }

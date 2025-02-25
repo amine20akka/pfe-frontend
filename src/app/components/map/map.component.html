@@ -1,1 +1,5 @@
-<div id="map" class="map-container"></div>
+<div id="map" [ngClass]="{'map-selection': isMapSelection}" class="map-container"></div>
+
+<div class="cursor-coordinates">
+  X: {{ cursorX | number:'1.4-4' }} | Y: {{ cursorY | number:'1.4-4' }}
+</div>

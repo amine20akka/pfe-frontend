@@ -21,6 +21,7 @@
   }
   
   .manual-input {
+    padding-top: 8px;
     display: flex;
     flex-direction: column;
   }
@@ -33,13 +34,29 @@
     display: flex;
     justify-content: space-between;
     padding: 15px;
+    font-size: small;
   }
   
   .cancel-button {
-    color: #696969;
+    color: #696969 !important;
+    background-color: #f1f1f1 !important;
   }
   
-  .confirm-button {
+  .cancel-button:hover {
+    background-color: #d7d7d7 !important;
+  }
+
+  .map-selection-button {
+    color: rgb(238, 116, 34) !important;
+    background-color: rgb(247, 237, 228) !important;
     font-weight: bold;
+  }
+
+  .map-selection-button:hover {
+    background-color: rgb(245, 224, 206) !important;
+  }
+
+  .confirm-button {
+    background-color: #e7f0ff !important;
   }
   

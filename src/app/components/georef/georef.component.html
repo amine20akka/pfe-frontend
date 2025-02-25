@@ -3,19 +3,11 @@
     @if (!isImageLoaded) {
     <app-upload></app-upload>
     } @else {
-        <app-toolbar 
-        (addGCP)="handleAddGCP()" 
-        (exportGCPs)="handleExportGCPs()" 
-        (importGCPs)="handleImportGCPs()" 
-        (openSettings)="handleOpenSettings()" 
-        (validateAndProcess)="handleProcessing()" 
-        (resetImage)="handleResetImage()">
-    </app-toolbar>
-    
+    <app-toolbar></app-toolbar>
     <app-image></app-image>
     <app-gcp></app-gcp>
     <div class="cursor-coordinates">
-        X: {{ cursorX }} px | Y: {{ cursorY }} px
+        X: {{ cursorX | number:'1.4-4' }} px | Y: {{ cursorY | number:'1.4-4' }} px
     </div>
     }
 </div>

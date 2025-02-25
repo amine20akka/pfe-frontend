@@ -22,13 +22,13 @@ import Style from 'ol/style/Style';
   providedIn: 'root'
 })
 export class ImageService {
-  private gcpLayers: Map<number, VectorLayer<VectorSource>> = new Map<number, VectorLayer<VectorSource>>();
-  private gcpLayerSubject = new BehaviorSubject<Map<number, VectorLayer<VectorSource>>>(this.gcpLayers);
+  private imageLayers: Map<number, VectorLayer<VectorSource>> = new Map<number, VectorLayer<VectorSource>>();
+  private gcpLayerSubject = new BehaviorSubject<Map<number, VectorLayer<VectorSource>>>(this.imageLayers);
   private newGcpLayer!: VectorLayer<VectorSource>; // Couche OpenLayers pour les points de contrôle
   private imageUrl = '';
 
   map!: OLMap;
-  gcpLayers$ = this.gcpLayerSubject; // Observable pour suivre les changements
+  imageLayers$ = this.gcpLayerSubject; // Observable pour suivre les changements
   isDragging = false;
   isImageLoaded = false;
   imageWidth = 0; // Valeurs par défaut avant chargement
@@ -45,7 +45,7 @@ export class ImageService {
     });
   }
 
-  zoomIn() {
+  zoomIn(): void {
     const view = this.map.getView();
     view.animate({
       zoom: view.getZoom()! + 1,  // Augmente le zoom
@@ -53,7 +53,7 @@ export class ImageService {
     });
   }
 
-  zoomOut() {
+  zoomOut(): void {
     const view = this.map.getView();
     view.animate({
       zoom: view.getZoom()! - 1,  // Diminue le zoom
@@ -61,7 +61,7 @@ export class ImageService {
     });
   }
 
-  resetView() {
+  resetView(): void {
     if (this.map) {
       const view = this.map.getView();
       view.animate({
@@ -72,19 +72,19 @@ export class ImageService {
     }
   }
 
-  onDragOver(event: DragEvent) {
+  onDragOver(event: DragEvent): void {
     event.preventDefault();
     event.stopPropagation();
     this.isDragging = true;
   }
 
-  onDragLeave(event: DragEvent) {
+  onDragLeave(event: DragEvent): void {
     event.preventDefault();
     event.stopPropagation();
     this.isDragging = false;
   }
 
-  onDrop(event: DragEvent) {
+  onDrop(event: DragEvent): void {
     event.preventDefault();
     event.stopPropagation();
     this.isDragging = false;
@@ -95,14 +95,14 @@ export class ImageService {
     }
   }
 
-  onFileSelected(event: Event) {
+  onFileSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
     if (input.files?.length) {
       this.handleFile(input.files[0]);
     }
   }
 
-  resetImage() {
+  resetImage(): void {
     this.isImageLoaded = false;
     this.imageUrl = '';
     this.imageWidth = 1000;
@@ -111,11 +111,10 @@ export class ImageService {
     this.map.setTarget('');
     this.gcpService.cursorCoordinates.next({ x: 0, y: 0 });
     this.gcpService.clearGCPs()
-    this.gcpLayers.clear();
-
+    this.imageLayers.clear();
   }
 
-  private handleFile(file: File) {
+  private handleFile(file: File): void {
     if (!file.type.startsWith('image/')) {
       console.error('Format non supporté');
       return;
@@ -126,7 +125,6 @@ export class ImageService {
 
     reader.onload = () => {
       this.imageUrl = URL.createObjectURL(file);
-      console.log('URL créée :', this.imageUrl);
 
       // Charger l'image pour récupérer ses dimensions réelles
       const img = new Image();
@@ -134,7 +132,6 @@ export class ImageService {
         this.imageWidth = img.width;
         this.imageHeight = img.height;
         this.extent = [0, 0, this.imageWidth, this.imageHeight];
-        console.log(`Dimensions de l'image: ${this.imageWidth}x${this.imageHeight}`);
       };
       img.src = this.imageUrl;
     };
@@ -142,7 +139,7 @@ export class ImageService {
     reader.readAsDataURL(file);
   }
 
-  initImageLayer() {
+  initImageLayer(): void {
     setTimeout(() => {
       this.map = new OLMap({
         target: 'image-map',
@@ -167,10 +164,12 @@ export class ImageService {
 
       this.map.on('pointermove', (event) => {
         const coords = event.coordinate;
-        const invertedY = this.imageHeight - Math.round(coords[1]); // Inversion de Y
-        this.gcpService.cursorCoordinates.next({ x: Math.round(coords[0]), y: invertedY });
-      });
-
+        const invertedY = this.imageHeight - parseFloat(coords[1].toFixed(4)); // Inversion de Y avec 4 décimales
+        this.gcpService.cursorCoordinates.next({ 
+          x: parseFloat(coords[0].toFixed(4)), 
+          y: invertedY 
+        });
+      });      
     }, 100); // Petit délai pour s'assurer que le DOM est prêt
   }
 
@@ -184,7 +183,7 @@ export class ImageService {
 
     // After removing, re-add layers
     setTimeout(() => {
-      this.gcpLayers.forEach((layer, index) => {
+      this.imageLayers.forEach((layer, index) => {
         if (!this.map.getLayers().getArray().includes(layer)) {
           layer.setStyle(this.applyLayerStyle(index));
           layer.setVisible(true);
@@ -194,7 +193,6 @@ export class ImageService {
       });
     }, 700); // Small delay to ensure removal is processed
   }
-
 
   private applyLayerStyle(index: number): Style {
     const style = this.gcpService.gcpStyles[(index - 1) % 10];
@@ -228,34 +226,34 @@ export class ImageService {
     this.newGcpLayer.setVisible(true);
     this.newGcpLayer.setZIndex(1000);
 
-    this.gcpLayers.set(index, this.newGcpLayer);
-    this.gcpLayerSubject.next(this.gcpLayers);
+    this.imageLayers.set(index, this.newGcpLayer);
+    this.gcpLayerSubject.next(this.imageLayers);
     return this.newGcpLayer;
   }
 
-  addGcpLayer(index: number) {
-    this.gcpService.createGCP(this.x, this.y);
-    this.map.addLayer(this.createGcpLayer(index));
+  addToImage(layer: VectorLayer): void {
+    this.map.addLayer(layer);
   }
 
-  deleteGcpLayer(index: number) {
+  deleteGcpLayer(index: number): void {
     // Récupérer la couche à supprimer
-    const layerToRemove = this.gcpLayers.get(index);
+    const layerToRemove = this.imageLayers.get(index);
     if (!layerToRemove) return;
 
     // Supprimer la couche de la carte
     this.map.removeLayer(layerToRemove);
-    this.gcpLayers.delete(index);
+    this.imageLayers.delete(index);
 
     // Réindexer les GCPs dans gcpLayers
-    const newGcpLayers = new Map<number, VectorLayer<VectorSource>>();
+    const newImageLayers = new Map<number, VectorLayer<VectorSource>>();
     let newIndex = 1;
-    this.gcpLayers.forEach((layer) => {
-      newGcpLayers.set(newIndex++, layer);
+    this.imageLayers.forEach((layer) => {
+      newImageLayers.set(newIndex++, layer);
     });
 
-    this.gcpLayers = newGcpLayers;
-    this.gcpLayerSubject.next(this.gcpLayers);
+    this.imageLayers = newImageLayers;
+    this.gcpLayerSubject.next(this.imageLayers);
     this.updateMapLayers();
   }
+  
 }

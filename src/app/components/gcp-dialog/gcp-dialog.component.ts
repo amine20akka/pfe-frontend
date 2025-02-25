@@ -1,5 +1,5 @@
-import { Component } from '@angular/core';
-import { MatDialogModule, MatDialogRef } from '@angular/material/dialog';
+import { Component, Inject, OnInit } from '@angular/core';
+import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { GcpService } from '../../services/gcp.service';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -7,6 +7,8 @@ import { MatRadioModule } from '@angular/material/radio';
 import { MatFormFieldModule, MatLabel } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { FormsModule } from '@angular/forms';
+import { ImageService } from '../../services/image.service';
+import { MapService } from '../../services/map.service';
 
 @Component({
   selector: 'app-gcp-dialog',
@@ -23,27 +25,43 @@ import { FormsModule } from '@angular/forms';
     MatInputModule,
   ]
 })
-export class GcpDialogComponent {
-  selection: 'click' | 'manual' = 'click';
-  x!: number;
-  y!: number;
+export class GcpDialogComponent implements OnInit {
+  mapX!: number;
+  mapY!: number;
 
   constructor(
     private dialogRef: MatDialogRef<GcpDialogComponent>,
-    private gcpService: GcpService
-  ) {}
+    private gcpService: GcpService,
+    private imageService: ImageService,
+    private mapService: MapService,
+    @Inject(MAT_DIALOG_DATA) public data: { x: number, y: number }
+  ) { }
 
-  onConfirm() {
-    if (this.selection === 'manual' && this.x !== undefined && this.y !== undefined) {
-      this.gcpService.addGCP(this.x, this.y);
-    } else if (this.selection === 'click') {
-      // this.gcpService.handleStartAddingGCP();
+  ngOnInit() {
+    if (this.data) {
+      this.mapX = this.data.x;
+      this.mapY = this.data.y;
     }
-    this.gcpService.isAddingGCP = false;
-    this.dialogRef.close();
   }
 
+  onConfirm() {
+    // Fermer le dialogue avec les coordonnées destination (map)
+    this.dialogRef.close({
+      mapX: this.mapX,
+      mapY: this.mapY
+    });
+  }
+
+  startMapSelection() {
+    this.mapService.startMapSelection();
+    this.dialogRef.close(); // Close dialog to allow map interaction
+  }  
+
   onCancel() {
+    const gcpLayers = this.imageService.imageLayers$.getValue();
+    const cancelledLayer = gcpLayers.get(gcpLayers.size);
+    this.imageService.map.removeLayer(cancelledLayer!);
+    gcpLayers.delete(gcpLayers.size);
     this.gcpService.isAddingGCP = false;
     this.dialogRef.close();
   }

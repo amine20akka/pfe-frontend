@@ -1,12 +1,11 @@
-import { AfterViewInit, Component, ElementRef, ViewChild } from '@angular/core';
+import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
 import { ImageService } from '../../services/image.service';
 import { trigger, state, style, transition, animate } from '@angular/animations';
 import { GeorefService } from '../../services/georef.service';
 import { GcpService } from '../../services/gcp.service';
 import { CommonModule } from '@angular/common';
-// import { GcpDialogComponent } from '../gcp-dialog/gcp-dialog.component';
+import { GcpDialogComponent } from '../gcp-dialog/gcp-dialog.component';
 import { MatDialog } from '@angular/material/dialog';
-import { MapService } from '../../services/map.service';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
@@ -29,18 +28,17 @@ import { MatTooltipModule } from '@angular/material/tooltip';
     ])
   ]
 })
-export class ImageComponent implements AfterViewInit {
+export class ImageComponent implements OnInit {
 
   @ViewChild('imageContainer', { static: false }) imageContainer!: ElementRef;
   length = 0;
-  x = 0;
-  y = 0;
+  sourceX = 0;
+  sourceY = 0;
 
   constructor(
     private imageService: ImageService,
     private georefService: GeorefService,
     private gcpService: GcpService,
-    private mapService: MapService,
     private dialog: MatDialog,
   ) { }
 
@@ -52,12 +50,12 @@ export class ImageComponent implements AfterViewInit {
     return this.gcpService.isAddingGCP;
   }
 
-  ngAfterViewInit() {
+  ngOnInit(): void {
     this.imageService.initImageLayer();
     this.gcpService.cursorCoordinates.subscribe((coords) => {
       if (this.isAddingGCP) {
-        this.x = coords.x;
-        this.y = coords.y;
+        this.sourceX = coords.x;
+        this.sourceY = coords.y;
       }
     });
     this.gcpService.gcps$.subscribe((gcps) => {
@@ -65,45 +63,45 @@ export class ImageComponent implements AfterViewInit {
     })
   }
 
-  zoomIn() {
+  zoomIn(): void {
     this.imageService.zoomIn();
   }
-  
-  zoomOut() {
+
+  zoomOut(): void {
     this.imageService.zoomOut();
   }
-  
-  resetView() {
+
+  resetView(): void {
     this.imageService.resetView();
   }
 
-  onImageKeydown(event: KeyboardEvent) {
+  onImageKeydown(event: KeyboardEvent): void {
     if (event.key === 'a') {
       console.log('🟢 Ajout de GCP activé');
     }
   }
 
-  onImageClick() {
+  onImageClick(): void {
     if (!this.isAddingGCP) return;
 
-    this.imageService.addGcpLayer(this.length + 1);
+    const newGcpLayer = this.imageService.createGcpLayer(this.length + 1);
+    this.imageService.addToImage(newGcpLayer);
 
     // Ouvrir le dialogue pour la sélection de la méthode
-    // const dialogRef = this.dialog.open(GcpDialogComponent, {
-    //   width: '400px',
-    //   data: { x: this.x, y: this.y }
-    // });
+    const dialogRef = this.dialog.open(GcpDialogComponent, {
+      width: 'auto',
+      height: 'auto',
+      disableClose: true
+    });
 
-    // dialogRef.afterClosed().subscribe(result => {
-    //   if (result) {
-    //     if (result.selection === 'map') {
-    //       this.mapService.enableMapSelection();
-    //     } else {
-    //       // Ajouter le GCP via le service
-    //       this.gcpService.addGCP(result.gcp.x, result.gcp.y);
-    //     }
-    //   }
-    // });
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        // Créer un GCP avec les coordonnées destinations
+        this.gcpService.createGCP(this.sourceX, this.sourceY, result.mapX, result.mapY);
+      } else {
+        this.gcpService.isAddingGCP = false;
+      }
+    });
   }
 
 }

@@ -17,10 +17,15 @@ export class MapComponent implements OnInit {
 
   ngOnInit(): void {
     this.mapService.initMap('map');
+    this.mapService.mapLayers$.subscribe(() => {
+      console.log("On Map : ", this.mapService.getMap()!.getLayers().getArray());
+      this.mapService.syncMapLayers();
+    });
+    
     this.mapService.isMapSelection$.subscribe(value => {
       this.isMapSelection = value;
     });
-
+    
     // S'abonner aux coordonnées du curseur
     this.mapService.mapCoordinates$.subscribe(coords => {
       this.cursorX = coords.x;

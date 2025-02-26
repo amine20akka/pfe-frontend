@@ -13,6 +13,9 @@ import { GcpService } from '../../services/gcp.service';
 import { ImageService } from '../../services/image.service';
 import VectorLayer from 'ol/layer/Vector';
 import VectorSource from 'ol/source/Vector';
+import { MapService } from '../../services/map.service';
+import { FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { MatInputModule } from '@angular/material/input';
 
 @Component({
   selector: 'app-gcp',
@@ -23,6 +26,8 @@ import VectorSource from 'ol/source/Vector';
     CommonModule,
     MatCheckboxModule,
     MatTooltipModule,
+    ReactiveFormsModule,
+    MatInputModule,
   ],
   templateUrl: './gcp.component.html',
   styleUrl: './gcp.component.scss',
@@ -41,46 +46,97 @@ export class GcpComponent implements OnInit, OnDestroy {
     private georefService: GeorefService,
     private gcpService: GcpService,
     private imageService: ImageService,
+    private mapService: MapService,
+    private fb: FormBuilder
   ) { }
-  
-  displayedColumns: string[] = ['select', 'index', 'sourceX', 'sourceY', 'mapX', 'mapY', 'residual', 'edit', 'delete'];
+
+  displayedColumns: string[] = ['select', 'index', 'sourceX', 'sourceY', 'mapX', 'mapY', 'residual', 'delete'];
   dataSource = new MatTableDataSource<GCP>();
   selection = new SelectionModel<GCP>(true, []);
   isDeleting = false;
-  private gcpLayers: Map<number, VectorLayer<VectorSource>> = new Map<number, VectorLayer<VectorSource>>();
+  private imageLayers: Map<number, VectorLayer<VectorSource>> = new Map<number, VectorLayer<VectorSource>>();
+  private mapLayers: Map<number, VectorLayer<VectorSource>> = new Map<number, VectorLayer<VectorSource>>();
   
+  // Variables pour l'édition
+  editingGcpId: number | null = null;
+  editForm!: FormGroup;
+
+
   ngOnInit() {
+    // Initialiser le formulaire d'édition
+    this.editForm = this.fb.group({
+      sourceX: [null, [Validators.required]],
+      sourceY: [null, [Validators.required]],
+      mapX: [null, [Validators.required]],
+      mapY: [null, [Validators.required]]
+    });
+    
     this.gcpService.gcps$.subscribe((gcps) => {
       this.dataSource.data = gcps;
       // Sélectionner automatiquement les nouveaux GCPs et les rendre visibles
       if (gcps.length > 0 && !this.isDeleting) {
         this.selection.select(gcps[gcps.length - 1]);
-        this.isDeleting = false;
       }
-      // Update residual values
-      if (gcps.length >= 3) {
-        this.gcpService.updateGcpsAndResiduals();
-      } else {
-        this.dataSource.data.forEach((gcp) => {
-          gcp.residual = undefined;
-        })
+      
+      // Restaurer la sélection depuis le stockage local
+      const savedSelection = localStorage.getItem('selectedGCPs');
+      if (savedSelection) {
+        const selectedIndexes: number[] = JSON.parse(savedSelection);
+        selectedIndexes.forEach(index => {
+          const gcp = gcps.find(g => g.index === index);
+          if (gcp) this.selection.select(gcp);
+          const gcpLayer = this.imageLayers.get(index);
+          if (gcpLayer) gcpLayer.setVisible(true);
+        });
       }
       this.updateGcpLayerVisibility();
+      
+      // Update residual values
+      // if (gcps.length >= 3) {
+      //   this.gcpService.updateGcpsAndResiduals();
+      // } else {
+      //   this.dataSource.data.forEach((gcp) => {
+      //     gcp.residual = undefined;
+      //   })
+      // }
       console.log('GCPs Data : ', gcps);
       console.log('GCPs Selection : ', this.selection);
     });
     this.imageService.imageLayers$.subscribe((imageLayers) => {
-      this.gcpLayers = imageLayers;
-      console.log('GCPs Layers : ', imageLayers);
+      this.imageLayers = imageLayers;
+      console.log('GCPs Image Layers : ', imageLayers);
+    });
+    this.mapService.mapLayers$.subscribe((mapLayers) => {
+      this.mapLayers = mapLayers;
+      console.log('GCPs Map Layers : ', mapLayers);
     });
   }
 
   ngOnDestroy(): void {
     this.gcpService.isAddingGCP = false;
+    // Sauvegarde de l'état de la sélection
+    const selectedIndexes = this.selection.selected.map(gcp => gcp.index);
+    localStorage.setItem('selectedGCPs', JSON.stringify(selectedIndexes));
   }
-  
+
   get isGeorefActive(): boolean {
     return this.georefService.isGeorefActive;
+  }
+
+  get sourceXControl(): FormControl {
+    return this.editForm.get('sourceX') as FormControl;
+  }
+
+  get sourceYControl(): FormControl {
+    return this.editForm.get('sourceY') as FormControl;
+  }
+
+  get mapXControl(): FormControl {
+    return this.editForm.get('mapX') as FormControl;
+  }
+
+  get mapYControl(): FormControl {
+    return this.editForm.get('mapY') as FormControl;
   }
 
   /** Vérifie si tous les éléments sont sélectionnés */
@@ -109,27 +165,109 @@ export class GcpComponent implements OnInit, OnDestroy {
 
   /** Met à jour la visibilité des couches de GCP */
   updateGcpLayerVisibility(): void {
-    if (!this.gcpLayers) return; // No GCP layers
+    if (!this.imageLayers) return; // No GCP image layers
 
-    this.gcpLayers.forEach((layer, index) => {
+    this.imageLayers.forEach((layer, index) => {
+      const isVisible = this.selection.selected.some(gcp => gcp.index === index);
+      layer.setVisible(isVisible);
+    });
+
+    if (!this.mapLayers) return; // No GCP map layers
+
+    this.mapLayers.forEach((layer, index) => {
       const isVisible = this.selection.selected.some(gcp => gcp.index === index);
       layer.setVisible(isVisible);
     });
   }
 
   deleteGcp(index: number): void {
-    const deletedGcp = this.gcpService.getGCPs()[index - 1];
-    console.log(deletedGcp);
     this.isDeleting = true;
     this.selection.deselect(this.dataSource.data.find(gcp => gcp.index === index)!);
     this.gcpService.deleteGcpData(index);
     this.imageService.deleteGcpLayer(index);
+    this.mapService.deleteGcpLayer(index);
     this.updateGcpLayerVisibility();
+    
+    // Ajoute cette ligne pour réinitialiser après suppression
+    setTimeout(() => { this.isDeleting = false; }, 100);
+  }
+
+  // Méthodes pour l'édition des GCPs
+  
+  /** Commencer l'édition d'un GCP */
+  editGcp(gcp: GCP): void {
+    // Annuler toute édition en cours
+    if (this.editingGcpId !== null) {
+      this.cancelEdit();
+    }
+    
+    // Définir le GCP en cours d'édition
+    this.editingGcpId = gcp.index;
+    
+    // Remplir le formulaire avec les valeurs actuelles
+    this.editForm.patchValue({
+      sourceX: gcp.sourceX,
+      sourceY: gcp.sourceY,
+      mapX: gcp.mapX,
+      mapY: gcp.mapY
+    });
+  }
+  
+  /** Gérer le double-clic sur une cellule pour éditer */
+  onCellDoubleClick(gcp: GCP, column: string): void {
+    // Vérifier si la colonne est éditable
+    if (['sourceX', 'sourceY', 'mapX', 'mapY'].includes(column)) {
+      this.editGcp(gcp);
+      
+      // Focus sur le champ concerné
+      setTimeout(() => {
+        const input = document.getElementById(`edit-${column}`);
+        if (input) (input as HTMLInputElement).focus();
+      });
+    }
+  }
+  
+  /** Enregistrer les modifications */
+  saveEdit(): void {
+    if (this.editForm.valid && this.editingGcpId !== null) {
+      const updatedGcp = {
+        ...this.dataSource.data.find(gcp => gcp.index === this.editingGcpId)!,
+        sourceX: this.editForm.value.sourceX,
+        sourceY: this.editForm.value.sourceY,
+        mapX: this.editForm.value.mapX,
+        mapY: this.editForm.value.mapY
+      };
+      
+      // Mettre à jour le GCP dans le service
+      this.gcpService.updateGcp(updatedGcp);
+      
+      // Mettre à jour les couches visuelles si nécessaire
+      this.imageService.updateGcpPosition(this.editingGcpId, updatedGcp.sourceX, updatedGcp.sourceY);
+      this.mapService.updateGcpPosition(this.editingGcpId, updatedGcp.mapX, updatedGcp.mapY);
+      
+      // Réinitialiser l'état d'édition
+      this.editingGcpId = null;
+    }
+  }
+  
+  /** Annuler l'édition */
+  cancelEdit(): void {
+    this.editingGcpId = null;
+    this.editForm.reset();
+  }
+
+  /** Traitement de touche appuyée dans un champ d'édition */
+  handleKeyDown(event: KeyboardEvent): void {
+    if (event.key === 'Enter') {
+      this.saveEdit();
+    } else if (event.key === 'Escape') {
+      this.cancelEdit();
+    }
   }
 
   trackByFn(index: number): number {
     return index;
-}
+  }
 
   getFillColor(index: number): string {
     const colors = ['red', 'blue', 'green', 'yellow', 'purple', 'orange', 'pink', 'brown', 'cyan', 'magenta'];
@@ -140,5 +278,4 @@ export class GcpComponent implements OnInit, OnDestroy {
     const textColors = ['white', 'white', 'white', 'black', 'white', 'black', 'black', 'white', 'black', 'white'];
     return textColors[(index - 1) % textColors.length];
   }
-
 }

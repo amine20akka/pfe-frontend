@@ -57,3 +57,45 @@ button {
 mat-icon {
     font-size: large;
 }
+
+/* Style pour le champ d'édition */
+.edit-field {
+    width: 100%;
+    max-width: 120px;
+    
+    input {
+        padding: 2px 4px;
+        font-size: small;
+        text-align: center;
+    }
+}
+
+/* Style pour l'animation d'entrée du mode édition */
+td.editing {
+    background-color: #e3f2fd; /* Bleu clair */
+    transition: background-color 0.3s ease-in-out;
+}
+
+/* Boutons d'édition */
+.edit-buttons {
+    display: flex;
+    gap: 5px;
+    justify-content: center;
+}
+
+/* Style des icônes */
+// mat-icon {
+//     font-size: 18px;
+// }
+
+/* Ajouter une bordure autour des cellules en mode édition */
+td.editing mat-form-field {
+    border: 1px solid #1976d2;
+    border-radius: 4px;
+    padding: 3px;
+}
+
+/* Effet hover pour mieux visualiser l'édition */
+tr:hover td {
+    background-color: rgba(0, 0, 0, 0.05);
+}

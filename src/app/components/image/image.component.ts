@@ -9,6 +9,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MapService } from '../../services/map.service';
 
 @Component({
   selector: 'app-image',
@@ -39,6 +40,7 @@ export class ImageComponent implements OnInit {
     private imageService: ImageService,
     private georefService: GeorefService,
     private gcpService: GcpService,
+    private mapService: MapService,
     private dialog: MatDialog,
   ) { }
 
@@ -51,7 +53,11 @@ export class ImageComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.imageService.initImageLayer();
+    this.imageService.initImageLayer('image-map');
+    this.imageService.imageLayers$.subscribe(() => {
+      console.log("On Image Map : ", this.imageService.getImageMap()!.getLayers().getArray());
+      this.imageService.syncImageLayers();
+    });
     this.gcpService.cursorCoordinates.subscribe((coords) => {
       if (this.isAddingGCP) {
         this.sourceX = coords.x;
@@ -84,8 +90,8 @@ export class ImageComponent implements OnInit {
   onImageClick(): void {
     if (!this.isAddingGCP) return;
 
-    const newGcpLayer = this.imageService.createGcpLayer(this.length + 1);
-    this.imageService.addToImage(newGcpLayer);
+    const newGcpLayer = this.imageService.createGcpLayer();
+    this.imageService.addGcpLayerToList(newGcpLayer);
 
     // Ouvrir le dialogue pour la sélection de la méthode
     const dialogRef = this.dialog.open(GcpDialogComponent, {
@@ -97,10 +103,12 @@ export class ImageComponent implements OnInit {
     dialogRef.afterClosed().subscribe(result => {
       if (result) {
         // Créer un GCP avec les coordonnées destinations
-        this.gcpService.createGCP(this.sourceX, this.sourceY, result.mapX, result.mapY);
-      } else {
-        this.gcpService.isAddingGCP = false;
+        const newGcp = this.gcpService.createGCP(this.sourceX, this.sourceY, result.mapX, result.mapY);
+        this.gcpService.addGcpToList(newGcp);
+        const newGcpLayer = this.mapService.createGcpLayer(result.mapX, result.mapY);
+        this.mapService.addGcpLayerToList(newGcpLayer);
       }
+      this.gcpService.isAddingGCP = false;
     });
   }
 

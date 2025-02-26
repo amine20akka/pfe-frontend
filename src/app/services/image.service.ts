@@ -3,6 +3,7 @@ import OLMap from 'ol/Map';
 import View from 'ol/View';
 import { Image as ImageLayer } from 'ol/layer';
 import { defaults as defaultControls } from 'ol/control';
+import ImageSource from 'ol/source/Image';
 import { defaults as defaultInteractions } from 'ol/interaction';
 import { getCenter } from 'ol/extent';
 import Static from 'ol/source/ImageStatic';
@@ -23,15 +24,16 @@ import Style from 'ol/style/Style';
 })
 export class ImageService {
   private imageLayers: Map<number, VectorLayer<VectorSource>> = new Map<number, VectorLayer<VectorSource>>();
-  private gcpLayerSubject = new BehaviorSubject<Map<number, VectorLayer<VectorSource>>>(this.imageLayers);
-  private newGcpLayer!: VectorLayer<VectorSource>; // Couche OpenLayers pour les points de contrôle
+  private imageLayersSubject = new BehaviorSubject<Map<number, VectorLayer<VectorSource>>>(this.imageLayers);
+  private imageLayer: ImageLayer<ImageSource> = new ImageLayer<ImageSource>();
   private imageUrl = '';
-
-  map!: OLMap;
-  imageLayers$ = this.gcpLayerSubject; // Observable pour suivre les changements
+  private imageMap: OLMap = new OLMap();
+  private imageMapSubject = new BehaviorSubject<OLMap>(this.imageMap);
+  imageMap$ = this.imageMapSubject;
+  imageLayers$ = this.imageLayersSubject;
   isDragging = false;
   isImageLoaded = false;
-  imageWidth = 0; // Valeurs par défaut avant chargement
+  imageWidth = 0;
   imageHeight = 0;
   private extent = [0, 0, this.imageWidth, this.imageHeight];
   x = 0;
@@ -45,8 +47,19 @@ export class ImageService {
     });
   }
 
+  createImageLayer(): ImageLayer<ImageSource> {
+    this.imageLayer = new ImageLayer({
+      source: new Static({
+        url: this.imageUrl,
+        imageExtent: this.extent,
+        projection: new Projection({ code: 'PIXEL', units: 'pixels', extent: this.extent })
+      })
+    })
+    return this.imageLayer;
+  }
+
   zoomIn(): void {
-    const view = this.map.getView();
+    const view = this.imageMap.getView();
     view.animate({
       zoom: view.getZoom()! + 1,  // Augmente le zoom
       duration: 300 // Durée de l'animation (500ms)
@@ -54,7 +67,7 @@ export class ImageService {
   }
 
   zoomOut(): void {
-    const view = this.map.getView();
+    const view = this.imageMap.getView();
     view.animate({
       zoom: view.getZoom()! - 1,  // Diminue le zoom
       duration: 300 // Durée de l'animation (500ms)
@@ -62,8 +75,8 @@ export class ImageService {
   }
 
   resetView(): void {
-    if (this.map) {
-      const view = this.map.getView();
+    if (this.imageMap) {
+      const view = this.imageMap.getView();
       view.animate({
         center: getCenter(this.extent), // Recentre sur l’image
         zoom: 1, // Zoom initial
@@ -108,7 +121,7 @@ export class ImageService {
     this.imageWidth = 1000;
     this.imageHeight = 1000;
     this.extent = [0, 0, this.imageWidth, this.imageHeight];
-    this.map.setTarget('');
+    this.imageMap.setTarget('');
     this.gcpService.cursorCoordinates.next({ x: 0, y: 0 });
     this.gcpService.clearGCPs()
     this.imageLayers.clear();
@@ -139,10 +152,10 @@ export class ImageService {
     reader.readAsDataURL(file);
   }
 
-  initImageLayer(): void {
+  initImageLayer(target: string): void {
     setTimeout(() => {
-      this.map = new OLMap({
-        target: 'image-map',
+      this.imageMap = new OLMap({
+        target: target,
         interactions: defaultInteractions(),
         view: new View({
           projection: new Projection({ code: 'PIXEL', units: 'pixels', extent: this.extent }),
@@ -150,51 +163,50 @@ export class ImageService {
           center: getCenter(this.extent),
           zoom: 1
         }),
-        layers: [
-          new ImageLayer({
-            source: new Static({
-              url: this.imageUrl,
-              imageExtent: this.extent,
-              projection: new Projection({ code: 'PIXEL', units: 'pixels', extent: this.extent })
-            })
-          })
-        ],
+        layers: [this.createImageLayer()],
         controls: defaultControls({ zoom: false, attribution: false, rotate: false })
       });
+      this.imageMapSubject.next(this.imageMap);
 
-      this.map.on('pointermove', (event) => {
+      this.imageMap.on('pointermove', (event) => {
         const coords = event.coordinate;
         const invertedY = this.imageHeight - parseFloat(coords[1].toFixed(4)); // Inversion de Y avec 4 décimales
-        this.gcpService.cursorCoordinates.next({ 
-          x: parseFloat(coords[0].toFixed(4)), 
-          y: invertedY 
+        this.gcpService.cursorCoordinates.next({
+          x: parseFloat(coords[0].toFixed(4)),
+          y: invertedY
         });
-      });      
-    }, 100); // Petit délai pour s'assurer que le DOM est prêt
+      });
+    }, 200); // Petit délai pour s'assurer que le DOM est prêt
   }
 
-  updateMapLayers(): void {
-    // Remove only vector layers
-    this.map.getLayers().getArray().forEach((layer) => {
-      if (layer instanceof VectorLayer) {
-        this.map.removeLayer(layer);
+  getImageMap(): OLMap | null {
+    return this.imageMapSubject.getValue(); // Récupération de l'état actuel
+  }
+
+  syncImageLayers(): void {
+    const imageMap = this.getImageMap(); // Récupérer la carte OpenLayers
+    if (!imageMap) return;
+
+    const mapLayers = imageMap.getLayers().getArray(); // Liste des couches actuelles
+    const gcpLayersSet = new Set(this.imageLayers.values()); // Set des couches de imageLayers
+
+    // 1️⃣ Supprimer les couches qui ne sont plus dans `imageLayers`
+    mapLayers.forEach(layer => {
+      if (!gcpLayersSet.has(layer as VectorLayer<VectorSource>) && layer !== this.imageLayer) {
+        this.removeGcpLayerFromImage(layer as VectorLayer<VectorSource>);
       }
     });
 
-    // After removing, re-add layers
-    setTimeout(() => {
-      this.imageLayers.forEach((layer, index) => {
-        if (!this.map.getLayers().getArray().includes(layer)) {
-          layer.setStyle(this.applyLayerStyle(index));
-          layer.setVisible(true);
-          this.map.addLayer(layer);
-          this.map.render();
-        }
-      });
-    }, 700); // Small delay to ensure removal is processed
+    // 2️⃣ Ajouter les nouvelles couches de `imageLayers`
+    this.imageLayers.forEach((layer, index) => {
+      this.updateLayerStyle(index, layer);
+      if (!mapLayers.includes(layer)) {
+        this.addGcpLayerToImage(layer);
+      }
+    });
   }
 
-  private applyLayerStyle(index: number): Style {
+  applyLayerStyle(index: number): Style {
     const style = this.gcpService.gcpStyles[(index - 1) % 10];
     style.setText(
       new Text({
@@ -209,51 +221,87 @@ export class ImageService {
     return style;
   }
 
-  createGcpLayer(index: number): VectorLayer {
+  updateLayerStyle(index: number, updatedGcpLayer: VectorLayer): void {
+    const updatedStyle = this.applyLayerStyle(index);
+    updatedGcpLayer.setStyle(updatedStyle);
+  }
+
+  createGcpLayer(): VectorLayer {
     const feature = new Feature({
       geometry: new Point([this.x, this.imageHeight - this.y])
     });
 
-    const pointStyle = this.applyLayerStyle(index);
+    const pointStyle = this.applyLayerStyle(this.imageLayers.size + 1);
 
-    this.newGcpLayer = new VectorLayer({
+    const newGcpLayer = new VectorLayer({
       source: new VectorSource(
         { features: [feature] }
       ),
       extent: this.extent,
       style: pointStyle,
     });
-    this.newGcpLayer.setVisible(true);
-    this.newGcpLayer.setZIndex(1000);
+    newGcpLayer.setVisible(true);
+    newGcpLayer.setZIndex(1000);
 
-    this.imageLayers.set(index, this.newGcpLayer);
-    this.gcpLayerSubject.next(this.imageLayers);
-    return this.newGcpLayer;
+    return newGcpLayer;
   }
 
-  addToImage(layer: VectorLayer): void {
-    this.map.addLayer(layer);
+  addGcpLayerToImage(newGcplayer: VectorLayer): void {
+    this.imageMap.addLayer(newGcplayer);
   }
 
-  deleteGcpLayer(index: number): void {
-    // Récupérer la couche à supprimer
-    const layerToRemove = this.imageLayers.get(index);
-    if (!layerToRemove) return;
+  removeGcpLayerFromImage(removedGcpLayer: VectorLayer): void {
+    this.imageMap.removeLayer(removedGcpLayer);
+  }
 
-    // Supprimer la couche de la carte
-    this.map.removeLayer(layerToRemove);
-    this.imageLayers.delete(index);
-
+  reindex(): Map<number, VectorLayer<VectorSource>> {
     // Réindexer les GCPs dans gcpLayers
     const newImageLayers = new Map<number, VectorLayer<VectorSource>>();
     let newIndex = 1;
+
     this.imageLayers.forEach((layer) => {
       newImageLayers.set(newIndex++, layer);
     });
-
-    this.imageLayers = newImageLayers;
-    this.gcpLayerSubject.next(this.imageLayers);
-    this.updateMapLayers();
+    return newImageLayers;
   }
-  
+
+  addGcpLayerToList(newGcplayer: VectorLayer): void {
+    // Cloner la Map pour forcer la détection du changement
+    const updatedImageLayers = new Map(this.imageLayers);
+    updatedImageLayers.set(updatedImageLayers.size + 1, newGcplayer);
+
+    this.imageLayers = updatedImageLayers;
+    this.imageLayersSubject.next(this.imageLayers);
+  }
+
+  deleteLastGcpLayer(): void {
+    const size = this.imageLayers.size;
+    const newImageLayers = new Map<number, VectorLayer<VectorSource>>(this.imageLayers);
+    if (size > 0) {
+      newImageLayers.delete(size);
+      this.imageLayers = newImageLayers;
+      this.imageLayersSubject.next(this.imageLayers);
+    }
+  }
+
+  deleteGcpLayer(index: number): void {
+    const layerToRemove = this.imageLayers.get(index);
+    if (!layerToRemove) return;
+
+    this.imageLayers.delete(index);
+    const newImageLayers = this.reindex();
+    this.imageLayers = newImageLayers;
+    this.imageLayersSubject.next(this.imageLayers);
+  }
+
+  updateGcpPosition(index: number, sourceX: number, sourceY: number): void {
+    const gcpLayer = this.imageLayers.get(index);
+    if (gcpLayer) {
+      // Mettre à jour la position de la couche (exemple avec OpenLayers)
+      const feature = gcpLayer.getSource()?.getFeatures()[0];
+      if (feature) {
+        feature.setGeometry(new Point([sourceX, sourceY]));
+      }
+    }
+  }
 }

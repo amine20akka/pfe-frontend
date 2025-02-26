@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, filter, Observable, switchMap } from 'rxjs';
-import Map from 'ol/Map';
+import OLMap from 'ol/Map';
 import View from 'ol/View';
 import { defaults as defaultControls } from 'ol/control';
 import { defaults as defaultInteractions } from 'ol/interaction';
@@ -10,23 +10,33 @@ import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { GcpDialogComponent } from '../components/gcp-dialog/gcp-dialog.component';
 import MapBrowserEvent from 'ol/MapBrowserEvent';
 import { GcpService } from './gcp.service';
+import VectorLayer from 'ol/layer/Vector';
+import VectorSource from 'ol/source/Vector';
+import Feature from 'ol/Feature';
+import { Point } from 'ol/geom';
+import { ImageService } from './image.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class MapService {
   
-  private map!: Map;
-  private mapSubject = new BehaviorSubject<Map | null>(null);
-  public map$ = this.mapSubject.asObservable();
+  private map!: OLMap;
+  private OSMLayer: TileLayer = new TileLayer();
+  private mapSubject = new BehaviorSubject<OLMap | null>(null);
+  private mapLayers: Map<number, VectorLayer<VectorSource>> = new Map<number, VectorLayer<VectorSource>>();
+  private mapLayersSubject = new BehaviorSubject<Map<number, VectorLayer<VectorSource>>>(this.mapLayers);
   private isMapSelectionSubject = new BehaviorSubject<boolean>(false);
-  isMapSelection$ = this.isMapSelectionSubject.asObservable();
   private mapCoordinates = new BehaviorSubject<{ x: number, y: number }>({ x: 0, y: 0 });
-  public mapCoordinates$ = this.mapCoordinates.asObservable();
+  map$ = this.mapSubject.asObservable();
+  mapLayers$ = this.mapLayersSubject;
+  mapCoordinates$ = this.mapCoordinates.asObservable();
+  isMapSelection$ = this.isMapSelectionSubject.asObservable();
 
   constructor(
     private dialog: MatDialog,
     private gcpService: GcpService,
+    private imageService: ImageService,
   ) {
     // Subscribe to isMapSelection changes
     this.isMapSelection$
@@ -42,32 +52,36 @@ export class MapService {
           
           dialogRef.afterClosed().subscribe(result => {
             if (result) {
-              this.gcpService.createGCP(
+              const newGcp = this.gcpService.createGCP(
                 this.gcpService.cursorCoordinates.getValue().x,
                 this.gcpService.cursorCoordinates.getValue().y,
                 result.mapX,
                 result.mapY
               );
+              this.gcpService.addGcpToList(newGcp);
             }
           });
         }
       });
   }
 
+  createOSMLayer(): TileLayer {
+    this.OSMLayer = new TileLayer({
+      source: new OSM()
+    })
+    return this.OSMLayer;
+  }
+
   initMap(target: string): void {
     if (!this.map) {
-      this.map = new Map({
+      this.map = new OLMap({
         target: target,
         interactions: defaultInteractions(),
-        layers: [
-          new TileLayer({
-            source: new OSM()
-          })
-        ],
+        layers: [ this.createOSMLayer() ],
         view: new View({
           projection: 'EPSG:3857', // Projection Web Mercator
-          center: [0, 0],
-          zoom: 3
+          center: [-59598.84, 5339845.08],
+          zoom: 18
         }),
         controls: defaultControls({ zoom: false, attribution: false })
       });
@@ -85,10 +99,112 @@ export class MapService {
     } else {
       this.map.setTarget(target);
     }
+    this.mapSubject.next(this.map);
   }
 
-  getMap(): Map | null {
+  getMap(): OLMap | null {
     return this.mapSubject.getValue(); // Récupération de l'état actuel
+  }
+
+  syncMapLayers(): void {
+    const map = this.getMap(); // Récupérer la carte OpenLayers
+    if (!map) return;
+
+    const mapLayers = map.getLayers().getArray(); // Liste des couches actuelles
+    const gcpLayersSet = new Set(this.mapLayers.values()); // Set des couches de mapLayers
+
+    // 1️⃣ Supprimer les couches qui ne sont plus dans `mapLayers`
+    mapLayers.forEach(layer => {
+      if (!gcpLayersSet.has(layer as VectorLayer<VectorSource>) && layer !== this.OSMLayer) {
+        this.removeGcpLayerFromMap(layer as VectorLayer<VectorSource>);
+      }
+    });
+
+    // 2️⃣ Ajouter les nouvelles couches de `mapLayers`
+    this.mapLayers.forEach((layer, index) => {
+      this.imageService.updateLayerStyle(index, layer);
+      if (!mapLayers.includes(layer)) {
+        this.addGcpLayerToMap(layer);
+      }
+    });
+  }
+
+  createGcpLayer(x: number, y: number): VectorLayer {
+    const feature = new Feature({
+      geometry: new Point([x, y])
+    });
+
+    const pointStyle = this.imageService.applyLayerStyle(this.mapLayers.size + 1);
+
+    const newGcpLayer = new VectorLayer({
+      source: new VectorSource(
+        { features: [feature] }
+      ),
+      style: pointStyle,
+    });
+    newGcpLayer.setVisible(true);
+    newGcpLayer.setZIndex(1000);
+
+    return newGcpLayer;
+  }
+
+  addGcpLayerToMap(newGcplayer: VectorLayer): void {
+    this.map.addLayer(newGcplayer);
+  }
+
+  removeGcpLayerFromMap(removedGcpLayer: VectorLayer): void {
+    this.map.removeLayer(removedGcpLayer);
+  }
+
+  reindex(): Map<number, VectorLayer<VectorSource>> {
+    // Réindexer les GCPs dans gcpLayers
+    const newImageLayers = new Map<number, VectorLayer<VectorSource>>();
+    let newIndex = 1;
+
+    this.mapLayers.forEach((layer) => {
+      newImageLayers.set(newIndex++, layer);
+    });
+    return newImageLayers;
+  }
+
+  addGcpLayerToList(newGcplayer: VectorLayer): void {
+    // Cloner la Map pour forcer la détection du changement
+    const updatedImageLayers = new Map(this.mapLayers);
+    updatedImageLayers.set(updatedImageLayers.size + 1, newGcplayer);
+
+    this.mapLayers = updatedImageLayers;
+    this.mapLayersSubject.next(this.mapLayers);
+  }
+
+  deleteGcpLayer(index: number): void {
+    const layerToRemove = this.mapLayers.get(index);
+    if (!layerToRemove) return;
+
+    this.mapLayers.delete(index);
+    const newImageLayers = this.reindex();
+    this.mapLayers = newImageLayers;
+    this.mapLayersSubject.next(this.mapLayers);
+  }
+
+  deleteLastGcpLayer(): void {
+    const size = this.mapLayers.size;
+    const newImageLayers = new Map<number, VectorLayer<VectorSource>>(this.mapLayers);
+    if (size > 0) {
+      newImageLayers.delete(size);
+      this.mapLayers = newImageLayers;
+      this.mapLayersSubject.next(this.mapLayers);
+    }
+  }
+
+  updateGcpPosition(index: number, sourceX: number, sourceY: number): void {
+    const gcpLayer = this.mapLayers.get(index);
+    if (gcpLayer) {
+      // Mettre à jour la position de la couche (exemple avec OpenLayers)
+      const feature = gcpLayer.getSource()?.getFeatures()[0];
+      if (feature) {
+        feature.setGeometry(new Point([sourceX, sourceY]));
+      }
+    }
   }
 
   startMapSelection() {
@@ -99,9 +215,11 @@ export class MapService {
     return new Observable(observer => {
       const mapClickHandler = (event: MapBrowserEvent<MouseEvent>) => {
         const clickedCoord = this.map.getCoordinateFromPixel(event.pixel);
-        console.log('Raw : ', clickedCoord);
         // Convert coordinates if necessary
         observer.next({ x: clickedCoord[0], y: clickedCoord[1] });
+        
+        const newGcpLayer = this.createGcpLayer(clickedCoord[0], clickedCoord[1]);
+        this.addGcpLayerToList(newGcpLayer);
 
         // Remove click listener after selecting a point
         this.map.un('click', mapClickHandler);
@@ -121,17 +239,5 @@ export class MapService {
       data: { x, y }
     });
   }
-
-  // enableMapSelection() {
-  //   console.log("Sélection sur la carte activée !");
-
-  //   this.map.on('click', (event) => {
-  //     const coords = event.coordinate;
-  //     const x = Math.round(coords[0]);
-  //     const y = Math.round(coords[1]);
-
-  //     console.log(`GCP ajouté sur la carte : (${x}, ${y})`);
-  //   });
-  // }
 
 }

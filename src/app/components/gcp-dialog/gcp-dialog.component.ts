@@ -39,8 +39,8 @@ export class GcpDialogComponent implements OnInit {
 
   ngOnInit() {
     if (this.data) {
-      this.mapX = this.data.x;
-      this.mapY = this.data.y;
+      this.mapX = parseFloat(this.data.x.toFixed(4));
+      this.mapY = parseFloat(this.data.y.toFixed(4));
     }
   }
 
@@ -58,11 +58,9 @@ export class GcpDialogComponent implements OnInit {
   }  
 
   onCancel() {
-    const gcpLayers = this.imageService.imageLayers$.getValue();
-    const cancelledLayer = gcpLayers.get(gcpLayers.size);
-    this.imageService.map.removeLayer(cancelledLayer!);
-    gcpLayers.delete(gcpLayers.size);
-    this.gcpService.isAddingGCP = false;
+    this.imageService.deleteLastGcpLayer();
+    this.mapService.deleteLastGcpLayer();
+    this.gcpService.toggleAddingGcp();
     this.dialogRef.close();
   }
 }

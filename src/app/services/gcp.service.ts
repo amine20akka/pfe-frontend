@@ -16,7 +16,6 @@ export class GcpService {
 
   cursorCoordinates = new BehaviorSubject<{ x: number; y: number }>({ x: 0, y: 0 });
   gcps$ = this.gcpsSubject.asObservable(); // Observable pour suivre les changements
-  newGcp: GCP = { index: 0, sourceX: 0, sourceY: 0 };
   gcpStyles: Style[] = [];
   isAddingGCP = false; // Gère l'ajout de points de contrôle
 
@@ -24,7 +23,7 @@ export class GcpService {
     this.initGcpStyles();
   }
 
-  createGCP(sourceX: number, sourceY: number, mapX: number, mapY: number): void {
+  createGCP(sourceX: number, sourceY: number, mapX: number, mapY: number): GCP {
     const newGCP: GCP = {
       index: this.gcps.length + 1,
       sourceX: sourceX,
@@ -33,7 +32,7 @@ export class GcpService {
       mapY: mapY,
     };
 
-    this.addGcpToTable(newGCP);
+    return newGCP;
   }
 
   getGCPs(): GCP[] {
@@ -48,7 +47,7 @@ export class GcpService {
     this.isAddingGCP = !this.isAddingGCP;
   }
 
-  addGcpToTable(gcp: GCP): void {
+  addGcpToList(gcp: GCP): void {
     this.gcps.push(gcp);
     this.gcpsSubject.next(this.gcps);
   }
@@ -57,6 +56,14 @@ export class GcpService {
     this.gcps = this.gcps.filter(gcp => gcp.index !== index); // Supprimer le GCP
     this.gcps.forEach((gcp, i) => gcp.index = i + 1); // Réindexer les GCPs
     this.gcpsSubject.next(this.gcps);
+  }
+
+  updateGcp(updatedGcp: GCP): void {
+    const index = this.gcps.findIndex(gcp => gcp.index === updatedGcp.index);
+    if (index !== -1) {
+      this.gcps[index] = updatedGcp;
+      this.gcpsSubject.next(this.gcps);
+    }
   }
 
   private initGcpStyles(): void {

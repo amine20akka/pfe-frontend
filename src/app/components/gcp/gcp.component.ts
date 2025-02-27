@@ -50,10 +50,14 @@ export class GcpComponent implements OnInit, OnDestroy {
     private fb: FormBuilder
   ) { }
 
-  displayedColumns: string[] = ['select', 'index', 'sourceX', 'sourceY', 'mapX', 'mapY', 'residual', 'delete'];
+  displayedColumns: string[] = ['select', 'index', 'sourceX', 'sourceY', 'mapX', 'mapY', 'residual', 'edit', 'delete'];
   dataSource = new MatTableDataSource<GCP>();
   selection = new SelectionModel<GCP>(true, []);
   isDeleting = false;
+  sourceXControl = new FormControl('', [Validators.required, Validators.nullValidator]);
+  sourceYControl = new FormControl('', [Validators.required, Validators.nullValidator]);
+  mapXControl = new FormControl('', [Validators.required, Validators.nullValidator]);
+  mapYControl = new FormControl('', [Validators.required, Validators.nullValidator]);
   private imageLayers: Map<number, VectorLayer<VectorSource>> = new Map<number, VectorLayer<VectorSource>>();
   private mapLayers: Map<number, VectorLayer<VectorSource>> = new Map<number, VectorLayer<VectorSource>>();
   
@@ -65,13 +69,16 @@ export class GcpComponent implements OnInit, OnDestroy {
   ngOnInit() {
     // Initialiser le formulaire d'édition
     this.editForm = this.fb.group({
-      sourceX: [null, [Validators.required]],
-      sourceY: [null, [Validators.required]],
-      mapX: [null, [Validators.required]],
-      mapY: [null, [Validators.required]]
+      sourceX: this.sourceXControl,
+      sourceY: this.sourceYControl,
+      mapX: this.mapXControl,
+      mapY: this.mapYControl,
     });
     
     this.gcpService.gcps$.subscribe((gcps) => {
+      if (gcps.length === 0) {
+        this.selection.clear();
+      }
       this.dataSource.data = gcps;
       // Sélectionner automatiquement les nouveaux GCPs et les rendre visibles
       if (gcps.length > 0 && !this.isDeleting) {
@@ -121,22 +128,6 @@ export class GcpComponent implements OnInit, OnDestroy {
 
   get isGeorefActive(): boolean {
     return this.georefService.isGeorefActive;
-  }
-
-  get sourceXControl(): FormControl {
-    return this.editForm.get('sourceX') as FormControl;
-  }
-
-  get sourceYControl(): FormControl {
-    return this.editForm.get('sourceY') as FormControl;
-  }
-
-  get mapXControl(): FormControl {
-    return this.editForm.get('mapX') as FormControl;
-  }
-
-  get mapYControl(): FormControl {
-    return this.editForm.get('mapY') as FormControl;
   }
 
   /** Vérifie si tous les éléments sont sélectionnés */

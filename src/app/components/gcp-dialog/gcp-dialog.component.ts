@@ -58,9 +58,9 @@ export class GcpDialogComponent implements OnInit {
   }  
 
   onCancel() {
-    this.imageService.deleteLastGcpLayer();
-    this.mapService.deleteLastGcpLayer();
-    this.gcpService.toggleAddingGcp();
+    const deletedIndex = this.imageService.deleteLastGcpLayer();
+    this.mapService.deleteLastGcpLayer(deletedIndex);
+    this.gcpService.isAddingGCP = false;
     this.dialogRef.close();
   }
 }

@@ -18,7 +18,7 @@
 
         <!-- Index Column -->
         <ng-container matColumnDef="index">
-            <th mat-header-cell *matHeaderCellDef> ID </th>
+            <th mat-header-cell *matHeaderCellDef>ID</th>
             <td mat-cell *matCellDef="let gcp">
                 <span
                     [ngStyle]="{'color': getTextColor(gcp.index), 'background-color': getFillColor(gcp.index), 'padding': '3px 6px', 'border-radius': '50%'}">
@@ -30,98 +30,84 @@
 
         <!-- Source X Column -->
         <ng-container matColumnDef="sourceX">
-            <th mat-header-cell *matHeaderCellDef> Source X </th>
+            <th mat-header-cell *matHeaderCellDef>Source X</th>
             <td mat-cell *matCellDef="let gcp" (dblclick)="onCellDoubleClick(gcp, 'sourceX')">
-                @if (editingGcpId !== gcp.index) {
-                <ng-container>
+                <ng-container *ngIf="editingGcpId !== gcp.index; else editMode">
                     {{ gcp.sourceX | number:'1.4-4' }}
                 </ng-container>
-                } @else {
-                <ng-template>
+                <ng-template #editMode>
                     <mat-form-field appearance="outline" class="edit-field">
                         <input id="edit-sourceX" matInput [formControl]="sourceXControl" type="number" step="0.0001"
                             (keydown)="handleKeyDown($event)">
                     </mat-form-field>
                 </ng-template>
-                }
             </td>
         </ng-container>
 
         <!-- Source Y Column -->
         <ng-container matColumnDef="sourceY">
-            <th mat-header-cell *matHeaderCellDef> Source Y </th>
+            <th mat-header-cell *matHeaderCellDef>Source Y</th>
             <td mat-cell *matCellDef="let gcp" (dblclick)="onCellDoubleClick(gcp, 'sourceY')">
-                @if (editingGcpId !== gcp.index) {
-                <ng-container>
+                <ng-container *ngIf="editingGcpId !== gcp.index; else editSourceY">
                     {{ gcp.sourceY | number:'1.4-4' }}
                 </ng-container>
-                } @else {
-                <ng-template>
+                <ng-template #editSourceY>
                     <mat-form-field appearance="outline" class="edit-field">
                         <input id="edit-sourceY" matInput [formControl]="sourceYControl" type="number" step="0.0001"
                             (keydown)="handleKeyDown($event)">
                     </mat-form-field>
                 </ng-template>
-                }
             </td>
         </ng-container>
 
         <!-- Map X Column -->
         <ng-container matColumnDef="mapX">
-            <th mat-header-cell *matHeaderCellDef> Destination X </th>
+            <th mat-header-cell *matHeaderCellDef>Destination X</th>
             <td mat-cell *matCellDef="let gcp" (dblclick)="onCellDoubleClick(gcp, 'mapX')">
-                @if (editingGcpId !== gcp.index) {
-                <ng-container>
+                <ng-container *ngIf="editingGcpId !== gcp.index; else editMapX">
                     {{ gcp.mapX | number:'1.4-4' }}
                 </ng-container>
-                } @else {
-                <ng-template>
+                <ng-template #editMapX>
                     <mat-form-field appearance="outline" class="edit-field">
                         <input id="edit-mapX" matInput [formControl]="mapXControl" type="number" step="0.0001"
                             (keydown)="handleKeyDown($event)">
                     </mat-form-field>
                 </ng-template>
-                }
             </td>
         </ng-container>
 
         <!-- Map Y Column -->
         <ng-container matColumnDef="mapY">
-            <th mat-header-cell *matHeaderCellDef> Destination Y </th>
+            <th mat-header-cell *matHeaderCellDef>Destination Y</th>
             <td mat-cell *matCellDef="let gcp" (dblclick)="onCellDoubleClick(gcp, 'mapY')">
-                @if (editingGcpId !== gcp.index) {
-                <ng-container>
+                <ng-container *ngIf="editingGcpId !== gcp.index; else editMapY">
                     {{ gcp.mapY | number:'1.4-4' }}
                 </ng-container>
-                } @else {
-                <ng-template>
+                <ng-template #editMapY>
                     <mat-form-field appearance="outline" class="edit-field">
                         <input id="edit-mapY" matInput [formControl]="mapYControl" type="number" step="0.0001"
                             (keydown)="handleKeyDown($event)">
                     </mat-form-field>
                 </ng-template>
-                }
             </td>
         </ng-container>
 
         <!-- Residual Column -->
         <ng-container matColumnDef="residual">
-            <th mat-header-cell *matHeaderCellDef> Résidu </th>
+            <th mat-header-cell *matHeaderCellDef>Résidu</th>
             <td mat-cell *matCellDef="let gcp"> {{ gcp.residual | number:'1.4-4' }} </td>
         </ng-container>
 
         <!-- Edit Column -->
         <ng-container matColumnDef="edit">
-            <th mat-header-cell *matHeaderCellDef> Modifier </th>
+            <th mat-header-cell *matHeaderCellDef>Modifier</th>
             <td mat-cell *matCellDef="let gcp">
-                @if (editingGcpId !== gcp.index) {
-                <ng-container>
+                <ng-container *ngIf="editingGcpId !== gcp.index; else editButtons">
                     <button mat-icon-button color="primary" (click)="editGcp(gcp)" matTooltip="Modifier">
                         <mat-icon>edit</mat-icon>
                     </button>
                 </ng-container>
-                } @else {
-                <ng-template>
+                <ng-template #editButtons>
                     <div class="edit-buttons">
                         <button mat-icon-button color="primary" (click)="saveEdit()" matTooltip="Enregistrer">
                             <mat-icon>check</mat-icon>
@@ -131,13 +117,12 @@
                         </button>
                     </div>
                 </ng-template>
-                }
             </td>
         </ng-container>
 
         <!-- Delete Column -->
         <ng-container matColumnDef="delete">
-            <th mat-header-cell *matHeaderCellDef> Supprimer </th>
+            <th mat-header-cell *matHeaderCellDef>Supprimer</th>
             <td mat-cell *matCellDef="let gcp">
                 <button mat-icon-button color="warn" (click)="deleteGcp(gcp.index)" matTooltip="Supprimer">
                     <mat-icon>delete</mat-icon>

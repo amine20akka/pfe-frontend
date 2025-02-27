@@ -28,6 +28,7 @@ export class MapService {
   private mapLayersSubject = new BehaviorSubject<Map<number, VectorLayer<VectorSource>>>(this.mapLayers);
   private isMapSelectionSubject = new BehaviorSubject<boolean>(false);
   private mapCoordinates = new BehaviorSubject<{ x: number, y: number }>({ x: 0, y: 0 });
+  private imageLayersLength!: number;
   map$ = this.mapSubject.asObservable();
   mapLayers$ = this.mapLayersSubject;
   mapCoordinates$ = this.mapCoordinates.asObservable();
@@ -38,6 +39,9 @@ export class MapService {
     private gcpService: GcpService,
     private imageService: ImageService,
   ) {
+    this.imageService.imageLayers$.subscribe((imageLayers) => {
+      this.imageLayersLength = imageLayers.size;
+    });
     // Subscribe to isMapSelection changes
     this.isMapSelection$
       .pipe(
@@ -186,7 +190,8 @@ export class MapService {
     this.mapLayersSubject.next(this.mapLayers);
   }
 
-  deleteLastGcpLayer(): void {
+  deleteLastGcpLayer(deletedIndex: number): void {
+    if (this.mapLayers.size < deletedIndex) return;
     const size = this.mapLayers.size;
     const newImageLayers = new Map<number, VectorLayer<VectorSource>>(this.mapLayers);
     if (size > 0) {
@@ -196,13 +201,13 @@ export class MapService {
     }
   }
 
-  updateGcpPosition(index: number, sourceX: number, sourceY: number): void {
+  updateGcpPosition(index: number, mapX: number, mapY: number): void {
     const gcpLayer = this.mapLayers.get(index);
     if (gcpLayer) {
       // Mettre à jour la position de la couche (exemple avec OpenLayers)
       const feature = gcpLayer.getSource()?.getFeatures()[0];
       if (feature) {
-        feature.setGeometry(new Point([sourceX, sourceY]));
+        feature.setGeometry(new Point([mapX, mapY]));
       }
     }
   }
@@ -218,8 +223,12 @@ export class MapService {
         // Convert coordinates if necessary
         observer.next({ x: clickedCoord[0], y: clickedCoord[1] });
         
-        const newGcpLayer = this.createGcpLayer(clickedCoord[0], clickedCoord[1]);
-        this.addGcpLayerToList(newGcpLayer);
+        if (this.mapLayers.size === this.imageLayersLength) {
+          this.updateGcpPosition(this.mapLayers.size, clickedCoord[0], clickedCoord[1]);
+        } else {
+          const newGcpLayer = this.createGcpLayer(clickedCoord[0], clickedCoord[1]);
+          this.addGcpLayerToList(newGcpLayer);
+        }
 
         // Remove click listener after selecting a point
         this.map.un('click', mapClickHandler);
@@ -238,6 +247,12 @@ export class MapService {
       disableClose: true,
       data: { x, y }
     });
+  }
+
+  clearAllGcpLayers(): void {
+    for (; this.mapLayers.size > 0;) {
+      this.deleteGcpLayer(this.mapLayers.size);
+    }
   }
 
 }

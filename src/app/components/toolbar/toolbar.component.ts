@@ -7,6 +7,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { GeorefService } from '../../services/georef.service';
 import { ImageService } from '../../services/image.service';
 import { GcpService } from '../../services/gcp.service';
+import { MapService } from '../../services/map.service';
 
 @Component({
   selector: 'app-toolbar',
@@ -26,21 +27,29 @@ export class ToolbarComponent {
     private georefService: GeorefService, 
     private imageService: ImageService, 
     private gcpService: GcpService,
+    private mapService: MapService,
   ) { }
 
-  get isAddingGCP() {
+  get isAddingGCP(): boolean {
     return this.gcpService.isAddingGCP;
   }
 
-  toggleGeoref() {
+  toggleGeoref(): void {
     this.georefService.toggleGeoref();
   }
 
-  toggleAddingGCP() {
+  toggleAddingGCP(): void {
     this.gcpService.toggleAddingGcp();
   }
 
-  resetImage() {
+  reset(): void {
     this.imageService.resetImage();
+    this.mapService.clearAllGcpLayers();
+  }
+
+  clearGCPs(): void {
+    this.gcpService.clearGCPs();
+    this.imageService.clearAllGcpLayers();
+    this.mapService.clearAllGcpLayers();
   }
 }

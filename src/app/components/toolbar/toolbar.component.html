@@ -8,7 +8,7 @@
 
     <!-- Section Image -->
     <div class="toolbar-section">
-        <button mat-icon-button matTooltip="Réinitialiser l'image" (click)="resetImage()">
+        <button mat-icon-button matTooltip="Réinitialiser l'image" (click)="reset()">
             <mat-icon>refresh</mat-icon>
         </button>
     </div>
@@ -22,6 +22,9 @@
         </button>
         <button mat-icon-button matTooltip="Exporter les GCPs">
             <mat-icon>save_alt</mat-icon>
+        </button>
+        <button mat-icon-button matTooltip="Supprimer tous les GCPs" (click)="clearGCPs()">
+            <mat-icon>delete</mat-icon>
         </button>
         <button mat-icon-button [matTooltip]="isAddingGCP ? 'Annuler':'Ajouter un GCP'" (click)="toggleAddingGCP()">
             <mat-icon [fontIcon]="isAddingGCP ? 'close':'control_point'"></mat-icon>

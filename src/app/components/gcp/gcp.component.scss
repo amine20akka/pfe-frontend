@@ -55,17 +55,20 @@ button {
 }
 
 mat-icon {
-    font-size: large;
+    font-size: medium;
 }
 
-/* Style pour le champ d'édition */
+/* Réduction de la taille du champ d'édition */
 .edit-field {
-    width: 100%;
-    max-width: 120px;
-    
+    width: 70px;
+    height: 12px;
+    min-height: 22px;
+
     input {
-        padding: 2px 4px;
-        font-size: small;
+        padding: 0;
+        height: 22px;
+        min-height: 22px;
+        font-size: xx-small;
         text-align: center;
     }
 }
@@ -73,29 +76,35 @@ mat-icon {
 /* Style pour l'animation d'entrée du mode édition */
 td.editing {
     background-color: #e3f2fd; /* Bleu clair */
-    transition: background-color 0.3s ease-in-out;
+    transition: background-color 0.2s ease-in-out;
 }
 
 /* Boutons d'édition */
 .edit-buttons {
     display: flex;
-    gap: 5px;
+    gap: 4px;
     justify-content: center;
 }
 
-/* Style des icônes */
-// mat-icon {
-//     font-size: 18px;
-// }
+/* Réduction de la taille des boutons */
+.edit-buttons button {
+    width: 24px;
+    height: 24px;
+    min-width: 18px;
+    padding: 0;
+    padding-top: 2px;
+}
 
-/* Ajouter une bordure autour des cellules en mode édition */
-td.editing mat-form-field {
-    border: 1px solid #1976d2;
-    border-radius: 4px;
-    padding: 3px;
+/* Ajustement du mat-form-field */
+mat-form-field {
+    padding: 1px;
+    min-height: 22px;
+    font-size: xx-small;
+    min-width: 70px;
 }
 
 /* Effet hover pour mieux visualiser l'édition */
 tr:hover td {
-    background-color: rgba(0, 0, 0, 0.05);
+    background-color: rgba(0, 0, 0, 0.03);
 }
+

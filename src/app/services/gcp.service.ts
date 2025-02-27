@@ -40,6 +40,7 @@ export class GcpService {
   }
 
   clearGCPs(): void {
+    this.gcps = [];
     this.gcpsSubject.next([]);
   }
 

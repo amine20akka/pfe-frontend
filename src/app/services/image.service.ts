@@ -26,6 +26,7 @@ export class ImageService {
   private imageLayers: Map<number, VectorLayer<VectorSource>> = new Map<number, VectorLayer<VectorSource>>();
   private imageLayersSubject = new BehaviorSubject<Map<number, VectorLayer<VectorSource>>>(this.imageLayers);
   private imageLayer: ImageLayer<ImageSource> = new ImageLayer<ImageSource>();
+  private extent: number[] = [];
   private imageUrl = '';
   private imageMap: OLMap = new OLMap();
   private imageMapSubject = new BehaviorSubject<OLMap>(this.imageMap);
@@ -35,7 +36,6 @@ export class ImageService {
   isImageLoaded = false;
   imageWidth = 0;
   imageHeight = 0;
-  private extent = [0, 0, this.imageWidth, this.imageHeight];
   x = 0;
   y = 0;
 
@@ -118,13 +118,12 @@ export class ImageService {
   resetImage(): void {
     this.isImageLoaded = false;
     this.imageUrl = '';
-    this.imageWidth = 1000;
-    this.imageHeight = 1000;
-    this.extent = [0, 0, this.imageWidth, this.imageHeight];
+    this.imageWidth = 0;
+    this.imageHeight = 0;
     this.imageMap.setTarget('');
     this.gcpService.cursorCoordinates.next({ x: 0, y: 0 });
     this.gcpService.clearGCPs()
-    this.imageLayers.clear();
+    this.clearAllGcpLayers();
   }
 
   private handleFile(file: File): void {
@@ -160,7 +159,7 @@ export class ImageService {
         view: new View({
           projection: new Projection({ code: 'PIXEL', units: 'pixels', extent: this.extent }),
           showFullExtent: true,
-          center: getCenter(this.extent),
+          center: [this.imageWidth / 2, this.imageHeight / 2],
           zoom: 1
         }),
         layers: [this.createImageLayer()],
@@ -170,10 +169,9 @@ export class ImageService {
 
       this.imageMap.on('pointermove', (event) => {
         const coords = event.coordinate;
-        const invertedY = this.imageHeight - parseFloat(coords[1].toFixed(4)); // Inversion de Y avec 4 décimales
         this.gcpService.cursorCoordinates.next({
           x: parseFloat(coords[0].toFixed(4)),
-          y: invertedY
+          y: parseFloat(coords[1].toFixed(4)) - this.imageHeight,
         });
       });
     }, 200); // Petit délai pour s'assurer que le DOM est prêt
@@ -190,14 +188,12 @@ export class ImageService {
     const mapLayers = imageMap.getLayers().getArray(); // Liste des couches actuelles
     const gcpLayersSet = new Set(this.imageLayers.values()); // Set des couches de imageLayers
 
-    // 1️⃣ Supprimer les couches qui ne sont plus dans `imageLayers`
     mapLayers.forEach(layer => {
       if (!gcpLayersSet.has(layer as VectorLayer<VectorSource>) && layer !== this.imageLayer) {
         this.removeGcpLayerFromImage(layer as VectorLayer<VectorSource>);
       }
     });
 
-    // 2️⃣ Ajouter les nouvelles couches de `imageLayers`
     this.imageLayers.forEach((layer, index) => {
       this.updateLayerStyle(index, layer);
       if (!mapLayers.includes(layer)) {
@@ -228,7 +224,7 @@ export class ImageService {
 
   createGcpLayer(): VectorLayer {
     const feature = new Feature({
-      geometry: new Point([this.x, this.imageHeight - this.y])
+      geometry: new Point([this.x, this.y + this.imageHeight])
     });
 
     const pointStyle = this.applyLayerStyle(this.imageLayers.size + 1);
@@ -274,7 +270,7 @@ export class ImageService {
     this.imageLayersSubject.next(this.imageLayers);
   }
 
-  deleteLastGcpLayer(): void {
+  deleteLastGcpLayer(): number {
     const size = this.imageLayers.size;
     const newImageLayers = new Map<number, VectorLayer<VectorSource>>(this.imageLayers);
     if (size > 0) {
@@ -282,6 +278,7 @@ export class ImageService {
       this.imageLayers = newImageLayers;
       this.imageLayersSubject.next(this.imageLayers);
     }
+    return size;
   }
 
   deleteGcpLayer(index: number): void {
@@ -294,13 +291,19 @@ export class ImageService {
     this.imageLayersSubject.next(this.imageLayers);
   }
 
+  clearAllGcpLayers(): void {
+    for (; this.imageLayers.size > 0;) {
+      this.deleteGcpLayer(this.imageLayers.size);
+    }
+  }
+
   updateGcpPosition(index: number, sourceX: number, sourceY: number): void {
     const gcpLayer = this.imageLayers.get(index);
     if (gcpLayer) {
       // Mettre à jour la position de la couche (exemple avec OpenLayers)
       const feature = gcpLayer.getSource()?.getFeatures()[0];
       if (feature) {
-        feature.setGeometry(new Point([sourceX, sourceY]));
+        feature.setGeometry(new Point([sourceX, sourceY + this.imageHeight]));
       }
     }
   }

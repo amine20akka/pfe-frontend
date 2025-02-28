@@ -63,6 +63,9 @@ export class MapService {
                 result.mapY
               );
               this.gcpService.addGcpToList(newGcp);
+              if (coords.x !== result.mapX || coords.y !== result.mapY) {
+                this.updateGcpPosition(newGcp.index, result.mapX, result.mapY);
+              }
             }
           });
         }
@@ -158,6 +161,12 @@ export class MapService {
 
   removeGcpLayerFromMap(removedGcpLayer: VectorLayer): void {
     this.map.removeLayer(removedGcpLayer);
+  }
+
+  removeAllGcpLayersFromMap(): void {
+    this.mapLayers.forEach((layer) => {
+      this.removeGcpLayerFromMap(layer);
+    });
   }
 
   reindex(): Map<number, VectorLayer<VectorSource>> {

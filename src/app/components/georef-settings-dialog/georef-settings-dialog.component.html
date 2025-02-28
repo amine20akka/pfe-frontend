@@ -1,0 +1,46 @@
+<!-- georef-settings-dialog.component.html -->
+<h2 mat-dialog-title>Paramètres de géoréférencement</h2>
+<mat-dialog-content>
+  <div class="settings-form">
+    <mat-form-field appearance="outline">
+      <mat-label>Type de transformation</mat-label>
+      <mat-select [(ngModel)]="settings.transformation_type">
+        <mat-option *ngFor="let type of transformationTypes" [value]="type">
+          {{ type }}
+        </mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>SRID</mat-label>
+      <mat-select [(ngModel)]="settings.srid">
+        <!-- Utiliser les options avec descriptions -->
+        <mat-option *ngFor="let option of sridOptions" [value]="option.value">
+          {{ option.viewValue }}
+        </mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Méthode de rééchantillonnage</mat-label>
+      <mat-select [(ngModel)]="settings.resampling_method">
+        <mat-option *ngFor="let method of resamplingMethods" [value]="method">
+          {{ method }}
+        </mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Compression</mat-label>
+      <mat-select [(ngModel)]="settings.compression">
+        <mat-option *ngFor="let comp of compressionTypes" [value]="comp">
+          {{ comp }}
+        </mat-option>
+      </mat-select>
+    </mat-form-field>
+  </div>
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button mat-button (click)="onCancel()">Annuler</button>
+  <button mat-raised-button color="primary" (click)="onSave()">Enregistrer</button>
+</mat-dialog-actions>

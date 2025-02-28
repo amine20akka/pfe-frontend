@@ -6,32 +6,23 @@
   margin-bottom: 10px;
 }
 
-input {
-  height: 24px;
-}
-
 .dialog-content {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 28px;
   padding: 10px;
 }
 
-.radio-group {
+.manual-input {
+  margin-top: 8px;
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
 
-.manual-input {
-  padding-top: 8px;
-  display: flex;
-  flex-direction: column;
-}
-
-.mat-form-field {
-  width: 100%;
+mat-form-field input {
+  height: 16px;
+  font-size: 14px;
 }
 
 .dialog-actions {

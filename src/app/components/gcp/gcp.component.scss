@@ -58,27 +58,6 @@ mat-icon {
     font-size: medium;
 }
 
-/* Réduction de la taille du champ d'édition */
-.edit-field {
-    width: 70px;
-    height: 12px;
-    min-height: 22px;
-
-    input {
-        padding: 0;
-        height: 22px;
-        min-height: 22px;
-        font-size: xx-small;
-        text-align: center;
-    }
-}
-
-/* Style pour l'animation d'entrée du mode édition */
-td.editing {
-    background-color: #e3f2fd; /* Bleu clair */
-    transition: background-color 0.2s ease-in-out;
-}
-
 /* Boutons d'édition */
 .edit-buttons {
     display: flex;
@@ -95,12 +74,21 @@ td.editing {
     padding-top: 2px;
 }
 
-/* Ajustement du mat-form-field */
-mat-form-field {
-    padding: 1px;
-    min-height: 22px;
-    font-size: xx-small;
-    min-width: 70px;
+.edit-field {
+    width: 79px; /* Même largeur que l’ancien mat-form-field */
+    height: 20px; /* Ajustement de la hauteur */
+    padding: 1px 0px; /* Réduction du padding */
+    font-size: x-small;
+    border: 1px solid #ccc; /* Ajoute une bordure pour garder la structure */
+    border-radius: 4px; /* Coins arrondis */
+    text-align: center;
+    background-color: #fff; /* Fond blanc pour rester homogène */
+}
+
+/* Effet hover et focus pour donner un look interactif */
+.edit-field:hover, .edit-field:focus {
+    border-color: #2e84da; /* Couleur Material Design */
+    outline: none;
 }
 
 /* Effet hover pour mieux visualiser l'édition */

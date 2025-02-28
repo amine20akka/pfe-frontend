@@ -1,21 +1,36 @@
 <h2 mat-dialog-title class="dialog-title">Ajouter un GCP sur la carte</h2>
 
 <mat-dialog-content class="dialog-content">
-    <div class="manual-input">
-        <mat-form-field appearance="outline">
-            <mat-label>X</mat-label>
-            <input matInput type="number" [(ngModel)]="mapX">
-        </mat-form-field>
+    <form [formGroup]="gcpForm">
+        <div class="manual-input">
+            <mat-form-field appearance="outline">
+                <mat-label>X</mat-label>
+                <input matInput type="number" formControlName="mapX">
+                <mat-error *ngIf="gcpForm.controls['mapX'].hasError('required')">
+                    La valeur X est requise.
+                </mat-error>
+                <mat-error *ngIf="gcpForm.controls['mapX'].hasError('pattern')">
+                    Veuillez entrer un nombre valide.
+                </mat-error>
+            </mat-form-field>
 
-        <mat-form-field appearance="outline">
-            <mat-label>Y</mat-label>
-            <input matInput type="number" [(ngModel)]="mapY">
-        </mat-form-field>
-    </div>
+            <mat-form-field appearance="outline">
+                <mat-label>Y</mat-label>
+                <input matInput type="number" formControlName="mapY">
+                <mat-error *ngIf="gcpForm.controls['mapY'].hasError('required')">
+                    La valeur Y est requise.
+                </mat-error>
+                <mat-error *ngIf="gcpForm.controls['mapY'].hasError('pattern')">
+                    Veuillez entrer un nombre valide.
+                </mat-error>
+            </mat-form-field>
+        </div>
+    </form>
 </mat-dialog-content>
 
 <mat-dialog-actions align="end" class="dialog-actions">
     <button mat-button (click)="onCancel()" class="cancel-button">Annuler</button>
     <button mat-button (click)="startMapSelection()" class="map-selection-button">Choisir depuis la carte</button>
-    <button mat-button color="primary" class="confirm-button" (click)="onConfirm()">Confirmer</button>
+    <button mat-button color="primary" class="confirm-button" (click)="onConfirm()"
+        [disabled]="gcpForm.invalid">Confirmer</button>
 </mat-dialog-actions>

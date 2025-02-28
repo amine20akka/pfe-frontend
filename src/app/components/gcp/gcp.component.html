@@ -36,10 +36,8 @@
                     {{ gcp.sourceX | number:'1.4-4' }}
                 </ng-container>
                 <ng-template #editMode>
-                    <mat-form-field appearance="outline" class="edit-field">
-                        <input id="edit-sourceX" matInput [formControl]="sourceXControl" type="number" step="0.0001"
-                            (keydown)="handleKeyDown($event)">
-                    </mat-form-field>
+                    <input id="edit-sourceX" class="edit-field" [formControl]="sourceXControl" type="number"
+                        step="0.0001" (keydown)="handleKeyDown($event)">
                 </ng-template>
             </td>
         </ng-container>
@@ -52,10 +50,8 @@
                     {{ gcp.sourceY | number:'1.4-4' }}
                 </ng-container>
                 <ng-template #editSourceY>
-                    <mat-form-field appearance="outline" class="edit-field">
-                        <input id="edit-sourceY" matInput [formControl]="sourceYControl" type="number" step="0.0001"
-                            (keydown)="handleKeyDown($event)">
-                    </mat-form-field>
+                    <input id="edit-sourceY" class="edit-field" [formControl]="sourceYControl" type="number"
+                        step="0.0001" (keydown)="handleKeyDown($event)">
                 </ng-template>
             </td>
         </ng-container>
@@ -68,10 +64,8 @@
                     {{ gcp.mapX | number:'1.4-4' }}
                 </ng-container>
                 <ng-template #editMapX>
-                    <mat-form-field appearance="outline" class="edit-field">
-                        <input id="edit-mapX" matInput [formControl]="mapXControl" type="number" step="0.0001"
-                            (keydown)="handleKeyDown($event)">
-                    </mat-form-field>
+                    <input id="edit-mapX" class="edit-field" [formControl]="mapXControl" type="number"
+                        step="0.0001" (keydown)="handleKeyDown($event)">
                 </ng-template>
             </td>
         </ng-container>
@@ -84,10 +78,8 @@
                     {{ gcp.mapY | number:'1.4-4' }}
                 </ng-container>
                 <ng-template #editMapY>
-                    <mat-form-field appearance="outline" class="edit-field">
-                        <input id="edit-mapY" matInput [formControl]="mapYControl" type="number" step="0.0001"
-                            (keydown)="handleKeyDown($event)">
-                    </mat-form-field>
+                    <input id="edit-mapY" class="edit-field" [formControl]="mapYControl" type="number"
+                        step="0.0001" (keydown)="handleKeyDown($event)">
                 </ng-template>
             </td>
         </ng-container>

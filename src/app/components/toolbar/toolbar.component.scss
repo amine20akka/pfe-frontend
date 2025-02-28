@@ -14,20 +14,27 @@
 
 #georef-button {
     overflow: hidden;
-    background-color: rgb(238, 116, 34);
-    color: rgb(255, 255, 255);
+    background: linear-gradient(45deg, #FF6A00, #ffad49); /* Dégradé proche du logo Orange */
+    color: white;
     margin-left: 10px;
     margin-top: 2px;
-    height: 34px;    
+    height: 34px;
     font-size: small;
+    border: none;
+    border-radius: 50px;
+    transition: background 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+}
+
+#georef-button:hover {
+    background: linear-gradient(45deg, #ffad49, #FF6A00); /* Inversion du dégradé au hover */
+    box-shadow: 0px 4px 10px rgba(255, 138, 0, 0.6);
 }
 
 #close-button {
-    overflow: hidden;
     display: flex;
     flex-direction: row;
     justify-self: start;
-    margin-right: 86px;
+    margin-right: 94px;
 }
 
 #georef-icon {
@@ -47,7 +54,9 @@ mat-icon {
 }
 
 mat-divider {
-    overflow: hidden;
-    height: 32px;
-    margin: 0 12px;
+    height: 32px; /* Hauteur verticale */
+    width: 1px; /* Épaisseur de la ligne */
+    margin: 0 12px; /* Espacement horizontal */
+    border-radius: 4px; /* Arrondir légèrement les bords */
+    box-shadow: 1px 0 1px rgba(0, 0, 0, 0.15); /* Effet d'ombre latérale */
 }

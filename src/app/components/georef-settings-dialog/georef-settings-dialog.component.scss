@@ -1,0 +1,14 @@
+.settings-form {
+  display: flex;
+  flex-direction: column;
+  margin: 10px 0;
+}
+
+mat-form-field {
+  margin-bottom: 15px;
+  width: 100%;
+}
+
+mat-dialog-actions {
+  margin-top: 10px;
+}

@@ -1,5 +1,5 @@
 <mat-toolbar color="primary" class="toolbar">
-    
+
     <div id="close-button">
         <button mat-icon-button matTooltip="Fermer" (click)="toggleGeoref()">
             <mat-icon>arrow_forward</mat-icon>
@@ -14,34 +14,34 @@
     </div>
 
     <mat-divider vertical></mat-divider>
-    
+
     <!-- Section Points -->
     <div class="toolbar-section">
+        <button mat-icon-button matTooltip="Supprimer tous les GCPs" (click)="clearGCPs()">
+            <mat-icon>delete</mat-icon>
+        </button>
         <button mat-icon-button matTooltip="Charger des GCPs">
             <mat-icon>upload</mat-icon>
         </button>
         <button mat-icon-button matTooltip="Exporter les GCPs">
             <mat-icon>save_alt</mat-icon>
         </button>
-        <button mat-icon-button matTooltip="Supprimer tous les GCPs" (click)="clearGCPs()">
-            <mat-icon>delete</mat-icon>
-        </button>
         <button mat-icon-button [matTooltip]="isAddingGCP ? 'Annuler':'Ajouter un GCP'" (click)="toggleAddingGCP()">
             <mat-icon [fontIcon]="isAddingGCP ? 'close':'control_point'"></mat-icon>
         </button>
     </div>
-    
+
     <mat-divider vertical></mat-divider>
 
     <!-- Section Paramètres -->
     <div class="toolbar-section">
-        <button mat-icon-button matTooltip="Paramètres">
+        <button mat-icon-button matTooltip="Paramètres" (click)="openGeorefSettings()">
             <mat-icon>settings</mat-icon>
         </button>
         <button mat-fab extended id="georef-button">
             <mat-icon id="georef-icon">play_arrow</mat-icon>
             Géoréférencer
-          </button>
+        </button>
     </div>
 
 </mat-toolbar>

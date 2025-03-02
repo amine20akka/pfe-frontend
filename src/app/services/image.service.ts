@@ -34,6 +34,7 @@ export class ImageService {
   imageLayers$ = this.imageLayersSubject;
   isDragging = false;
   isImageLoaded = false;
+  isLoading = false;
   imageWidth = 0;
   imageHeight = 0;
   x = 0;
@@ -47,21 +48,10 @@ export class ImageService {
     });
   }
 
-  createImageLayer(): ImageLayer<ImageSource> {
-    this.imageLayer = new ImageLayer({
-      source: new Static({
-        url: this.imageUrl,
-        imageExtent: this.extent,
-        projection: new Projection({ code: 'PIXEL', units: 'pixels', extent: this.extent })
-      })
-    })
-    return this.imageLayer;
-  }
-
   zoomIn(): void {
     const view = this.imageMap.getView();
     view.animate({
-      zoom: view.getZoom()! + 1,  // Augmente le zoom
+      zoom: view.getZoom()! + 0.5,  // Augmente le zoom
       duration: 300 // Durée de l'animation (500ms)
     });
   }
@@ -69,7 +59,7 @@ export class ImageService {
   zoomOut(): void {
     const view = this.imageMap.getView();
     view.animate({
-      zoom: view.getZoom()! - 1,  // Diminue le zoom
+      zoom: view.getZoom()! - 0.5,  // Diminue le zoom
       duration: 300 // Durée de l'animation (500ms)
     });
   }
@@ -83,6 +73,17 @@ export class ImageService {
         duration: 300 // Animation fluide
       });
     }
+  }
+
+  resetImage(): void {
+    this.isImageLoaded = false;
+    this.imageUrl = '';
+    this.imageWidth = 0;
+    this.imageHeight = 0;
+    this.imageMap.setTarget('');
+    this.gcpService.cursorCoordinates.next({ x: 0, y: 0 });
+    this.gcpService.clearGCPs()
+    this.clearAllGcpLayers();
   }
 
   onDragOver(event: DragEvent): void {
@@ -101,6 +102,7 @@ export class ImageService {
     event.preventDefault();
     event.stopPropagation();
     this.isDragging = false;
+    this.isLoading = true;
 
     if (event.dataTransfer?.files.length) {
       const file = event.dataTransfer.files[0];
@@ -109,46 +111,73 @@ export class ImageService {
   }
 
   onFileSelected(event: Event): void {
+    this.isLoading = true; // Afficher immédiatement le spinner
     const input = event.target as HTMLInputElement;
     if (input.files?.length) {
       this.handleFile(input.files[0]);
     }
   }
 
-  resetImage(): void {
-    this.isImageLoaded = false;
-    this.imageUrl = '';
-    this.imageWidth = 0;
-    this.imageHeight = 0;
-    this.imageMap.setTarget('');
-    this.gcpService.cursorCoordinates.next({ x: 0, y: 0 });
-    this.gcpService.clearGCPs()
-    this.clearAllGcpLayers();
-  }
-
   private handleFile(file: File): void {
-    if (!file.type.startsWith('image/')) {
+    const allowedExtensions = ['png', 'jpg', 'jpeg', 'tiff', 'tif'];
+    const fileExtension = file.name.split('.').pop()?.toLowerCase();
+    const maxSize = 1 * 1024 * 1024; // 5 Mo en octets
+
+    if (!fileExtension || !allowedExtensions.includes(fileExtension)) {
       console.error('Format non supporté');
       return;
     }
 
-    this.isImageLoaded = true;
+    if (file.size > maxSize) {
+      console.error('Fichier trop volumineux (max 1 Mo)');
+      return;
+    }
+
+    this.isImageLoaded = false;
+
     const reader = new FileReader();
 
     reader.onload = () => {
-      this.imageUrl = URL.createObjectURL(file);
-
-      // Charger l'image pour récupérer ses dimensions réelles
+      const imageUrl = URL.createObjectURL(file);
       const img = new Image();
+
       img.onload = () => {
-        this.imageWidth = img.width;
-        this.imageHeight = img.height;
-        this.extent = [0, 0, this.imageWidth, this.imageHeight];
+        const minLoadingTime = 1000; // 1 seconde
+        const startTime = Date.now(); // Temps de début du chargement
+
+        const finishLoading = () => {
+          this.isLoading = false; // Cacher le spinner
+          this.isImageLoaded = true;
+          this.imageUrl = imageUrl;
+          this.imageWidth = img.width;
+          this.imageHeight = img.height;
+          this.extent = [0, 0, this.imageWidth, this.imageHeight];
+        };
+
+        // Vérifier si le chargement a duré au moins 2s
+        const elapsedTime = Date.now() - startTime;
+        if (elapsedTime < minLoadingTime) {
+          setTimeout(finishLoading, minLoadingTime - elapsedTime);
+        } else {
+          finishLoading();
+        }
       };
-      img.src = this.imageUrl;
+
+      img.src = imageUrl;
     };
 
     reader.readAsDataURL(file);
+  }
+
+  createImageLayer(): ImageLayer<ImageSource> {
+    this.imageLayer = new ImageLayer({
+      source: new Static({
+        url: this.imageUrl,
+        imageExtent: this.extent,
+        projection: new Projection({ code: 'PIXEL', units: 'pixels', extent: this.extent })
+      })
+    })
+    return this.imageLayer;
   }
 
   initImageLayer(target: string): void {

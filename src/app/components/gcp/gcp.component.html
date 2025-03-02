@@ -116,7 +116,7 @@
         <ng-container matColumnDef="delete">
             <th mat-header-cell *matHeaderCellDef>Supprimer</th>
             <td mat-cell *matCellDef="let gcp">
-                <button mat-icon-button color="warn" (click)="deleteGcp(gcp.index)" matTooltip="Supprimer">
+                <button mat-icon-button color="warn" (click)="openDeleteConfirmDialog(gcp.index)" matTooltip="Supprimer">
                     <mat-icon>delete</mat-icon>
                 </button>
             </td>

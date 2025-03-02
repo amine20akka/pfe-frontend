@@ -1,0 +1,13 @@
+<mat-dialog-content class="dialog-content">
+    <mat-icon class="dialog-icon">{{ data.icon || 'help_outline' }}</mat-icon>
+    <p id="dialog-title">{{ data.title }}</p>
+</mat-dialog-content>
+
+<mat-dialog-actions class="dialog-actions">
+    <button mat-button (click)="onCancel()" id="cancel-button">
+        {{ data.cancelText || 'Annuler' }}
+    </button>
+    <button mat-button (click)="onConfirm()" id="confirm-button">
+        {{ data.confirmText || 'Confirmer' }}
+    </button>
+</mat-dialog-actions>

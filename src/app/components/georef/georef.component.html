@@ -1,6 +1,12 @@
 @if (isGeorefActive) {
 <div class="georef-container" [@toggleContent]="isGeorefActive ? 'open' : 'closed'">
-    @if (!isImageLoaded) {
+
+    @if (isLoading) {
+    <div class="loading-container">
+        <mat-spinner class="spinner" diameter="50"></mat-spinner>
+        <p>Chargement de l'image...</p>
+    </div>
+    } @else if (!isImageLoaded) {
     <app-upload></app-upload>
     } @else {
     <app-toolbar></app-toolbar>
@@ -10,6 +16,6 @@
         X: {{ cursorX | number:'1.4-4' }} px | Y: {{ cursorY | number:'1.4-4' }} px
     </div>
     }
-</div>
 
+</div>
 }

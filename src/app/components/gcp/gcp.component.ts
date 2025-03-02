@@ -16,6 +16,9 @@ import VectorSource from 'ol/source/Vector';
 import { MapService } from '../../services/map.service';
 import { FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatInputModule } from '@angular/material/input';
+import { MatDialog } from '@angular/material/dialog';
+import { ConfirmDialogData } from '../../interfaces/confirm-dialog-data';
+import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/confirm-dialog.component';
 
 @Component({
   selector: 'app-gcp',
@@ -47,7 +50,8 @@ export class GcpComponent implements OnInit, OnDestroy {
     private gcpService: GcpService,
     private imageService: ImageService,
     private mapService: MapService,
-    private fb: FormBuilder
+    private fb: FormBuilder,
+    private dialog: MatDialog,
   ) { }
 
   displayedColumns: string[] = ['select', 'index', 'sourceX', 'sourceY', 'mapX', 'mapY', 'residual', 'edit', 'delete'];
@@ -85,18 +89,20 @@ export class GcpComponent implements OnInit, OnDestroy {
         this.selection.select(gcps[gcps.length - 1]);
       }
       
-      // Restaurer la sélection depuis le stockage local
-      const savedSelection = localStorage.getItem('selectedGCPs');
-      if (savedSelection) {
-        const selectedIndexes: number[] = JSON.parse(savedSelection);
-        selectedIndexes.forEach(index => {
-          const gcp = gcps.find(g => g.index === index);
-          if (gcp) this.selection.select(gcp);
-          const gcpLayer = this.imageLayers.get(index);
-          if (gcpLayer) gcpLayer.setVisible(true);
-        });
-      }
-      this.updateGcpLayerVisibility();
+      setTimeout(() => {
+        // Restaurer la sélection depuis le stockage local
+        const savedSelection = localStorage.getItem('selectedGCPs');
+        if (savedSelection) {
+          const selectedIndexes: number[] = JSON.parse(savedSelection);
+          selectedIndexes.forEach(index => {
+            const gcp = gcps.find(g => g.index === index);
+            if (gcp) this.selection.select(gcp);
+            const gcpLayer = this.imageLayers.get(index);
+            if (gcpLayer) gcpLayer.setVisible(true);
+          });
+        }
+        this.updateGcpLayerVisibility();
+      }, 300);
       
       // Update residual values
       // if (gcps.length >= 3) {
@@ -182,8 +188,6 @@ export class GcpComponent implements OnInit, OnDestroy {
     // Ajoute cette ligne pour réinitialiser après suppression
     setTimeout(() => { this.isDeleting = false; }, 100);
   }
-
-  // Méthodes pour l'édition des GCPs
   
   /** Commencer l'édition d'un GCP */
   editGcp(gcp: GCP): void {
@@ -197,10 +201,10 @@ export class GcpComponent implements OnInit, OnDestroy {
     
     // Remplir le formulaire avec les valeurs actuelles
     this.editForm.patchValue({
-      sourceX: gcp.sourceX,
-      sourceY: gcp.sourceY,
-      mapX: gcp.mapX,
-      mapY: gcp.mapY
+      sourceX: parseFloat(gcp.sourceX.toFixed(4)),
+      sourceY: parseFloat(gcp.sourceY.toFixed(4)),
+      mapX: parseFloat(gcp.mapX!.toFixed(4)),
+      mapY: parseFloat(gcp.mapY!.toFixed(4))
     });
   }
   
@@ -269,4 +273,27 @@ export class GcpComponent implements OnInit, OnDestroy {
     const textColors = ['white', 'white', 'white', 'black', 'white', 'black', 'black', 'white', 'black', 'white'];
     return textColors[(index - 1) % textColors.length];
   }
+
+  openDeleteConfirmDialog(index: number): void {
+      const dialogData: ConfirmDialogData = {
+        title: 'Êtes-vous sûr de supprimer ce point de contrôle ?',
+        confirmText: 'Supprimer',
+        cancelText: 'Annuler',
+        icon: 'delete'
+      };
+  
+      const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+        width: '400px',
+        data: dialogData
+      });
+  
+      dialogRef.afterClosed().subscribe(result => {
+        if (result) {
+          console.log('Action confirmée');
+          this.deleteGcp(index);
+        } else {
+          console.log('Action annulée');
+        }
+      });
+    }
 }

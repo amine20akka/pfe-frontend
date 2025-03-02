@@ -11,6 +11,8 @@ import { MapService } from '../../services/map.service';
 import { MatDialog } from '@angular/material/dialog';
 import { GeorefSettingsDialogComponent } from '../georef-settings-dialog/georef-settings-dialog.component';
 import { CompressionType, ResamplingMethod, SRID, TransformationType } from '../../interfaces/georef-settings';
+import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/confirm-dialog.component';
+import { ConfirmDialogData } from '../../interfaces/confirm-dialog-data';
 
 @Component({
   selector: 'app-toolbar',
@@ -67,9 +69,9 @@ export class ToolbarComponent {
       width: '500px',
       data: {
         transformation_type: this.transformationType || 'polynomial 1',
-        srid: this.srid || 4326,
-        resampling_method: this.resamplingMethod || 'bilinear',
-        compression: this.compression || 'LZW'
+        srid: this.srid || 3857,
+        resampling_method: this.resamplingMethod || 'nearest',
+        compression: this.compression || 'NONE'
       }
     });
   
@@ -80,6 +82,52 @@ export class ToolbarComponent {
         this.resamplingMethod = result.resampling_method;
         this.compression = result.compression;
         console.log('Paramètres de géoréférencement mis à jour:', result);
+      }
+    });
+  }
+
+  openResetConfirmDialog(): void {
+    const dialogData: ConfirmDialogData = {
+      title: 'Êtes-vous sûr de réinitialiser votre image importée ?',
+      confirmText: 'Réinitialiser',
+      cancelText: 'Annuler',
+      icon: 'refresh'
+    };
+
+    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+      width: '400px',
+      data: dialogData
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        console.log('Action confirmée');
+        this.reset();
+      } else {
+        console.log('Action annulée');
+      }
+    });
+  }
+
+  openClearConfirmDialog(): void {
+    const dialogData: ConfirmDialogData = {
+      title: 'Êtes-vous sûr de supprimer tous les points de contrôles ?',
+      confirmText: 'Supprimer',
+      cancelText: 'Annuler',
+      icon: 'delete'
+    };
+
+    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+      width: '400px',
+      data: dialogData
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        console.log('Action confirmée');
+        this.clearGCPs();
+      } else {
+        console.log('Action annulée');
       }
     });
   }

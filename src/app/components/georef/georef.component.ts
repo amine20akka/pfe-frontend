@@ -11,6 +11,7 @@ import { GcpComponent } from "../gcp/gcp.component";
 import { ToolbarComponent } from '../toolbar/toolbar.component';
 import { GcpService } from '../../services/gcp.service';
 import { CommonModule } from '@angular/common';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
 @Component({
   selector: 'app-georef',
@@ -23,7 +24,8 @@ import { CommonModule } from '@angular/common';
     UploadComponent,
     ImageComponent,
     GcpComponent,
-    ToolbarComponent
+    ToolbarComponent,
+    MatProgressSpinnerModule,
   ],
   animations: [
     trigger('toggleContent', [
@@ -60,12 +62,16 @@ export class GeorefComponent implements OnInit, OnDestroy {
     }
   }
 
-  get isGeorefActive() {
+  get isGeorefActive(): boolean {
     return this.georefService.isGeorefActive;
   }
 
-  get isImageLoaded() {
+  get isImageLoaded(): boolean {
     return this.imageService.isImageLoaded;
+  }
+
+  get isLoading(): boolean {
+    return this.imageService.isLoading;
   }
 
   toggleGeoref(): void {

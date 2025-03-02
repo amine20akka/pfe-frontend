@@ -10,9 +10,10 @@ import { GcpService } from '../../services/gcp.service';
 import { MapService } from '../../services/map.service';
 import { MatDialog } from '@angular/material/dialog';
 import { GeorefSettingsDialogComponent } from '../georef-settings-dialog/georef-settings-dialog.component';
-import { CompressionType, ResamplingMethod, SRID, TransformationType } from '../../interfaces/georef-settings';
+import { CompressionType, GeorefSettings, ResamplingMethod, SRID, TransformationType } from '../../interfaces/georef-settings';
 import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/confirm-dialog.component';
 import { ConfirmDialogData } from '../../interfaces/confirm-dialog-data';
+import { GeorefSettingsService } from '../../services/georef-settings.service';
 
 @Component({
   selector: 'app-toolbar',
@@ -29,17 +30,32 @@ import { ConfirmDialogData } from '../../interfaces/confirm-dialog-data';
 export class ToolbarComponent {
 
   transformationType: TransformationType = TransformationType.POLYNOMIAL_1;
-  srid: SRID = SRID.WGS84;
-  resamplingMethod: ResamplingMethod = ResamplingMethod.BILINEAR;
-  compression: CompressionType = CompressionType.LZW;
+  srid: SRID = SRID.WEB_MERCATOR;
+  resamplingMethod: ResamplingMethod = ResamplingMethod.NEAREST;
+  compressionType: CompressionType = CompressionType.NONE;
 
   constructor(
     private georefService: GeorefService, 
     private imageService: ImageService, 
     private gcpService: GcpService,
     private mapService: MapService,
+    private georefSettingsService: GeorefSettingsService,
     private dialog: MatDialog,
-  ) { }
+  ) { 
+    this.georefSettingsService.transformationType$.subscribe((type) => {
+      this.transformationType = type;
+    })
+    this.georefSettingsService.srid$.subscribe((srid) => {
+      this.srid = srid;
+    })
+    this.georefSettingsService.resamplingMethod$.subscribe((method) => {
+      this.resamplingMethod = method;
+    })
+    this.georefSettingsService.compressionType$.subscribe((type) => {
+      this.compressionType = type;
+    })
+    
+  }
 
   get isAddingGCP(): boolean {
     return this.gcpService.isAddingGCP;
@@ -68,19 +84,16 @@ export class ToolbarComponent {
     const dialogRef = this.dialog.open(GeorefSettingsDialogComponent, {
       width: '500px',
       data: {
-        transformation_type: this.transformationType || 'polynomial 1',
-        srid: this.srid || 3857,
-        resampling_method: this.resamplingMethod || 'nearest',
-        compression: this.compression || 'NONE'
+        transformation_type: this.transformationType,
+        srid: this.srid,
+        resampling_method: this.resamplingMethod,
+        compression: this.compressionType
       }
     });
   
-    dialogRef.afterClosed().subscribe(result => {
+    dialogRef.afterClosed().subscribe((result: GeorefSettings) => {
       if (result) {
-        this.transformationType = result.transformation_type;
-        this.srid = result.srid;
-        this.resamplingMethod = result.resampling_method;
-        this.compression = result.compression;
+        this.georefSettingsService.updateSettings(result);
         console.log('Paramètres de géoréférencement mis à jour:', result);
       }
     });

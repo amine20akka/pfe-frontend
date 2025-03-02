@@ -242,6 +242,8 @@ export class GcpComponent implements OnInit, OnDestroy {
       
       // Réinitialiser l'état d'édition
       this.editingGcpId = null;
+
+      this.selection.select(updatedGcp);
     }
   }
   

@@ -3,12 +3,13 @@ export interface GeorefSettings {
     srid: SRID;
     resampling_method: ResamplingMethod;
     compression: CompressionType;
+    output_filename: string;
 }
 
 export enum TransformationType {
-    POLYNOMIAL_1 = 'polynomial 1',
-    POLYNOMIAL_2 = 'polynomial 2',
-    POLYNOMIAL_3 = 'polynomial 3'
+    POLYNOMIAL_1 = 'Polynomiale 1',
+    POLYNOMIAL_2 = 'Polynomiale 2',
+    POLYNOMIAL_3 = 'Polynomiale 3'
 }
 
 export enum SRID {
@@ -17,10 +18,10 @@ export enum SRID {
 }
 
 export enum ResamplingMethod {
-    NEAREST = 'nearest',
-    BILINEAR = 'bilinear',
-    CUBIC = 'cubic',
-    LANCZOS = 'lanczos'
+    NEAREST = 'Plus proche voisin',
+    BILINEAR = 'Bilinear',
+    CUBIC = 'Cubic',
+    LANCZOS = 'Lanczos'
 }
 
 export enum CompressionType {
@@ -38,6 +39,6 @@ export const COMPRESSION_TYPES = Object.values(CompressionType);
 
 // Pour les SRIDS, vous pourriez vouloir un objet clé-valeur pour afficher des descriptions
 export const SRID_OPTIONS = [
-    { value: SRID.WGS84, viewValue: 'WGS84 - EPSG:4326' },
-    { value: SRID.WEB_MERCATOR, viewValue: 'Web Mercator - EPSG:3857' }
+    { value: SRID.WGS84, viewValue: 'EPSG:4326 - WGS84' },
+    { value: SRID.WEB_MERCATOR, viewValue: 'EPSG:3857 - WGS84 / Pseudo-Mercator' }
 ];

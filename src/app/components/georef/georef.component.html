@@ -1,6 +1,4 @@
-@if (isGeorefActive) {
 <div class="georef-container" [@toggleContent]="isGeorefActive ? 'open' : 'closed'">
-
     @if (isLoading) {
     <div class="loading-container">
         <mat-spinner class="spinner" diameter="50"></mat-spinner>
@@ -12,10 +10,25 @@
     <app-toolbar></app-toolbar>
     <app-image></app-image>
     <app-gcp></app-gcp>
-    <div class="cursor-coordinates">
-        X: {{ cursorX | number:'1.4-4' }} px | Y: {{ cursorY | number:'1.4-4' }} px
+    <div class="georef-info-container" [class.hidden]="!isGeorefActive">
+        <!-- Paramètres de géoréférencement en ligne -->
+        <div class="georef-parameters">
+            {{ georefSettings.transformation_type }}
+        </div>
+        <div class="georef-parameters">
+            EPSG:{{ georefSettings.srid }}
+        </div>
+        <div class="georef-parameters">
+            Ré-échantillonnage: {{ georefSettings.resampling_method }}
+        </div>
+        <div class="georef-parameters">
+            Compression: {{ georefSettings.compression }}
+        </div>
+
+        <!-- Coordonnées du curseur -->
+        <div class="cursor-coordinates">
+            X: {{ cursorX | number:'1.4-4' }} px | Y: {{ cursorY | number:'1.4-4' }} px
+        </div>
     </div>
     }
-
 </div>
-}

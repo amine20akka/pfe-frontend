@@ -6,12 +6,12 @@
         <div class="settings-group-title">Paramètres de transformation</div>
         <mat-form-field appearance="outline">
           <mat-label>Type de transformation</mat-label>
-          <mat-select formControlName="transformation_type">
+          <mat-select formControlName="transformationType">
             <mat-option *ngFor="let type of transformationTypes" [value]="type">
               {{ type }}
             </mat-option>
           </mat-select>
-          <mat-error *ngIf="georefForm.controls['transformation_type'].invalid">
+          <mat-error *ngIf="georefForm.controls['transformationType'].invalid">
             Type de transformation requis !
           </mat-error>
         </mat-form-field>
@@ -36,35 +36,35 @@
         <div class="settings-group-title">Paramètres en sortie</div>
         <mat-form-field appearance="outline">
           <mat-label>Méthode de ré-échantillonnage</mat-label>
-          <mat-select formControlName="resampling_method">
+          <mat-select formControlName="resamplingMethod">
             <mat-option *ngFor="let method of resamplingMethods" [value]="method">
               {{ method }}
             </mat-option>
           </mat-select>
-          <mat-error *ngIf="georefForm.controls['resampling_method'].invalid">
+          <mat-error *ngIf="georefForm.controls['resamplingMethod'].invalid">
             Sélectionnez une méthode de ré-échantillonnage !
           </mat-error>
         </mat-form-field>
 
         <mat-form-field appearance="outline">
           <mat-label>Type de compression</mat-label>
-          <mat-select formControlName="compression">
+          <mat-select formControlName="compressionType">
             <mat-option *ngFor="let comp of compressionTypes" [value]="comp">
               {{ comp }}
             </mat-option>
           </mat-select>
-          <mat-error *ngIf="georefForm.controls['compression'].invalid">
+          <mat-error *ngIf="georefForm.controls['compressionType'].invalid">
             Sélectionnez un type de compression !
           </mat-error>
         </mat-form-field>
 
         <mat-form-field appearance="outline">
           <mat-label>Fichier en sortie</mat-label>
-          <input matInput formControlName="output_filename" placeholder="Nom du fichier"/>
-          <mat-error *ngIf="georefForm.controls['output_filename'].hasError('required')">
+          <input matInput formControlName="outputFilename" placeholder="Nom du fichier"/>
+          <mat-error *ngIf="georefForm.controls['outputFilename'].hasError('required')">
             Le nom du fichier est requis !
           </mat-error>
-          <mat-error *ngIf="georefForm.controls['output_filename'].hasError('pattern')">
+          <mat-error *ngIf="georefForm.controls['outputFilename'].hasError('pattern')">
             Le nom ne peut contenir que des lettres, chiffres, tirets (-) et underscores (_).
           </mat-error>
         </mat-form-field>

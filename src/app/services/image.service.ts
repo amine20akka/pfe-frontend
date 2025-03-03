@@ -18,8 +18,8 @@ import Fill from 'ol/style/Fill';
 import { colors } from '../shared/colors';
 import { BehaviorSubject } from 'rxjs';
 import Style from 'ol/style/Style';
-import { GeorefImage } from '../interfaces/georef-image';
-import { CompressionType, GeorefSettings, ResamplingMethod, SRID, TransformationType } from '../interfaces/georef-settings';
+import { GeorefImage, GeorefStatus } from '../interfaces/georef-image';
+import { CompressionType, ResamplingMethod, SRID, TransformationType } from '../interfaces/georef-settings';
 
 @Injectable({
   providedIn: 'root'
@@ -30,7 +30,6 @@ export class ImageService {
   private imageLayersSubject = new BehaviorSubject<Map<number, VectorLayer<VectorSource>>>(this.imageLayers);
   private imageLayer: ImageLayer<ImageSource> = new ImageLayer<ImageSource>();
   private extent: number[] = [];
-  // private imageUrl = '';
   private imageMap: OLMap = new OLMap();
   private imageMapSubject = new BehaviorSubject<OLMap>(this.imageMap);
   georefImage$ = this.georefImageSubject.asObservable();
@@ -81,7 +80,6 @@ export class ImageService {
 
   resetImage(): void {
     this.isImageLoaded = false;
-    // this.imageUrl = '';
     this.imageWidth = 0;
     this.imageHeight = 0;
     this.imageMap.setTarget('');
@@ -89,7 +87,6 @@ export class ImageService {
     this.gcpService.clearGCPs()
     this.clearAllGcpLayers();
     this.georefImageSubject.next({} as GeorefImage);
-    console.log(this.georefImageSubject.getValue());
   }
 
   onDragOver(event: DragEvent): void {
@@ -128,58 +125,42 @@ export class ImageService {
     const allowedExtensions = ['png', 'jpg', 'jpeg', 'tiff', 'tif'];
     const fileExtension = file.name.split('.').pop()?.toLowerCase();
     const maxSize = 1 * 1024 * 1024; // 1 Mo
-  
+
     if (!fileExtension || !allowedExtensions.includes(fileExtension)) {
       console.error('Format non supporté');
       return;
     }
-  
+
     if (file.size > maxSize) {
       console.error('Fichier trop volumineux (max 1 Mo)');
       return;
     }
-  
+
     this.isImageLoaded = false;
     const reader = new FileReader();
-  
+
     reader.onload = () => {
       const imageUrl = URL.createObjectURL(file);
       const img = new Image();
-  
+
       img.onload = () => {
         const minLoadingTime = 1000; // 1 seconde
         const startTime = Date.now();
-  
+
         const finishLoading = () => {
           this.isLoading = false;
           this.isImageLoaded = true;
-          // this.imageUrl = imageUrl;
           this.imageWidth = img.width;
           this.imageHeight = img.height;
           this.extent = [0, 0, this.imageWidth, this.imageHeight];
-  
-          // Création des paramètres par défaut de GeorefSettings
-          const defaultSettings: GeorefSettings = {
-            transformation_type: TransformationType.POLYNOMIAL_1,
-            srid: SRID.WEB_MERCATOR,
-            resampling_method: ResamplingMethod.NEAREST,
-            compression: CompressionType.NONE,
-            output_filename: ''
-          };
-          
-          // Création du nouvel objet GeorefImage
-          const newGeorefImage: GeorefImage = {
-            filenameOriginal: file.name,
-            filePath: imageUrl,
-            status: 'pending',
-            settings: defaultSettings
-          };
-  
+
+          const newGeorefImage = this.createGeorefImage(file, imageUrl);
+
           // Envoi de l'image au Subject pour mise à jour
           this.georefImageSubject.next(newGeorefImage);
           console.log(this.georefImageSubject.getValue());
         };
-  
+
         // Vérifier si le chargement a duré au moins 1s
         const elapsedTime = Date.now() - startTime;
         if (elapsedTime < minLoadingTime) {
@@ -188,11 +169,26 @@ export class ImageService {
           finishLoading();
         }
       };
-  
+
       img.src = imageUrl;
     };
-  
+
     reader.readAsDataURL(file);
+  }
+
+  createGeorefImage(file: File, imageUrl: string): GeorefImage {
+    return {
+      filenameOriginal: file.name,
+      filePath: imageUrl,
+      status: GeorefStatus.PENDING,
+      settings: {
+        srid: SRID.WEB_MERCATOR,
+        resamplingMethod: ResamplingMethod.NEAREST,
+        compressionType: CompressionType.NONE,
+        transformationType: TransformationType.POLYNOMIAL_1,
+        outputFilename: 'output_georef'
+      }
+    };
   }
 
   createImageLayer(): ImageLayer<ImageSource> {
@@ -258,19 +254,25 @@ export class ImageService {
   }
 
   applyLayerStyle(index: number): Style {
-    const style = this.gcpService.gcpStyles[(index - 1) % 10];
-    style.setText(
-      new Text({
+    const baseStyle = this.gcpService.gcpStyles[(index - 1) % 10]; // Récupère la base
+  
+    // Crée une copie indépendante du style pour éviter les conflits
+    const newStyle = new Style({
+      image: baseStyle.getImage()!, // Réutilise l'icône du style
+      fill: baseStyle.getFill()!,
+      stroke: baseStyle.getStroke()!,
+      text: new Text({
         text: index.toString(),
-        font: '12px Arial', // Augmentez la taille de la police si nécessaire
+        font: '12px Arial',
         fill: new Fill({ color: colors[(index - 1) % 10].text }),
-        textAlign: 'center', // Centre le texte horizontalement
-        textBaseline: 'middle', // Centre le texte verticalement
-        offsetY: 0 // Pas de décalage vertical
+        textAlign: 'center',
+        textBaseline: 'middle',
+        offsetY: 0
       })
-    );
-    return style;
-  }
+    });
+  
+    return newStyle;
+  }  
 
   updateLayerStyle(index: number, updatedGcpLayer: VectorLayer): void {
     const updatedStyle = this.applyLayerStyle(index);

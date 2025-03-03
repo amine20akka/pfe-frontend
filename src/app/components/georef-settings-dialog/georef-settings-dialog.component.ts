@@ -39,11 +39,11 @@ export class GeorefSettingsDialogComponent {
     @Inject(MAT_DIALOG_DATA) public data: GeorefSettings
   ) {
     this.georefForm = this.fb.group({
-      transformation_type: [data.transformation_type, Validators.required],
+      transformationType: [data.transformationType, Validators.required],
       srid: [data.srid, Validators.required],
-      resampling_method: [data.resampling_method, Validators.required],
-      compression: [data.compression, Validators.required],
-      output_filename: [data.output_filename, [Validators.required, Validators.pattern(/^[a-zA-Z0-9_-]+$/)]],
+      resamplingMethod: [data.resamplingMethod, Validators.required],
+      compressionType: [data.compressionType, Validators.required],
+      outputFilename: [data.outputFilename, [Validators.required, Validators.pattern(/^[a-zA-Z0-9_-]+$/)]],
     });
   }
 

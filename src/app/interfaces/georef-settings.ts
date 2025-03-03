@@ -1,9 +1,9 @@
 export interface GeorefSettings {
-    transformation_type: TransformationType;
+    transformationType: TransformationType;
     srid: SRID;
-    resampling_method: ResamplingMethod;
-    compression: CompressionType;
-    output_filename: string;
+    resamplingMethod: ResamplingMethod;
+    compressionType: CompressionType;
+    outputFilename: string;
 }
 
 export enum TransformationType {

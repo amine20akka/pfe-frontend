@@ -33,6 +33,7 @@ export class ToolbarComponent {
   srid: SRID = SRID.WEB_MERCATOR;
   resamplingMethod: ResamplingMethod = ResamplingMethod.NEAREST;
   compressionType: CompressionType = CompressionType.NONE;
+  outputFilename = '';
 
   constructor(
     private georefService: GeorefService, 
@@ -54,7 +55,9 @@ export class ToolbarComponent {
     this.georefSettingsService.compressionType$.subscribe((type) => {
       this.compressionType = type;
     })
-    
+    this.georefSettingsService.outputFilename$.subscribe((filename) => {
+      this.outputFilename = filename;
+    })
   }
 
   get isAddingGCP(): boolean {
@@ -84,16 +87,18 @@ export class ToolbarComponent {
     const dialogRef = this.dialog.open(GeorefSettingsDialogComponent, {
       width: '500px',
       data: {
-        transformation_type: this.transformationType,
+        transformationType: this.transformationType,
         srid: this.srid,
-        resampling_method: this.resamplingMethod,
-        compression: this.compressionType
+        resamplingMethod: this.resamplingMethod,
+        compressionType: this.compressionType,
+        outputFilename: this.outputFilename
       }
     });
   
     dialogRef.afterClosed().subscribe((result: GeorefSettings) => {
       if (result) {
         this.georefSettingsService.updateSettings(result);
+        this.gcpService.updateResiduals();
         console.log('Paramètres de géoréférencement mis à jour:', result);
       }
     });
@@ -144,4 +149,26 @@ export class ToolbarComponent {
       }
     });
   }
+
+  georeferenceImage(): void {
+    const gcpData = this.gcpService.getGCPs(); // Récupère les GCPs
+    const requestData = {
+      transformationType: this.transformationType,
+      srid: this.srid,
+      resamplingMethod: this.resamplingMethod,
+      compressionType: this.compressionType,
+      outputFilename: this.outputFilename,
+      gcps: gcpData
+    };
+  
+    this.georefService.georeferenceImage(requestData).subscribe(
+      (response) => {
+        console.log('Géoréférencement terminé avec succès !', response);
+        // TODO: Afficher le résultat sur la carte
+      },
+      (error) => {
+        console.error('Erreur lors du géoréférencement', error);
+      }
+    );
+  }  
 }

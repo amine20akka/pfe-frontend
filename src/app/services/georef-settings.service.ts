@@ -12,7 +12,7 @@ export class GeorefSettingsService {
   private sridSubject = new BehaviorSubject<SRID>(SRID.WEB_MERCATOR);
   private resamplingMethodSubject = new BehaviorSubject<ResamplingMethod>(ResamplingMethod.NEAREST);
   private compressionTypeSubject = new BehaviorSubject<CompressionType>(CompressionType.NONE);
-  private outputFilenameSubject = new BehaviorSubject<string>('output_georef.tif');
+  private outputFilenameSubject = new BehaviorSubject<string>('');
 
   // Observables accessibles depuis toute l'application
   transformationType$ = this.transformationTypeSubject.asObservable();
@@ -44,16 +44,16 @@ export class GeorefSettingsService {
 
   // Méthode pour mettre à jour tous les paramètres en une seule fois
   updateSettings(settings: { 
-    transformation_type: TransformationType, 
+    transformationType: TransformationType, 
     srid: SRID, 
-    resampling_method: ResamplingMethod, 
-    compression: CompressionType,
-    output_filename: string
+    resamplingMethod: ResamplingMethod, 
+    compressionType: CompressionType,
+    outputFilename: string
   }): void {
-    this.setTransformationType(settings.transformation_type);
+    this.setTransformationType(settings.transformationType);
     this.setSrid(settings.srid);
-    this.setResamplingMethod(settings.resampling_method);
-    this.setCompression(settings.compression);
-    this.setOutputFilename(settings.output_filename);
+    this.setResamplingMethod(settings.resamplingMethod);
+    this.setCompression(settings.compressionType);
+    this.setOutputFilename(settings.outputFilename);
   }
 }

@@ -43,11 +43,11 @@ export class GeorefComponent implements OnInit, OnDestroy {
   cursorY = 0;
   private coordSub!: Subscription;
   georefSettings: GeorefSettings = {
-    transformation_type: TransformationType.POLYNOMIAL_1,
+    transformationType: TransformationType.POLYNOMIAL_1,
     srid: SRID.WEB_MERCATOR,
-    resampling_method: ResamplingMethod.NEAREST,
-    compression: CompressionType.NONE,
-    output_filename: '',
+    resamplingMethod: ResamplingMethod.NEAREST,
+    compressionType: CompressionType.NONE,
+    outputFilename: '',
   };
 
   constructor(
@@ -65,11 +65,11 @@ export class GeorefComponent implements OnInit, OnDestroy {
     });
 
     // Observer les paramètres de géoréférencement
-    this.georefSettingsService.transformationType$.subscribe(type => this.georefSettings.transformation_type = type);
+    this.georefSettingsService.transformationType$.subscribe(type => this.georefSettings.transformationType = type);
     this.georefSettingsService.srid$.subscribe(srid => this.georefSettings.srid = srid);
-    this.georefSettingsService.resamplingMethod$.subscribe(method => this.georefSettings.resampling_method = method);
-    this.georefSettingsService.compressionType$.subscribe(compression => this.georefSettings.compression = compression);
-    this.georefSettingsService.outputFilename$.subscribe(filename => this.georefSettings.output_filename = filename);
+    this.georefSettingsService.resamplingMethod$.subscribe(method => this.georefSettings.resamplingMethod = method);
+    this.georefSettingsService.compressionType$.subscribe(compression => this.georefSettings.compressionType = compression);
+    this.georefSettingsService.outputFilename$.subscribe(filename => this.georefSettings.outputFilename = filename);
   }
 
   ngOnDestroy() {

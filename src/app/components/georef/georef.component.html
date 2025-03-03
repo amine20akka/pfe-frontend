@@ -13,16 +13,16 @@
     <div class="georef-info-container" [class.hidden]="!isGeorefActive">
         <!-- Paramètres de géoréférencement en ligne -->
         <div class="georef-parameters">
-            {{ georefSettings.transformation_type }}
+            {{ georefSettings.transformationType }}
         </div>
         <div class="georef-parameters">
             EPSG:{{ georefSettings.srid }}
         </div>
         <div class="georef-parameters">
-            Ré-échantillonnage: {{ georefSettings.resampling_method }}
+            Ré-échantillonnage: {{ georefSettings.resamplingMethod }}
         </div>
         <div class="georef-parameters">
-            Compression: {{ georefSettings.compression }}
+            Compression: {{ georefSettings.compressionType }}
         </div>
 
         <!-- Coordonnées du curseur -->

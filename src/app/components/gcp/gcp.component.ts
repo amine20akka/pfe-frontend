@@ -103,15 +103,6 @@ export class GcpComponent implements OnInit, OnDestroy {
         }
         this.updateGcpLayerVisibility();
       }, 300);
-      
-      // Update residual values
-      // if (gcps.length >= 3) {
-      //   this.gcpService.updateGcpsAndResiduals();
-      // } else {
-      //   this.dataSource.data.forEach((gcp) => {
-      //     gcp.residual = undefined;
-      //   })
-      // }
       console.log('GCPs Data : ', gcps);
       console.log('GCPs Selection : ', this.selection);
     });

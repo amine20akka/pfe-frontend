@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import { SidenavComponent } from './shared/components/sidenav/sidenav.component';
+import { SidenavComponent } from './components/sidenav/sidenav.component';
 import { MapComponent } from './components/map/map.component';
 import { GeorefComponent } from "./components/georef/georef.component";
 

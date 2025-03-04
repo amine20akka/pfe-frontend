@@ -1,15 +1,27 @@
 .toolbar {
     display: flex;
     flex-direction: row;
-    justify-content: end;
     align-items: center;
-    height: 10%;
+    justify-content: space-between;
+    height: 54px;
     overflow: hidden;
     background-color: #f3f3f3;
 }
 
+#close-button {
+    display: flex;
+    align-items: center; /* Center vertically */
+    margin-right: auto; /* Push other elements to the right */
+}
+
 .toolbar-section {
     display: flex;
+    align-items: center;
+}
+
+/* Optional: Add some spacing between toolbar sections */
+.toolbar-section + .toolbar-section {
+    margin-left: 10px;
 }
 
 #georef-button {
@@ -17,7 +29,8 @@
     background: linear-gradient(45deg, #FF6A00, #ffad49); /* Dégradé proche du logo Orange */
     color: white;
     margin-left: 10px;
-    margin-top: 2px;
+    margin-bottom: 3px;
+    align-items: center;
     height: 34px;
     font-size: small;
     border: none;
@@ -30,12 +43,6 @@
     box-shadow: 0px 4px 10px rgba(255, 138, 0, 0.6);
 }
 
-#close-button {
-    display: flex;
-    flex-direction: row;
-    justify-self: start;
-    margin-right: 94px;
-}
 
 #georef-icon {
     overflow: hidden;

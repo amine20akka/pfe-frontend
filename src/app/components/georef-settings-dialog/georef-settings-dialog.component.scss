@@ -1,7 +1,7 @@
-/* Styles globaux du dialogue */
 .geo-dialog {
-  max-width: 500px;
   width: 100%;
+  max-width: 750px;
+  box-sizing: border-box;
 }
 
 .geo-dialog-title {
@@ -13,20 +13,20 @@
   margin-bottom: 20px;
 }
 
-/* Styles du formulaire */
-.settings-form {
+.settings-container {
   display: flex;
-  flex-direction: column;
-  padding: 5px 10px 15px;
+  gap: 20px;
+  width: 100%;
 }
 
-/* Groupes de paramètres */
 .settings-group {
-  margin-bottom: 20px;
-  padding: 15px;
+  flex: 1;
+  padding: 12px;
   border-radius: 6px;
   background-color: #eff3f7;
   border-left: 4px solid #3f51b5;
+  box-sizing: border-box;
+  min-width: 0; /* Permet aux flex items de rétrécir en dessous de leur taille de contenu */
 }
 
 .settings-group-title {
@@ -36,17 +36,13 @@
   margin-bottom: 18px;
 }
 
-/* Styles des champs */
 mat-form-field {
-  margin-bottom: 18px;
+  margin-bottom: 14px;
   width: 100%;
+  box-sizing: border-box;
+  font-size: small;
 }
 
-mat-form-field:last-child {
-  margin-bottom: 10px;
-}
-
-/* Style des options dans les select */
 .option-description {
   font-size: 12px;
   color: #757575;
@@ -54,13 +50,14 @@ mat-form-field:last-child {
   margin-top: 2px;
 }
 
-/* Style des boutons */
 mat-dialog-actions {
   display: flex;
   justify-content: space-between;
   margin-top: 15px;
   padding: 12px 14px;
   border-top: 1px solid #e0e0e0;
+  box-sizing: border-box;
+  width: 100%;
 }
 
 .cancel-button {
@@ -68,23 +65,22 @@ mat-dialog-actions {
 }
 
 .cancel-button:hover {
-  background-color: #f4f4f4;
+  background-color: #f4f4f4 !important;
 }
 
 .save-button {
   margin-left: 10px;
   min-width: 120px;
-  color: #3f51b5;
+  color: #3f51b5 !important;
 }
 
-/* Responsive */
-@media (max-width: 600px) {
-  .settings-form {
-    padding: 0;
+@media (max-width: 700px) {
+  .settings-container {
+    flex-direction: column;
+    gap: 15px;
   }
   
   .settings-group {
-    padding: 12px;
-    margin-bottom: 15px;
+    padding: 10px;
   }
 }

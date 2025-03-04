@@ -124,7 +124,7 @@ export class ImageService {
   private handleFile(file: File): void {
     const allowedExtensions = ['png', 'jpg', 'jpeg', 'tiff', 'tif'];
     const fileExtension = file.name.split('.').pop()?.toLowerCase();
-    const maxSize = 1 * 1024 * 1024; // 1 Mo
+    const maxSize = 5 * 1024 * 1024; // 5 Mo
 
     if (!fileExtension || !allowedExtensions.includes(fileExtension)) {
       console.error('Format non supporté');
@@ -132,7 +132,7 @@ export class ImageService {
     }
 
     if (file.size > maxSize) {
-      console.error('Fichier trop volumineux (max 1 Mo)');
+      console.error('Fichier trop volumineux (max 5 Mo)');
       return;
     }
 
@@ -150,6 +150,7 @@ export class ImageService {
         const finishLoading = () => {
           this.isLoading = false;
           this.isImageLoaded = true;
+          this.updateGeorefStatus(GeorefStatus.UPLOADED);
           this.imageWidth = img.width;
           this.imageHeight = img.height;
           this.extent = [0, 0, this.imageWidth, this.imageHeight];
@@ -158,7 +159,6 @@ export class ImageService {
 
           // Envoi de l'image au Subject pour mise à jour
           this.georefImageSubject.next(newGeorefImage);
-          console.log(this.georefImageSubject.getValue());
         };
 
         // Vérifier si le chargement a duré au moins 1s
@@ -178,8 +178,9 @@ export class ImageService {
 
   createGeorefImage(file: File, imageUrl: string): GeorefImage {
     return {
+      imageFile: file,
       filenameOriginal: file.name,
-      filePath: imageUrl,
+      originalFilePath: imageUrl,
       status: GeorefStatus.PENDING,
       settings: {
         srid: SRID.WEB_MERCATOR,
@@ -194,7 +195,7 @@ export class ImageService {
   createImageLayer(): ImageLayer<ImageSource> {
     this.imageLayer = new ImageLayer({
       source: new Static({
-        url: this.georefImageSubject.getValue().filePath!,
+        url: this.georefImageSubject.getValue().originalFilePath!,
         imageExtent: this.extent,
         projection: new Projection({ code: 'PIXEL', units: 'pixels', extent: this.extent })
       })
@@ -255,7 +256,7 @@ export class ImageService {
 
   applyLayerStyle(index: number): Style {
     const baseStyle = this.gcpService.gcpStyles[(index - 1) % 10]; // Récupère la base
-  
+
     // Crée une copie indépendante du style pour éviter les conflits
     const newStyle = new Style({
       image: baseStyle.getImage()!, // Réutilise l'icône du style
@@ -270,9 +271,9 @@ export class ImageService {
         offsetY: 0
       })
     });
-  
+
     return newStyle;
-  }  
+  }
 
   updateLayerStyle(index: number, updatedGcpLayer: VectorLayer): void {
     const updatedStyle = this.applyLayerStyle(index);
@@ -363,5 +364,11 @@ export class ImageService {
         feature.setGeometry(new Point([sourceX, sourceY + this.imageHeight]));
       }
     }
+  }
+
+  updateGeorefStatus(status: GeorefStatus): void {
+    const currentImage = this.georefImageSubject.getValue();
+    currentImage.status = status;
+    this.georefImageSubject.next(currentImage);
   }
 }

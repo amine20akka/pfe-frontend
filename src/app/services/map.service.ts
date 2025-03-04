@@ -5,7 +5,7 @@ import View from 'ol/View';
 import { defaults as defaultControls } from 'ol/control';
 import { defaults as defaultInteractions } from 'ol/interaction';
 import TileLayer from 'ol/layer/Tile';
-import OSM from 'ol/source/OSM';
+// import OSM from 'ol/source/OSM';
 import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { GcpDialogComponent } from '../components/gcp-dialog/gcp-dialog.component';
 import MapBrowserEvent from 'ol/MapBrowserEvent';
@@ -15,12 +15,16 @@ import VectorSource from 'ol/source/Vector';
 import Feature from 'ol/Feature';
 import { Point } from 'ol/geom';
 import { ImageService } from './image.service';
+import { ImageStatic, XYZ } from 'ol/source';
+import { Projection } from 'ol/proj';
+import ImageLayer from 'ol/layer/Image';
+import { GeoTiffMetadata } from '../interfaces/geotiff-metadata';
 
 @Injectable({
   providedIn: 'root'
 })
 export class MapService {
-  
+
   private map!: OLMap;
   private OSMLayer: TileLayer = new TileLayer();
   private mapSubject = new BehaviorSubject<OLMap | null>(null);
@@ -53,7 +57,7 @@ export class MapService {
           // Reopen the dialog with selected coordinates
           const dialogRef = this.openGcpDialog(coords.x, coords.y);
           this.isMapSelectionSubject.next(false); // Reset selection state
-          
+
           dialogRef.afterClosed().subscribe(result => {
             if (result) {
               const newGcp = this.gcpService.createGCP(
@@ -72,10 +76,20 @@ export class MapService {
       });
   }
 
-  createOSMLayer(): TileLayer {
+  // createOSMLayer(): TileLayer {
+  //   this.OSMLayer = new TileLayer({
+  //     source: new OSM()
+  //   })
+  //   return this.OSMLayer;
+  // }
+
+  createSatelliteLayer(): TileLayer {
     this.OSMLayer = new TileLayer({
-      source: new OSM()
-    })
+      source: new XYZ({
+        url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+        attributions: 'Tiles © Esri — Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+      })
+    });
     return this.OSMLayer;
   }
 
@@ -84,7 +98,7 @@ export class MapService {
       this.map = new OLMap({
         target: target,
         interactions: defaultInteractions(),
-        layers: [ this.createOSMLayer() ],
+        layers: [this.createSatelliteLayer()],
         view: new View({
           projection: 'EPSG:3857', // Projection Web Mercator
           center: [-59598.84, 5339845.08],
@@ -231,7 +245,7 @@ export class MapService {
         const clickedCoord = this.map.getCoordinateFromPixel(event.pixel);
         // Convert coordinates if necessary
         observer.next({ x: clickedCoord[0], y: clickedCoord[1] });
-        
+
         if (this.mapLayers.size === this.imageLayersLength) {
           this.updateGcpPosition(this.mapLayers.size, clickedCoord[0], clickedCoord[1]);
         } else {
@@ -262,6 +276,29 @@ export class MapService {
     for (; this.mapLayers.size > 0;) {
       this.deleteGcpLayer(this.mapLayers.size);
     }
+  }
+
+  addGeoreferencedImageToMap(fileUrl: string, metadata: GeoTiffMetadata['metadata']) {
+    // Créer une projection personnalisée
+    const projection = new Projection({
+      code: metadata && metadata.projection && metadata.projection.epsgCode ? 'EPSG:'.concat(metadata.projection.epsgCode) : 'EPSG:3857',
+      extent: [metadata!.extent.minX, metadata!.extent.minY, metadata!.extent.maxX, metadata!.extent.maxY],
+    });
+
+    // Créer la couche image
+    const georeferencedImageLayer = new ImageLayer({
+      source: new ImageStatic({
+        url: fileUrl,
+        projection: projection,
+        imageExtent: [metadata!.extent.minX, metadata!.extent.minY, metadata!.extent.maxX, metadata!.extent.maxY],
+      })
+    });
+
+    georeferencedImageLayer.setZIndex(2000);
+    georeferencedImageLayer.setVisible(true);
+
+    // Ajouter la couche à la carte
+    this.map.addLayer(georeferencedImageLayer);
   }
 
 }

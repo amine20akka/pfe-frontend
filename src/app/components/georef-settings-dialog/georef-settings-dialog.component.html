@@ -2,72 +2,77 @@
   <h2 mat-dialog-title class="geo-dialog-title">Paramètres de géoréférencement</h2>
   <mat-dialog-content>
     <form [formGroup]="georefForm" class="settings-form">
-      <div class="settings-group">
-        <div class="settings-group-title">Paramètres de transformation</div>
-        <mat-form-field appearance="outline">
-          <mat-label>Type de transformation</mat-label>
-          <mat-select formControlName="transformationType">
-            <mat-option *ngFor="let type of transformationTypes" [value]="type">
-              {{ type }}
-            </mat-option>
-          </mat-select>
-          <mat-error *ngIf="georefForm.controls['transformationType'].invalid">
-            Type de transformation requis !
-          </mat-error>
-        </mat-form-field>
+      <!-- Conteneur pour les deux groupes -->
+      <div class="settings-container">
+        <!-- Groupe 1 : Paramètres de transformation -->
+        <div class="settings-group">
+          <div class="settings-group-title">Paramètres de transformation</div>
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Type de transformation</mat-label>
+            <mat-select formControlName="transformationType">
+              <mat-option *ngFor="let type of transformationTypes" [value]="type">
+                {{ type }}
+              </mat-option>
+            </mat-select>
+            <mat-error *ngIf="georefForm.controls['transformationType'].invalid">
+              Type de transformation requis !
+            </mat-error>
+          </mat-form-field>
 
-        <mat-form-field appearance="outline">
-          <mat-label>Système de coordonnées cible</mat-label>
-          <mat-select formControlName="srid">
-            <mat-option *ngFor="let option of sridOptions" [value]="option.value">
-              {{ option.value }}
-              <span class="option-description" *ngIf="option.viewValue">
-                {{ option.viewValue }}
-              </span>
-            </mat-option>
-          </mat-select>
-          <mat-error *ngIf="georefForm.controls['srid'].invalid">
-            Sélectionnez un SRID !
-          </mat-error>
-        </mat-form-field>
-      </div>
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Système de coordonnées cible</mat-label>
+            <mat-select formControlName="srid">
+              <mat-option *ngFor="let option of sridOptions" [value]="option.value">
+                {{ option.value }}
+                <span class="option-description" *ngIf="option.viewValue">
+                  {{ option.viewValue }}
+                </span>
+              </mat-option>
+            </mat-select>
+            <mat-error *ngIf="georefForm.controls['srid'].invalid">
+              Sélectionnez un SRID !
+            </mat-error>
+          </mat-form-field>
+        </div>
 
-      <div class="settings-group">
-        <div class="settings-group-title">Paramètres en sortie</div>
-        <mat-form-field appearance="outline">
-          <mat-label>Méthode de ré-échantillonnage</mat-label>
-          <mat-select formControlName="resamplingMethod">
-            <mat-option *ngFor="let method of resamplingMethods" [value]="method">
-              {{ method }}
-            </mat-option>
-          </mat-select>
-          <mat-error *ngIf="georefForm.controls['resamplingMethod'].invalid">
-            Sélectionnez une méthode de ré-échantillonnage !
-          </mat-error>
-        </mat-form-field>
+        <!-- Groupe 2 : Paramètres en sortie -->
+        <div class="settings-group">
+          <div class="settings-group-title">Paramètres en sortie</div>
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Méthode de ré-échantillonnage</mat-label>
+            <mat-select formControlName="resamplingMethod">
+              <mat-option *ngFor="let method of resamplingMethods" [value]="method">
+                {{ method }}
+              </mat-option>
+            </mat-select>
+            <mat-error *ngIf="georefForm.controls['resamplingMethod'].invalid">
+              Sélectionnez une méthode de ré-échantillonnage !
+            </mat-error>
+          </mat-form-field>
 
-        <mat-form-field appearance="outline">
-          <mat-label>Type de compression</mat-label>
-          <mat-select formControlName="compressionType">
-            <mat-option *ngFor="let comp of compressionTypes" [value]="comp">
-              {{ comp }}
-            </mat-option>
-          </mat-select>
-          <mat-error *ngIf="georefForm.controls['compressionType'].invalid">
-            Sélectionnez un type de compression !
-          </mat-error>
-        </mat-form-field>
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Type de compression</mat-label>
+            <mat-select formControlName="compressionType">
+              <mat-option *ngFor="let comp of compressionTypes" [value]="comp">
+                {{ comp }}
+              </mat-option>
+            </mat-select>
+            <mat-error *ngIf="georefForm.controls['compressionType'].invalid">
+              Sélectionnez un type de compression !
+            </mat-error>
+          </mat-form-field>
 
-        <mat-form-field appearance="outline">
-          <mat-label>Fichier en sortie</mat-label>
-          <input matInput formControlName="outputFilename" placeholder="Nom du fichier"/>
-          <mat-error *ngIf="georefForm.controls['outputFilename'].hasError('required')">
-            Le nom du fichier est requis !
-          </mat-error>
-          <mat-error *ngIf="georefForm.controls['outputFilename'].hasError('pattern')">
-            Le nom ne peut contenir que des lettres, chiffres, tirets (-) et underscores (_).
-          </mat-error>
-        </mat-form-field>
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Fichier en sortie</mat-label>
+            <input matInput formControlName="outputFilename" placeholder="Nom du fichier"/>
+            <mat-error *ngIf="georefForm.controls['outputFilename'].hasError('required')">
+              Le nom du fichier est requis !
+            </mat-error>
+            <mat-error *ngIf="georefForm.controls['outputFilename'].hasError('pattern')">
+              Le nom ne peut contenir que des lettres, chiffres, tirets (-) et underscores (_).
+            </mat-error>
+          </mat-form-field>
+        </div>
       </div>
     </form>
   </mat-dialog-content>

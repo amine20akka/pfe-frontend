@@ -18,7 +18,7 @@ export enum SRID {
 }
 
 export enum ResamplingMethod {
-    NEAREST = 'Plus proche voisin',
+    NEAREST = 'Nearest',
     BILINEAR = 'Bilinear',
     CUBIC = 'Cubic',
     LANCZOS = 'Lanczos'

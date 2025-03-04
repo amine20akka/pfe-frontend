@@ -14,6 +14,8 @@ import { CompressionType, GeorefSettings, ResamplingMethod, SRID, Transformation
 import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/confirm-dialog.component';
 import { ConfirmDialogData } from '../../interfaces/confirm-dialog-data';
 import { GeorefSettingsService } from '../../services/georef-settings.service';
+import { GeorefRequestData } from '../../interfaces/georef-request-data';
+import { GeorefImage, GeorefStatus } from '../../interfaces/georef-image';
 
 @Component({
   selector: 'app-toolbar',
@@ -34,6 +36,7 @@ export class ToolbarComponent {
   resamplingMethod: ResamplingMethod = ResamplingMethod.NEAREST;
   compressionType: CompressionType = CompressionType.NONE;
   outputFilename = '';
+  private georefImage!: GeorefImage;
 
   constructor(
     private georefService: GeorefService, 
@@ -56,7 +59,13 @@ export class ToolbarComponent {
       this.compressionType = type;
     })
     this.georefSettingsService.outputFilename$.subscribe((filename) => {
-      this.outputFilename = filename;
+      if (filename) {
+        this.outputFilename = filename;
+        this.georefImage.filenameGeoreferenced = filename;
+      }
+    })
+    this.imageService.georefImage$.subscribe((image) => {
+      this.georefImage = image;
     })
   }
 
@@ -85,7 +94,6 @@ export class ToolbarComponent {
 
   openGeorefSettings(): void {
     const dialogRef = this.dialog.open(GeorefSettingsDialogComponent, {
-      width: '500px',
       data: {
         transformationType: this.transformationType,
         srid: this.srid,
@@ -151,24 +159,48 @@ export class ToolbarComponent {
   }
 
   georeferenceImage(): void {
-    const gcpData = this.gcpService.getGCPs(); // Récupère les GCPs
-    const requestData = {
-      transformationType: this.transformationType,
-      srid: this.srid,
-      resamplingMethod: this.resamplingMethod,
-      compressionType: this.compressionType,
-      outputFilename: this.outputFilename,
-      gcps: gcpData
+    const gcpData = this.gcpService.getGCPs();
+    
+    const requestData: GeorefRequestData = {
+      settings: {
+        transformationType: this.transformationType,
+        srid: this.srid,
+        resamplingMethod: this.resamplingMethod,
+        compressionType: this.compressionType,
+        outputFilename: this.outputFilename
+      },
+      gcps: gcpData,
+      imageFile: this.georefImage.imageFile  // Ajoutez le fichier à la requête
     };
   
-    this.georefService.georeferenceImage(requestData).subscribe(
-      (response) => {
-        console.log('Géoréférencement terminé avec succès !', response);
-        // TODO: Afficher le résultat sur la carte
+    // Mettez à jour le statut
+    this.imageService.updateGeorefStatus(GeorefStatus.PROCESSING);
+    
+    this.georefService.georeferenceImage(requestData).subscribe({
+      next: (response) => {
+        // Convertir le Blob en File
+        this.georefImage.resultFilePath = URL.createObjectURL(response);
+        const file = new File([response], this.georefImage.filenameGeoreferenced!.concat('.tiff'), {
+          type: 'image/tiff'
+        });
+        
+        this.georefImage.outputFile = file;
+        this.imageService.updateGeorefStatus(GeorefStatus.COMPLETED);
+    
+        // Récupérer les métadonnées
+        this.georefService.getGeoTiffMetadata(this.georefImage.filenameGeoreferenced!).subscribe({
+          next: (response) => {
+            if (response.metadata) {
+              this.mapService.addGeoreferencedImageToMap(this.georefImage.resultFilePath!, response.metadata);
+            }
+          }
+        });
+     
+        console.log('Géoréférencement terminé avec succès !', this.georefImage);
       },
-      (error) => {
+      error: (error) => {
         console.error('Erreur lors du géoréférencement', error);
       }
-    );
-  }  
+    });
+  }
 }

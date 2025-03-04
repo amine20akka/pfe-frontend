@@ -5,7 +5,7 @@ import Style from 'ol/style/Style';
 import CircleStyle from 'ol/style/Circle';
 import Fill from 'ol/style/Fill';
 import { colors } from '../shared/colors';
-import { TransformationType, GeorefSettings, CompressionType, ResamplingMethod, SRID } from '../interfaces/georef-settings';
+import { TransformationType } from '../interfaces/georef-settings';
 import { GeorefSettingsService } from './georef-settings.service';
 
 @Injectable({
@@ -26,37 +26,15 @@ export class GcpService {
   private totalRMSE = 0; // RMSE global
 
   // Paramètres de géoréférencement par défaut
-  private georefSettings: GeorefSettings = {
-    transformationType: TransformationType.POLYNOMIAL_1,
-    srid: SRID.WEB_MERCATOR, // WGS84 - WEB_MERCATOR par défaut
-    resamplingMethod: ResamplingMethod.BILINEAR,
-    compressionType: CompressionType.NONE,
-    outputFilename: 'output.tif'
-  };
+  private transformationType: TransformationType = TransformationType.POLYNOMIAL_1;
 
   constructor(
     private georefSettingsService: GeorefSettingsService
   ) {
     this.initGcpStyles();
     this.georefSettingsService.transformationType$.subscribe((type) => {
-      this.georefSettings.transformationType = type;
+      this.transformationType = type;
     })
-    this.georefSettingsService.srid$.subscribe((srid) => {
-      this.georefSettings.srid = srid;
-    })
-    this.georefSettingsService.resamplingMethod$.subscribe((method) => {
-      this.georefSettings.resamplingMethod = method;
-    })
-    this.georefSettingsService.compressionType$.subscribe((type) => {
-      this.georefSettings.compressionType = type;
-    })
-    this.georefSettingsService.outputFilename$.subscribe((filename) => {
-      this.georefSettings.outputFilename = filename;
-    })
-  }
-
-  getGeorefSettings(): GeorefSettings {
-    return this.georefSettings;
   }
 
   createGCP(sourceX: number, sourceY: number, mapX: number, mapY: number): GCP {
@@ -88,11 +66,8 @@ export class GcpService {
 
   addGcpToList(gcp: GCP): void {
     this.gcps.push(gcp);
-    if (this.hasEnoughGCPs()) {
-      this.calculateTransformation();
-      this.calculateResiduals();
-    }
     this.gcpsSubject.next(this.gcps);
+    this.updateResiduals();
   }
 
   deleteGcpData(index: number): void {
@@ -129,7 +104,7 @@ export class GcpService {
    * Détermine le nombre minimum de points nécessaires en fonction du type de transformation
    */
   private getMinimumPointsRequired(): number {
-    switch (this.georefSettings.transformationType) {
+    switch (this.transformationType) {
       case TransformationType.POLYNOMIAL_1:
         return 3; // Polynomiale du 1er degré (affine) : 3 points minimum
       case TransformationType.POLYNOMIAL_2:
@@ -150,7 +125,7 @@ export class GcpService {
     }
 
     try {
-      switch (this.georefSettings.transformationType) {
+      switch (this.transformationType) {
         case TransformationType.POLYNOMIAL_1:
           this.calculatePolynomial1Transformation();
           break;
@@ -370,7 +345,7 @@ export class GcpService {
     let transformedX = 0;
     let transformedY = 0;
 
-    switch (this.georefSettings.transformationType) {
+    switch (this.transformationType) {
       case TransformationType.POLYNOMIAL_1:
         transformedX = coeffsX[0] + coeffsX[1] * sourceX + coeffsX[2] * sourceY;
         transformedY = coeffsY[0] + coeffsY[1] * sourceX + coeffsY[2] * sourceY;
@@ -411,8 +386,8 @@ export class GcpService {
   }
 
   /**
-   * Calcule les résidus pour chaque point de contrôle
-   */
+ * Calcule les résidus pour chaque point de contrôle en pixels.
+ */
   calculateResiduals(): void {
     if (this.transformCoefficients.length === 0 || !this.hasEnoughGCPs()) {
       return;
@@ -426,25 +401,122 @@ export class GcpService {
         return;
       }
 
-      // Calculer les coordonnées transformées
-      const transformed = this.transformCoordinates(gcp.sourceX, gcp.sourceY);
+      // Calculer les coordonnées transformées (en pixels)
+      const transformedPixel = this.inverseTransformCoordinates(gcp.mapX, gcp.mapY);
 
-      // Calculer l'erreur euclidienne (résidu)
-      const dx = transformed.x - gcp.mapX;
-      const dy = transformed.y - gcp.mapY;
+      if (!transformedPixel) {
+        console.warn("Impossible d'inverser la transformation pour ce GCP.");
+        return;
+      }
+
+      // Calculer l'erreur euclidienne (résidu) en pixels
+      const dx = transformedPixel.x - gcp.sourceX;
+      const dy = transformedPixel.y - gcp.sourceY; // Utilisez invertedSourceY si nécessaire
       const residual = Math.sqrt(dx * dx + dy * dy);
 
       // Mettre à jour le résidu du point
-      gcp.residual = parseFloat(residual.toFixed(3));
+      gcp.residual = parseFloat(residual.toFixed(4));
 
       // Ajouter au carré total des résidus
       sumSquaredResiduals += residual * residual;
     });
 
-    // Calculer le RMSE global
+    // Calculer le RMSE global en pixels
     this.totalRMSE = Math.sqrt(sumSquaredResiduals / this.gcps.length);
   }
-  
+
+  /**
+   * Inverse la transformation polynomiale pour convertir des coordonnées géographiques en coordonnées pixel.
+   * @param mapX Coordonnée X géographique
+   * @param mapY Coordonnée Y géographique
+   * @returns Coordonnées en pixels ou null si l'inversion échoue
+   */
+  private inverseTransformCoordinates(mapX: number, mapY: number): { x: number, y: number } | null {
+    const maxIterations = 100; // Nombre maximum d'itérations pour la méthode de Newton-Raphson
+    const tolerance = 1e-6; // Tolérance pour la convergence
+
+    // Initialisation des valeurs de départ (guess)
+    let guessX = 0;
+    let guessY = 0;
+
+    for (let iteration = 0; iteration < maxIterations; iteration++) {
+      // Calculer les coordonnées géographiques correspondantes aux valeurs de départ
+      const transformed = this.transformCoordinates(guessX, guessY);
+
+      // Calculer les erreurs
+      const errorX = transformed.x - mapX;
+      const errorY = transformed.y - mapY;
+
+      // Vérifier la convergence
+      if (Math.abs(errorX) < tolerance && Math.abs(errorY) < tolerance) {
+        return { x: guessX, y: guessY };
+      }
+
+      // Calculer la matrice jacobienne
+      const jacobian = this.calculateJacobian(guessX, guessY);
+
+      // Calculer les dérivées partielles
+      const determinant = jacobian[0][0] * jacobian[1][1] - jacobian[0][1] * jacobian[1][0];
+      if (determinant === 0) {
+        console.error("La matrice jacobienne est singulière, inversion impossible.");
+        return null;
+      }
+
+      const deltaGuessX =
+        (jacobian[1][1] * errorX - jacobian[0][1] * errorY) / determinant;
+      const deltaGuessY =
+        (-jacobian[1][0] * errorX + jacobian[0][0] * errorY) / determinant;
+
+      // Mettre à jour les valeurs de départ
+      guessX -= deltaGuessX;
+      guessY -= deltaGuessY;
+    }
+
+    // Si la convergence n'est pas atteinte après maxIterations itérations
+    console.warn("Convergence non atteinte lors de l'inversion de la transformation.");
+    return null;
+  }
+
+  /**
+   * Calcule la matrice jacobienne pour la transformation polynomiale.
+   * @param x Coordonnée X en pixels
+   * @param y Coordonnée Y en pixels
+   * @returns Matrice jacobienne
+   */
+  private calculateJacobian(x: number, y: number): number[][] {
+    const coeffsX = this.transformCoefficients[0];
+    const coeffsY = this.transformCoefficients[1];
+
+    switch (this.transformationType) {
+      case TransformationType.POLYNOMIAL_1:
+        return [
+          [coeffsX[1], coeffsX[2]], // ∂x'/∂x, ∂x'/∂y
+          [coeffsY[1], coeffsY[2]]  // ∂y'/∂x, ∂y'/∂y
+        ];
+
+      case TransformationType.POLYNOMIAL_2: {
+        const dx = [coeffsX[1] + 2 * coeffsX[3] * x + coeffsX[4] * y, coeffsX[2] + coeffsX[4] * x + 2 * coeffsX[5] * y];
+        const dy = [coeffsY[1] + 2 * coeffsY[3] * x + coeffsY[4] * y, coeffsY[2] + coeffsY[4] * x + 2 * coeffsY[5] * y];
+        return [dx, dy];
+      }
+
+      case TransformationType.POLYNOMIAL_3: {
+        const dx = [
+          coeffsX[1] + 2 * coeffsX[3] * x + coeffsX[4] * y + 3 * coeffsX[6] * x * x + 2 * coeffsX[7] * x * y + coeffsX[8] * y * y,
+          coeffsX[2] + coeffsX[4] * x + 2 * coeffsX[5] * y + coeffsX[7] * x * x + 2 * coeffsX[8] * x * y + 3 * coeffsX[9] * y * y
+        ];
+        const dy = [
+          coeffsY[1] + 2 * coeffsY[3] * x + coeffsY[4] * y + 3 * coeffsY[6] * x * x + 2 * coeffsY[7] * x * y + coeffsY[8] * y * y,
+          coeffsY[2] + coeffsY[4] * x + 2 * coeffsY[5] * y + coeffsY[7] * x * x + 2 * coeffsY[8] * x * y + 3 * coeffsY[9] * y * y
+        ];
+        return [dx, dy];
+      }
+
+      default:
+        return [[1, 0], [0, 1]]; // Identité par défaut
+    }
+  }
+
   updateResiduals(): void {
     if (this.hasEnoughGCPs()) {
       this.calculateTransformation();

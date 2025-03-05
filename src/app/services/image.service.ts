@@ -187,7 +187,7 @@ export class ImageService {
         resamplingMethod: ResamplingMethod.NEAREST,
         compressionType: CompressionType.NONE,
         transformationType: TransformationType.POLYNOMIAL_1,
-        outputFilename: 'output_georef'
+        outputFilename: ''
       }
     };
   }

@@ -1,0 +1,14 @@
+<div class="layer-table-container" [@slideInOut]="isTableActive ? 'visible' : 'hidden'">
+    <h2 mat-dialog-title class="table-title">TDM des couches</h2>
+
+    <mat-list class="layer-list">
+        <div mat-subheader id="subheader">Images Géoréférencées</div>
+        <mat-list-item *ngFor="let wmslayer of wmsLayers">
+            <div class="layer-item">
+                <mat-checkbox [checked]="wmslayer.layer.getVisible()" (change)="toggleLayerVisibility(wmslayer.layer)" class="visibility-toggle">
+                    {{ wmslayer.layerName }}
+                </mat-checkbox>
+            </div>
+        </mat-list-item>
+    </mat-list>
+</div>

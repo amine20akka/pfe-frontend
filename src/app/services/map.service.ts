@@ -15,10 +15,9 @@ import VectorSource from 'ol/source/Vector';
 import Feature from 'ol/Feature';
 import { Point } from 'ol/geom';
 import { ImageService } from './image.service';
-import { ImageStatic, XYZ } from 'ol/source';
-import { Projection } from 'ol/proj';
-import ImageLayer from 'ol/layer/Image';
-import { GeoTiffMetadata } from '../interfaces/geotiff-metadata';
+import { XYZ } from 'ol/source';
+import BaseLayer from 'ol/layer/Base';
+import { WMSLayer } from '../interfaces/wms-layer';
 
 @Injectable({
   providedIn: 'root'
@@ -29,12 +28,14 @@ export class MapService {
   private OSMLayer: TileLayer = new TileLayer();
   private mapSubject = new BehaviorSubject<OLMap | null>(null);
   private mapLayers: Map<number, VectorLayer<VectorSource>> = new Map<number, VectorLayer<VectorSource>>();
+  private georefLayersSubject = new BehaviorSubject<WMSLayer[]>([]);
   private mapLayersSubject = new BehaviorSubject<Map<number, VectorLayer<VectorSource>>>(this.mapLayers);
   private isMapSelectionSubject = new BehaviorSubject<boolean>(false);
   private mapCoordinates = new BehaviorSubject<{ x: number, y: number }>({ x: 0, y: 0 });
   private imageLayersLength!: number;
   map$ = this.mapSubject.asObservable();
   mapLayers$ = this.mapLayersSubject;
+  georefLayers$ = this.georefLayersSubject.asObservable();
   mapCoordinates$ = this.mapCoordinates.asObservable();
   isMapSelection$ = this.isMapSelectionSubject.asObservable();
 
@@ -43,6 +44,11 @@ export class MapService {
     private gcpService: GcpService,
     private imageService: ImageService,
   ) {
+    this.georefLayers$.subscribe((georefLayers) => {
+      georefLayers.forEach((georefLayer) => {
+        this.addLayerToMap(georefLayer.layer);
+      })
+    })
     this.imageService.imageLayers$.subscribe((imageLayers) => {
       this.imageLayersLength = imageLayers.size;
     });
@@ -104,7 +110,7 @@ export class MapService {
           center: [-59598.84, 5339845.08],
           zoom: 18
         }),
-        controls: defaultControls({ zoom: false, attribution: false })
+        controls: defaultControls({ zoom: false, attribution: false, rotate: false })
       });
 
       this.mapSubject.next(this.map);
@@ -145,7 +151,7 @@ export class MapService {
     this.mapLayers.forEach((layer, index) => {
       this.imageService.updateLayerStyle(index, layer);
       if (!mapLayers.includes(layer)) {
-        this.addGcpLayerToMap(layer);
+        this.addLayerToMap(layer);
       }
     });
   }
@@ -169,8 +175,18 @@ export class MapService {
     return newGcpLayer;
   }
 
-  addGcpLayerToMap(newGcplayer: VectorLayer): void {
-    this.map.addLayer(newGcplayer);
+  addLayerToMap(newlayer: BaseLayer): void {
+    this.map.addLayer(newlayer);
+  }
+
+  addGeorefLayertoList(georefLayer: WMSLayer): void {
+    const currentGeorefLayers = this.georefLayersSubject.getValue();
+    const isLayerPresent = currentGeorefLayers.some(layer => layer === georefLayer);
+
+    if (!isLayerPresent) {
+      const updatedGeorefLayers = [...currentGeorefLayers, georefLayer];
+      this.georefLayersSubject.next(updatedGeorefLayers);
+    }
   }
 
   removeGcpLayerFromMap(removedGcpLayer: VectorLayer): void {
@@ -278,27 +294,11 @@ export class MapService {
     }
   }
 
-  addGeoreferencedImageToMap(fileUrl: string, metadata: GeoTiffMetadata['metadata']) {
-    // Créer une projection personnalisée
-    const projection = new Projection({
-      code: metadata && metadata.projection && metadata.projection.epsgCode ? 'EPSG:'.concat(metadata.projection.epsgCode) : 'EPSG:3857',
-      extent: [metadata!.extent.minX, metadata!.extent.minY, metadata!.extent.maxX, metadata!.extent.maxY],
-    });
-
-    // Créer la couche image
-    const georeferencedImageLayer = new ImageLayer({
-      source: new ImageStatic({
-        url: fileUrl,
-        projection: projection,
-        imageExtent: [metadata!.extent.minX, metadata!.extent.minY, metadata!.extent.maxX, metadata!.extent.maxY],
-      })
-    });
-
-    georeferencedImageLayer.setZIndex(2000);
-    georeferencedImageLayer.setVisible(true);
-
-    // Ajouter la couche à la carte
-    this.map.addLayer(georeferencedImageLayer);
+  toggleLayerVisibility(layer: TileLayer): void {
+    layer.setVisible(!layer.getVisible());
   }
 
+  updateLayerOpacity(layer: TileLayer, value: number) {
+    layer.setOpacity(value / 100);
+  }
 }

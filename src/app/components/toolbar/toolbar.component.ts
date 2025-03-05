@@ -16,6 +16,8 @@ import { ConfirmDialogData } from '../../interfaces/confirm-dialog-data';
 import { GeorefSettingsService } from '../../services/georef-settings.service';
 import { GeorefRequestData } from '../../interfaces/georef-request-data';
 import { GeorefImage, GeorefStatus } from '../../interfaces/georef-image';
+import { GeoserverService } from '../../services/geoserver.service';
+import { MatSnackBar } from '@angular/material/snack-bar';
 
 @Component({
   selector: 'app-toolbar',
@@ -31,41 +33,39 @@ import { GeorefImage, GeorefStatus } from '../../interfaces/georef-image';
 })
 export class ToolbarComponent {
 
-  transformationType: TransformationType = TransformationType.POLYNOMIAL_1;
-  srid: SRID = SRID.WEB_MERCATOR;
-  resamplingMethod: ResamplingMethod = ResamplingMethod.NEAREST;
-  compressionType: CompressionType = CompressionType.NONE;
-  outputFilename = '';
+  private georefSettings: GeorefSettings = {
+    transformationType: TransformationType.POLYNOMIAL_1,
+    srid: SRID.WEB_MERCATOR,
+    resamplingMethod: ResamplingMethod.NEAREST,
+    compressionType: CompressionType.NONE,
+    outputFilename: ''
+  };
   private georefImage!: GeorefImage;
 
   constructor(
-    private georefService: GeorefService, 
-    private imageService: ImageService, 
+    private georefService: GeorefService,
+    private imageService: ImageService,
     private gcpService: GcpService,
     private mapService: MapService,
     private georefSettingsService: GeorefSettingsService,
+    private geoserverService: GeoserverService,
     private dialog: MatDialog,
-  ) { 
-    this.georefSettingsService.transformationType$.subscribe((type) => {
-      this.transformationType = type;
-    })
-    this.georefSettingsService.srid$.subscribe((srid) => {
-      this.srid = srid;
-    })
-    this.georefSettingsService.resamplingMethod$.subscribe((method) => {
-      this.resamplingMethod = method;
-    })
-    this.georefSettingsService.compressionType$.subscribe((type) => {
-      this.compressionType = type;
-    })
-    this.georefSettingsService.outputFilename$.subscribe((filename) => {
-      if (filename) {
-        this.outputFilename = filename;
-        this.georefImage.filenameGeoreferenced = filename;
+    private snackBar: MatSnackBar
+  ) {
+    this.georefSettingsService.settings$.subscribe((settings) => {
+      if (settings.outputFilename) {
+        this.georefSettings = settings
+        this.georefImage.settings = settings
       }
     })
     this.imageService.georefImage$.subscribe((image) => {
       this.georefImage = image;
+      if (!this.georefImage.settings.outputFilename) {
+        const filenameParts = this.georefImage.filenameOriginal.split('.');
+        const extension = filenameParts.pop();
+        this.georefSettings.outputFilename = `${filenameParts.join('.')}_georef.${extension}`;
+        this.georefSettingsService.updateSettings(this.georefSettings);
+      }
     })
   }
 
@@ -95,14 +95,14 @@ export class ToolbarComponent {
   openGeorefSettings(): void {
     const dialogRef = this.dialog.open(GeorefSettingsDialogComponent, {
       data: {
-        transformationType: this.transformationType,
-        srid: this.srid,
-        resamplingMethod: this.resamplingMethod,
-        compressionType: this.compressionType,
-        outputFilename: this.outputFilename
+        transformationType: this.georefSettings.transformationType,
+        srid: this.georefSettings.srid,
+        resamplingMethod: this.georefSettings.resamplingMethod,
+        compressionType: this.georefSettings.compressionType,
+        outputFilename: this.georefSettings.outputFilename
       }
     });
-  
+
     dialogRef.afterClosed().subscribe((result: GeorefSettings) => {
       if (result) {
         this.georefSettingsService.updateSettings(result);
@@ -158,44 +158,38 @@ export class ToolbarComponent {
     });
   }
 
+  private showErrorSnackBar(message: string): void {
+    this.snackBar.open(message, 'Fermer', {
+      duration: 4000,
+      panelClass: ['error-snackbar'],
+      horizontalPosition: 'center',
+      verticalPosition: 'bottom'
+    });
+  }
+
   georeferenceImage(): void {
     const gcpData = this.gcpService.getGCPs();
-    
+
     const requestData: GeorefRequestData = {
       settings: {
-        transformationType: this.transformationType,
-        srid: this.srid,
-        resamplingMethod: this.resamplingMethod,
-        compressionType: this.compressionType,
-        outputFilename: this.outputFilename
+        transformationType: this.georefSettings.transformationType,
+        srid: this.georefSettings.srid,
+        resamplingMethod: this.georefSettings.resamplingMethod,
+        compressionType: this.georefSettings.compressionType,
+        outputFilename: this.georefSettings.outputFilename
       },
       gcps: gcpData,
       imageFile: this.georefImage.imageFile  // Ajoutez le fichier à la requête
     };
-  
+
     // Mettez à jour le statut
     this.imageService.updateGeorefStatus(GeorefStatus.PROCESSING);
-    
+
     this.georefService.georeferenceImage(requestData).subscribe({
-      next: (response) => {
-        // Convertir le Blob en File
-        this.georefImage.resultFilePath = URL.createObjectURL(response);
-        const file = new File([response], this.georefImage.filenameGeoreferenced!.concat('.tiff'), {
-          type: 'image/tiff'
-        });
-        
-        this.georefImage.outputFile = file;
+      next: (responselayerName) => {
         this.imageService.updateGeorefStatus(GeorefStatus.COMPLETED);
-    
-        // Récupérer les métadonnées
-        this.georefService.getGeoTiffMetadata(this.georefImage.filenameGeoreferenced!).subscribe({
-          next: (response) => {
-            if (response.metadata) {
-              this.mapService.addGeoreferencedImageToMap(this.georefImage.resultFilePath!, response.metadata);
-            }
-          }
-        });
-     
+        this.georefImage.wmsLayer = this.geoserverService.createWMSLayer(responselayerName);
+        this.mapService.addGeorefLayertoList(this.georefImage.wmsLayer);
         console.log('Géoréférencement terminé avec succès !', this.georefImage);
       },
       error: (error) => {

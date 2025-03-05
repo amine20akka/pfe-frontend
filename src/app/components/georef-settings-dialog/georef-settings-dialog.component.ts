@@ -43,7 +43,7 @@ export class GeorefSettingsDialogComponent {
       srid: [data.srid, Validators.required],
       resamplingMethod: [data.resamplingMethod, Validators.required],
       compressionType: [data.compressionType, Validators.required],
-      outputFilename: [data.outputFilename, [Validators.required, Validators.pattern(/^[a-zA-Z0-9_-]+$/)]],
+      outputFilename: [data.outputFilename, [Validators.required, Validators.pattern(/^[a-zA-Z0-9_.-]+$/)]],
     });
   }
 

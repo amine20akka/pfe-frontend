@@ -12,7 +12,7 @@ import { ToolbarComponent } from '../toolbar/toolbar.component';
 import { GcpService } from '../../services/gcp.service';
 import { CommonModule } from '@angular/common';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { CompressionType, GeorefSettings, ResamplingMethod, SRID, TransformationType } from '../../interfaces/georef-settings';
+import { GeorefSettings } from '../../interfaces/georef-settings';
 import { GeorefSettingsService } from '../../services/georef-settings.service';
 
 @Component({
@@ -42,13 +42,7 @@ export class GeorefComponent implements OnInit, OnDestroy {
   cursorX = 0;
   cursorY = 0;
   private coordSub!: Subscription;
-  georefSettings: GeorefSettings = {
-    transformationType: TransformationType.POLYNOMIAL_1,
-    srid: SRID.WEB_MERCATOR,
-    resamplingMethod: ResamplingMethod.NEAREST,
-    compressionType: CompressionType.NONE,
-    outputFilename: '',
-  };
+  georefSettings!: GeorefSettings;
 
   constructor(
     private georefService: GeorefService,
@@ -65,11 +59,9 @@ export class GeorefComponent implements OnInit, OnDestroy {
     });
 
     // Observer les paramètres de géoréférencement
-    this.georefSettingsService.transformationType$.subscribe(type => this.georefSettings.transformationType = type);
-    this.georefSettingsService.srid$.subscribe(srid => this.georefSettings.srid = srid);
-    this.georefSettingsService.resamplingMethod$.subscribe(method => this.georefSettings.resamplingMethod = method);
-    this.georefSettingsService.compressionType$.subscribe(compression => this.georefSettings.compressionType = compression);
-    this.georefSettingsService.outputFilename$.subscribe(filename => this.georefSettings.outputFilename = filename);
+    this.georefSettingsService.settings$.subscribe(settings => {
+      this.georefSettings = settings;
+    });
   }
 
   ngOnDestroy() {

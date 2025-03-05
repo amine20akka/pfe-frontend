@@ -5,7 +5,8 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { GeorefService } from '../../services/georef.service';
-
+import { MatDialog } from '@angular/material/dialog';
+import { LayerTableComponent } from "../layer-table/layer-table.component";
 
 @Component({
   selector: 'app-sidenav',
@@ -15,19 +16,32 @@ import { GeorefService } from '../../services/georef.service';
     MatButtonModule,
     MatCardModule,
     MatTooltipModule,
-  ],
+    LayerTableComponent
+],
   templateUrl: './sidenav.component.html',
   styleUrl: './sidenav.component.scss'
 })
 export class SidenavComponent {
 
-  constructor(private georefService: GeorefService) { }
+  constructor(
+    private georefService: GeorefService,
+    public dialog: MatDialog,
+  ) { }
 
-  get isGeorefActive() {
+  get isGeorefActive(): boolean {
     return this.georefService.isGeorefActive;
   }
 
-  toggleGeoref() {
+  get isTableActive(): boolean {
+    return this.georefService.isTableActive;
+  }
+
+
+  toggleGeoref(): void {
     this.georefService.toggleGeoref();
+  }
+
+  toggleTable(): void {
+    this.georefService.toggleTable()
   }
 }

@@ -32,8 +32,8 @@ export class GcpService {
     private georefSettingsService: GeorefSettingsService
   ) {
     this.initGcpStyles();
-    this.georefSettingsService.transformationType$.subscribe((type) => {
-      this.transformationType = type;
+    this.georefSettingsService.settings$.subscribe((settings) => {
+      this.transformationType = settings.transformationType;
     })
   }
 

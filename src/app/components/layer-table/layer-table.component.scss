@@ -1,0 +1,26 @@
+.layer-table-container {
+  position: fixed;
+  top: 0;
+  left: 66px;
+  width: 300px;
+  height: 100%;
+  background-color: white;
+  opacity: 0.95;
+  box-shadow: -2px 0 10px rgba(0, 0, 0, 0.2);
+  padding: 16px;
+  overflow-y: auto;
+}
+
+.table-title {
+  justify-self: center;
+  align-self: center;
+}
+
+#subheader {
+  font-size: medium;
+  font-weight: 400;
+}
+
+.layer-item {
+  overflow: hidden;
+}

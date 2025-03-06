@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { MapService } from '../../services/map.service';
 import { CommonModule } from '@angular/common';
+import { GeoserverService } from '../../services/geoserver.service';
 
 @Component({
   selector: 'app-map',
@@ -13,7 +14,10 @@ export class MapComponent implements OnInit {
   cursorX = 0;
   cursorY = 0;
 
-  constructor(private mapService: MapService) {}
+  constructor(
+    private mapService: MapService,
+    private geoserverService: GeoserverService
+  ) {}
 
   ngOnInit(): void {
     this.mapService.initMap('map');
@@ -21,6 +25,15 @@ export class MapComponent implements OnInit {
       console.log("On Map : ", this.mapService.getMap()!.getLayers().getArray());
       this.mapService.syncMapLayers();
     });
+
+    // const testLayer = this.geoserverService.createWMSLayer("Escou_non_georef_georef.tif");
+    // this.mapService.addGeorefLayertoList(testLayer);
+
+    this.mapService.georefLayers$.subscribe((georefLayers) => {
+      georefLayers.forEach((georefLayer) => {
+        this.mapService.addLayerToMap(georefLayer.layer);
+      })
+    })
     
     this.mapService.isMapSelection$.subscribe(value => {
       this.isMapSelection = value;

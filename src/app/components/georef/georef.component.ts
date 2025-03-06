@@ -14,6 +14,7 @@ import { CommonModule } from '@angular/common';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { GeorefSettings } from '../../interfaces/georef-settings';
 import { GeorefSettingsService } from '../../services/georef-settings.service';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
 
 @Component({
   selector: 'app-georef',
@@ -28,6 +29,7 @@ import { GeorefSettingsService } from '../../services/georef-settings.service';
     GcpComponent,
     ToolbarComponent,
     MatProgressSpinnerModule,
+    MatProgressBarModule,
   ],
   animations: [
     trigger('toggleContent', [
@@ -81,6 +83,10 @@ export class GeorefComponent implements OnInit, OnDestroy {
 
   get isLoading(): boolean {
     return this.imageService.isLoading;
+  }
+
+  get isProcessing(): boolean {
+    return this.georefService.isProcessing;
   }
 
   toggleGeoref(): void {

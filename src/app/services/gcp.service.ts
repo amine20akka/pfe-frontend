@@ -95,7 +95,7 @@ export class GcpService {
   /**
    * Vérifie s'il y a suffisamment de GCPs pour le type de transformation choisi
    */
-  private hasEnoughGCPs(): boolean {
+  hasEnoughGCPs(): boolean {
     const minPoints = this.getMinimumPointsRequired();
     return this.gcps.length >= minPoints;
   }

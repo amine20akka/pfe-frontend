@@ -21,7 +21,6 @@ export enum ResamplingMethod {
     NEAREST = 'Nearest',
     BILINEAR = 'Bilinear',
     CUBIC = 'Cubic',
-    LANCZOS = 'Lanczos'
 }
 
 export enum CompressionType {
@@ -33,12 +32,6 @@ export enum CompressionType {
 
 // Vous pouvez également créer des tableaux à partir des enums pour les utiliser dans les listes déroulantes
 export const TRANSFORMATION_TYPES = Object.values(TransformationType);
-export const SRIDS = Object.values(SRID);
+export const SRIDS = Object.values(SRID).filter(value => typeof value === 'number');
 export const RESAMPLING_METHODS = Object.values(ResamplingMethod);
 export const COMPRESSION_TYPES = Object.values(CompressionType);
-
-// Pour les SRIDS, vous pourriez vouloir un objet clé-valeur pour afficher des descriptions
-export const SRID_OPTIONS = [
-    { value: SRID.WGS84, viewValue: 'EPSG:4326 - WGS84' },
-    { value: SRID.WEB_MERCATOR, viewValue: 'EPSG:3857 - WGS84 / Pseudo-Mercator' }
-];

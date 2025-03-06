@@ -2,12 +2,40 @@
     <h2 mat-dialog-title class="table-title">TDM des couches</h2>
 
     <mat-list class="layer-list">
-        <div mat-subheader id="subheader">Images Géoréférencées</div>
+        <div mat-subheader id="subheader">Images Géoréférencées :</div>
         <mat-list-item *ngFor="let wmslayer of wmsLayers">
             <div class="layer-item">
-                <mat-checkbox [checked]="wmslayer.layer.getVisible()" (change)="toggleLayerVisibility(wmslayer.layer)" class="visibility-toggle">
-                    {{ wmslayer.layerName }}
-                </mat-checkbox>
+                <div class="layer-name-actions">
+                    <p class="layer-name">{{ wmslayer.layerName }}</p>
+
+                    <div class="layer-actions">
+                        <!-- ✅ Bouton de visibilité avec une icône dynamique -->
+                        <button mat-icon-button (click)="toggleLayerVisibility(wmslayer.layer)" matTooltip="Visibilité">
+                            <mat-icon>{{ wmslayer.layer.getVisible() ? 'visibility' : 'visibility_off' }}</mat-icon>
+                        </button>
+
+                        <!-- 🔍 Zoom sur la couche -->
+                        <button mat-icon-button (click)="zoomToLayer(wmslayer)" matTooltip="Zoom sur la couche">
+                            <mat-icon>aspect_ratio</mat-icon>
+                        </button>
+
+                        <!-- ℹ️ Détails -->
+                        <button mat-icon-button (click)="showLayerDetails(wmslayer.layer)"
+                            matTooltip="Détails de la couche">
+                            <mat-icon>info</mat-icon>
+                        </button>
+
+                        <!-- ❌ Supprimer la couche -->
+                        <button mat-icon-button (click)="removeLayer(wmslayer)" matTooltip="Supprimer">
+                            <mat-icon color="warn">delete</mat-icon>
+                        </button>
+                    </div>
+
+                </div>
+                <!-- Slider d'opacité -->
+                <mat-slider class="opacity-slider" min="0" max="1" step="0.1" [discrete]="true">
+                    <input matSliderThumb [(ngModel)]="wmslayer.opacity" (input)="updateOpacity(wmslayer)">
+                </mat-slider>
             </div>
         </mat-list-item>
     </mat-list>

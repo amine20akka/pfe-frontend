@@ -60,3 +60,17 @@
 .spinner {
     margin-bottom: 10px;
 }
+
+.progress-content {
+    position: relative;
+    top: 50%;
+    left: 18%;
+    width: 70%;
+}
+
+.progress-text {
+    align-self: center;
+    justify-self: center;
+    margin-top: 18px;
+    font-size: 16px;
+}

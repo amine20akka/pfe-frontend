@@ -11,6 +11,8 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { WMSLayer } from '../../interfaces/wms-layer';
 import { trigger, state, style, transition, animate } from '@angular/animations';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { FormsModule } from '@angular/forms';
 
 @Component({
   selector: 'app-layer-table',
@@ -22,13 +24,15 @@ import { trigger, state, style, transition, animate } from '@angular/animations'
     MatListModule,
     MatIconModule,
     MatButtonModule,
+    MatTooltipModule,
+    FormsModule,
   ],
   templateUrl: './layer-table.component.html',
   styleUrls: ['./layer-table.component.scss'],
   animations: [
     trigger('slideInOut', [
-      state('hidden', style({width: '0', opacity: 0})),
-      state('visible', style({width: '15%', opacity: 1})),
+      state('hidden', style({ width: '0', opacity: 0 })),
+      state('visible', style({ width: '28%', opacity: 1 })),
       transition('* => *', animate('500ms ease-in-out')),
     ])
   ]
@@ -51,20 +55,30 @@ export class LayerTableComponent implements OnInit {
     return this.georefService.isTableActive;
   }
 
-  /**
-   * Met à jour la visibilité d'une couche.
-   * @param layer Couche cible
-   */
   toggleLayerVisibility(layer: TileLayer): void {
     this.mapService.toggleLayerVisibility(layer);
   }
 
-  /**
-   * Met à jour l'opacité d'une couche.
-   * @param layer Couche cible
-   * @param event Événement du curseur
-   */
-  // updateLayerOpacity(layer: TileLayer, event: any): void {
-  //   this.mapService.updateLayerOpacity(layer, event.value);
-  // }
+  zoomToLayer(wmsLayer: WMSLayer): void {
+    const extent = wmsLayer.layer.getExtent();
+    console.log(extent);
+    if (extent) {
+      this.mapService.getMap()!.getView().fit(extent, { duration: 1000, padding: [50, 50, 50, 50] });
+    }
+  }
+
+  showLayerDetails(layer: TileLayer): void {
+    console.log('Détails de la couche:', layer);
+  }
+
+  updateOpacity(wmslayer: WMSLayer): void {
+    if (wmslayer.layer) {
+      wmslayer.layer.setOpacity(wmslayer.opacity);
+    }
+  }
+
+  removeLayer(layer: WMSLayer): void {
+    this.mapService.deleteGeorefLayer(layer);
+  }
+
 }

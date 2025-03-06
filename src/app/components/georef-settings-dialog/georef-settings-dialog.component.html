@@ -22,11 +22,8 @@
           <mat-form-field appearance="outline" class="full-width">
             <mat-label>Système de coordonnées cible</mat-label>
             <mat-select formControlName="srid">
-              <mat-option *ngFor="let option of sridOptions" [value]="option.value">
-                {{ option.value }}
-                <span class="option-description" *ngIf="option.viewValue">
-                  {{ option.viewValue }}
-                </span>
+              <mat-option *ngFor="let srid of srids" [value]="srid">
+                EPSG:{{ srid }}
               </mat-option>
             </mat-select>
             <mat-error *ngIf="georefForm.controls['srid'].invalid">

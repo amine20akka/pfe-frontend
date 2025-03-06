@@ -15,12 +15,19 @@ export class GeorefService {
     private mapService: MapService,
     private imageService: ImageService,
     private http: HttpClient
-  ) { }
+  ) { 
+    this.imageService.georefImage$.subscribe((georefImage) => {
+      if(georefImage.status === GeorefStatus.PROCESSING) this.isProcessing = true;
+      if(georefImage.status === GeorefStatus.COMPLETED) this.isProcessing = false;
+      if(georefImage.status === GeorefStatus.FAILED) this.isProcessing = false;
+    })
+  }
 
   private apiUrl = 'http://localhost:5000'; // URL du backend
 
   isGeorefActive = false; // Gère l'affichage de la partie droite
   isTableActive = false; // Gère la TDM
+  isProcessing = false;
 
   toggleGeoref() {
     this.isGeorefActive = !this.isGeorefActive;

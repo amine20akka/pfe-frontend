@@ -44,11 +44,6 @@ export class MapService {
     private gcpService: GcpService,
     private imageService: ImageService,
   ) {
-    this.georefLayers$.subscribe((georefLayers) => {
-      georefLayers.forEach((georefLayer) => {
-        this.addLayerToMap(georefLayer.layer);
-      })
-    })
     this.imageService.imageLayers$.subscribe((imageLayers) => {
       this.imageLayersLength = imageLayers.size;
     });
@@ -139,11 +134,16 @@ export class MapService {
 
     const mapLayers = map.getLayers().getArray(); // Liste des couches actuelles
     const gcpLayersSet = new Set(this.mapLayers.values()); // Set des couches de mapLayers
+    const georefLayersSet = new Set(this.georefLayersSubject.getValue().map(layer => layer.layer));
 
     // 1️⃣ Supprimer les couches qui ne sont plus dans `mapLayers`
     mapLayers.forEach(layer => {
-      if (!gcpLayersSet.has(layer as VectorLayer<VectorSource>) && layer !== this.OSMLayer) {
-        this.removeGcpLayerFromMap(layer as VectorLayer<VectorSource>);
+      const isNotInGcpLayers = !gcpLayersSet.has(layer as VectorLayer<VectorSource>);
+      const isNotOSMLayer = layer !== this.OSMLayer;
+      const isNotInGeorefLayers = !georefLayersSet.has(layer as TileLayer);
+    
+      if (isNotInGcpLayers && isNotOSMLayer && isNotInGeorefLayers) {
+        this.removeLayerFromMap(layer as VectorLayer<VectorSource>);
       }
     });
 
@@ -189,13 +189,20 @@ export class MapService {
     }
   }
 
-  removeGcpLayerFromMap(removedGcpLayer: VectorLayer): void {
-    this.map.removeLayer(removedGcpLayer);
+  deleteGeorefLayer(georefLayer: WMSLayer): void {
+    const currentGeorefLayers = this.georefLayersSubject.getValue();
+    const updatedGeorefLayers = currentGeorefLayers.filter(layer => layer !== georefLayer);
+    this.georefLayersSubject.next(updatedGeorefLayers);
+    this.removeLayerFromMap(georefLayer.layer);
+  }
+
+  removeLayerFromMap(removedLayer: BaseLayer): void {
+    this.map.removeLayer(removedLayer);
   }
 
   removeAllGcpLayersFromMap(): void {
     this.mapLayers.forEach((layer) => {
-      this.removeGcpLayerFromMap(layer);
+      this.removeLayerFromMap(layer);
     });
   }
 
@@ -298,7 +305,4 @@ export class MapService {
     layer.setVisible(!layer.getVisible());
   }
 
-  updateLayerOpacity(layer: TileLayer, value: number) {
-    layer.setOpacity(value / 100);
-  }
 }

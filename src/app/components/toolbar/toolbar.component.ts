@@ -60,7 +60,7 @@ export class ToolbarComponent {
     })
     this.imageService.georefImage$.subscribe((image) => {
       this.georefImage = image;
-      if (!this.georefImage.settings.outputFilename) {
+      if (!this.georefImage.settings.outputFilename!) {
         const filenameParts = this.georefImage.filenameOriginal.split('.');
         const extension = filenameParts.pop();
         this.georefSettings.outputFilename = `${filenameParts.join('.')}_georef.${extension}`;
@@ -82,8 +82,8 @@ export class ToolbarComponent {
   }
 
   reset(): void {
+    this.clearGCPs();
     this.imageService.resetImage();
-    this.mapService.clearAllGcpLayers();
   }
 
   clearGCPs(): void {
@@ -168,6 +168,28 @@ export class ToolbarComponent {
   }
 
   georeferenceImage(): void {
+    if (!this.gcpService.hasEnoughGCPs()) {
+      let message = "";
+      switch (this.georefSettings.transformationType) {
+        case TransformationType.POLYNOMIAL_1:
+          message = this.georefSettings.transformationType + " : Au moins 3 points de contrôle requis";
+          break;
+        case TransformationType.POLYNOMIAL_2:
+          message = this.georefSettings.transformationType + " : Au moins 6 points de contrôle requis";
+          break;
+        case TransformationType.POLYNOMIAL_3:
+          message = this.georefSettings.transformationType + " : Au moins 10 points de contrôle requis";
+          break;
+        default:
+          break;
+      }
+      this.showErrorSnackBar(message);
+      return;
+    }
+
+    // Mettez à jour le statut
+    this.imageService.updateGeorefStatus(GeorefStatus.PROCESSING);
+
     const gcpData = this.gcpService.getGCPs();
 
     const requestData: GeorefRequestData = {
@@ -182,19 +204,27 @@ export class ToolbarComponent {
       imageFile: this.georefImage.imageFile  // Ajoutez le fichier à la requête
     };
 
-    // Mettez à jour le statut
-    this.imageService.updateGeorefStatus(GeorefStatus.PROCESSING);
-
     this.georefService.georeferenceImage(requestData).subscribe({
       next: (responselayerName) => {
-        this.imageService.updateGeorefStatus(GeorefStatus.COMPLETED);
-        this.georefImage.wmsLayer = this.geoserverService.createWMSLayer(responselayerName);
-        this.mapService.addGeorefLayertoList(this.georefImage.wmsLayer);
-        console.log('Géoréférencement terminé avec succès !', this.georefImage);
+        setTimeout(() => {
+          this.georefImage.wmsLayer = this.geoserverService.createWMSLayer(responselayerName);
+          this.imageService.updateGeorefStatus(GeorefStatus.COMPLETED);
+          console.log('Géoréférencement terminé avec succès !', this.georefImage);
+          this.mapService.addGeorefLayertoList(this.georefImage.wmsLayer);
+          this.reset();
+          this.georefService.toggleGeoref();
+        }, 2000);
       },
       error: (error) => {
+        this.showErrorSnackBar("Géoréférencement échouée !");
         console.error('Erreur lors du géoréférencement', error);
+        this.imageService.updateGeorefStatus(GeorefStatus.FAILED);
+        this.georefService.toggleGeoref();
       }
     });
+    setTimeout(() => {
+      this.imageService.updateGeorefStatus(GeorefStatus.PENDING);
+      this.showErrorSnackBar("Géoréférencement terminé avec succès !");
+    }, 4000);
   }
 }

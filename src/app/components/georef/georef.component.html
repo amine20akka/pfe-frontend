@@ -1,4 +1,11 @@
 <div class="georef-container" [@toggleContent]="isGeorefActive ? 'open' : 'closed'">
+    @if (isProcessing) {
+    <div class="progress-content">
+        <!-- Progress bar et texte -->
+        <mat-progress-bar mode="query" color="primary"></mat-progress-bar>
+        <p class="progress-text">Géoréférencement en cours ...</p>
+    </div>
+    } @else {
     @if (isLoading) {
     <div class="loading-container">
         <mat-spinner class="spinner" diameter="50"></mat-spinner>
@@ -30,5 +37,6 @@
             X: {{ cursorX | number:'1.4-4' }} px | Y: {{ cursorY | number:'1.4-4' }} px
         </div>
     </div>
+    }
     }
 </div>

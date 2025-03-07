@@ -1,4 +1,9 @@
-<div class="georef-container" [@toggleContent]="isGeorefActive ? 'open' : 'closed'">
+<div #georefContainer class="georef-container"
+    [@toggleContent]="{value: isGeorefActive ? 'open' : 'closed', params: getAnimationParams()}">
+    <!-- Barre de redimensionnement à gauche -->
+    <div class="resize-handle" (mousedown)="startResize($event)" (touchstart)="startResize($event)"
+        [class.hidden]="!isGeorefActive"></div>
+
     @if (isProcessing) {
     <div class="progress-content">
         <!-- Progress bar et texte -->

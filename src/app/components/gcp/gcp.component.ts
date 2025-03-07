@@ -64,7 +64,7 @@ export class GcpComponent implements OnInit, OnDestroy {
   mapYControl = new FormControl('', [Validators.required, Validators.nullValidator]);
   private imageLayers: Map<number, VectorLayer<VectorSource>> = new Map<number, VectorLayer<VectorSource>>();
   private mapLayers: Map<number, VectorLayer<VectorSource>> = new Map<number, VectorLayer<VectorSource>>();
-  
+
   // Variables pour l'édition
   editingGcpId: number | null = null;
   editForm!: FormGroup;
@@ -78,7 +78,7 @@ export class GcpComponent implements OnInit, OnDestroy {
       mapX: this.mapXControl,
       mapY: this.mapYControl,
     });
-    
+
     this.gcpService.gcps$.subscribe((gcps) => {
       if (gcps.length === 0) {
         this.selection.clear();
@@ -88,7 +88,7 @@ export class GcpComponent implements OnInit, OnDestroy {
       if (gcps.length > 0 && !this.isDeleting) {
         this.selection.select(gcps[gcps.length - 1]);
       }
-      
+
       setTimeout(() => {
         // Restaurer la sélection depuis le stockage local
         const savedSelection = localStorage.getItem('selectedGCPs');
@@ -175,21 +175,21 @@ export class GcpComponent implements OnInit, OnDestroy {
     this.imageService.deleteGcpLayer(index);
     this.mapService.deleteGcpLayer(index);
     this.updateGcpLayerVisibility();
-    
+
     // Ajoute cette ligne pour réinitialiser après suppression
     setTimeout(() => { this.isDeleting = false; }, 100);
   }
-  
+
   /** Commencer l'édition d'un GCP */
   editGcp(gcp: GCP): void {
     // Annuler toute édition en cours
     if (this.editingGcpId !== null) {
       this.cancelEdit();
     }
-    
+
     // Définir le GCP en cours d'édition
     this.editingGcpId = gcp.index;
-    
+
     // Remplir le formulaire avec les valeurs actuelles
     this.editForm.patchValue({
       sourceX: parseFloat(gcp.sourceX.toFixed(4)),
@@ -198,13 +198,13 @@ export class GcpComponent implements OnInit, OnDestroy {
       mapY: parseFloat(gcp.mapY!.toFixed(4))
     });
   }
-  
+
   /** Gérer le double-clic sur une cellule pour éditer */
   onCellDoubleClick(gcp: GCP, column: string): void {
     // Vérifier si la colonne est éditable
     if (['sourceX', 'sourceY', 'mapX', 'mapY'].includes(column)) {
       this.editGcp(gcp);
-      
+
       // Focus sur le champ concerné
       setTimeout(() => {
         const input = document.getElementById(`edit-${column}`);
@@ -212,7 +212,7 @@ export class GcpComponent implements OnInit, OnDestroy {
       });
     }
   }
-  
+
   /** Enregistrer les modifications */
   saveEdit(): void {
     if (this.editForm.valid && this.editingGcpId !== null) {
@@ -223,21 +223,21 @@ export class GcpComponent implements OnInit, OnDestroy {
         mapX: this.editForm.value.mapX,
         mapY: this.editForm.value.mapY
       };
-      
+
       // Mettre à jour le GCP dans le service
       this.gcpService.updateGcp(updatedGcp);
-      
+
       // Mettre à jour les couches visuelles si nécessaire
       this.imageService.updateGcpPosition(this.editingGcpId, updatedGcp.sourceX, updatedGcp.sourceY);
       this.mapService.updateGcpPosition(this.editingGcpId, updatedGcp.mapX, updatedGcp.mapY);
-      
+
       // Réinitialiser l'état d'édition
       this.editingGcpId = null;
 
       this.selection.select(updatedGcp);
     }
   }
-  
+
   /** Annuler l'édition */
   cancelEdit(): void {
     this.editingGcpId = null;
@@ -268,25 +268,25 @@ export class GcpComponent implements OnInit, OnDestroy {
   }
 
   openDeleteConfirmDialog(index: number): void {
-      const dialogData: ConfirmDialogData = {
-        title: 'Êtes-vous sûr de supprimer ce point de contrôle ?',
-        confirmText: 'Supprimer',
-        cancelText: 'Annuler',
-        icon: 'delete'
-      };
-  
-      const dialogRef = this.dialog.open(ConfirmDialogComponent, {
-        width: '400px',
-        data: dialogData
-      });
-  
-      dialogRef.afterClosed().subscribe(result => {
-        if (result) {
-          console.log('Action confirmée');
-          this.deleteGcp(index);
-        } else {
-          console.log('Action annulée');
-        }
-      });
-    }
+    const dialogData: ConfirmDialogData = {
+      title: 'Êtes-vous sûr de supprimer ce point de contrôle ?',
+      confirmText: 'Supprimer',
+      cancelText: 'Annuler',
+      icon: 'delete'
+    };
+
+    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+      width: '400px',
+      data: dialogData
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        console.log('Action confirmée');
+        this.deleteGcp(index);
+      } else {
+        console.log('Action annulée');
+      }
+    });
+  }
 }

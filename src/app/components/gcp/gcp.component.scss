@@ -1,6 +1,8 @@
 .table-container {
     position: relative;
-    max-height: 34%;
+    max-height: 64%;
+    height: 34%;
+    min-height: 34%;
     overflow-y: auto;
     overflow-x: hidden;
     border: 1px solid #ddd;

@@ -10,10 +10,9 @@
     </button>
 </div>
 
-<div #imageContainer id="image-map" class="image-map-container" 
-    [ngClass]="{'adding-gcp': isAddingGCP}" 
-    (click)="onImageClick()"
-    (keydown)="onImageKeydown($event)"
-    [@toggleContent]="isGeorefActive ? 'open' : 'closed'"
-    tabindex="0">
+<div #imageContainer id="image-map" class="image-map-container" [style.height.%]="panelHeight"
+    (mousedown)="startResize($event)" [ngClass]="{'adding-gcp': isAddingGCP}" (click)="onImageClick()"
+    (keydown)="onImageKeydown($event)" [@toggleContent]="isGeorefActive ? 'open' : 'closed'" tabindex="0">
 </div>
+<div class="resize-handle" (mousedown)="startResize($event)" (touchstart)="startResize($event)"
+    [class.hidden]="!isGeorefActive"></div>

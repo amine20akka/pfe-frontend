@@ -60,7 +60,7 @@ export class ToolbarComponent {
     })
     this.imageService.georefImage$.subscribe((image) => {
       this.georefImage = image;
-      if (!this.georefImage.settings.outputFilename!) {
+      if (!this.georefImage.settings.outputFilename) {
         const filenameParts = this.georefImage.filenameOriginal.split('.');
         const extension = filenameParts.pop();
         this.georefSettings.outputFilename = `${filenameParts.join('.')}_georef.${extension}`;
@@ -209,6 +209,7 @@ export class ToolbarComponent {
         setTimeout(() => {
           this.georefImage.wmsLayer = this.geoserverService.createWMSLayer(responselayerName);
           this.imageService.updateGeorefStatus(GeorefStatus.COMPLETED);
+          this.imageService.updateGeorefDate(new Date(Date.now()));
           console.log('Géoréférencement terminé avec succès !', this.georefImage);
           this.mapService.addGeorefLayertoList(this.georefImage.wmsLayer);
           this.reset();

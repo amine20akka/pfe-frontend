@@ -1,0 +1,58 @@
+<!-- layer-details.component.html -->
+<div class="layer-details-container">
+    <h2 mat-dialog-title>Détails de l'image géoréférencée</h2>
+
+    <mat-divider></mat-divider>
+
+    <div mat-dialog-content class="layer-details-content">
+        <div class="info-section">
+            <h3 class="section-title">Informations sur l'image</h3>
+            <div class="info-item">
+                <span class="info-label">Nom du fichier :</span>
+                <span class="info-value">{{ geoImage.filenameOriginal }}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Date d'importation :</span>
+                <span class="info-value">{{ formatDate(geoImage.uploadingDate) }}</span>
+            </div>
+        </div>
+        
+        <div class="info-section">
+            <h3 class="section-title">Détails de géoréférencement</h3>
+            <div class="info-item">
+                <span class="info-label">Type de transformation :</span>
+                <span class="info-value">{{ geoImage.settings.transformationType }}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Système de coordonnées cible :</span>
+                <span class="info-value">EPSG:{{ geoImage.settings.srid }}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Méthode de rééchantillonnage :</span>
+                <span class="info-value">{{ geoImage.settings.resamplingMethod }}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Type de compression :</span>
+                <span class="info-value">{{ geoImage.settings.compressionType }}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Fichier de sortie :</span>
+                <span class="info-value">{{ geoImage.settings.outputFilename }}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Date de géoréférencement :</span>
+                <span class="info-value">{{ formatDate(geoImage.lastGeoreferencingDate!) }}</span>
+            </div>
+            @if (geoImage.totalRMSE !== undefined) {
+                <div class="info-item">
+                    <span class="info-label">Résidue totale :</span>
+                    <span class="info-value">{{ geoImage.totalRMSE.toFixed(4) }}</span>
+                </div>
+            }
+        </div>
+    </div>
+
+    <div mat-dialog-actions align="end">
+        <button mat-button id="close-button" color="primary" mat-dialog-close (click)="close()">Fermer</button>
+    </div>
+</div>

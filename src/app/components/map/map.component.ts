@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { MapService } from '../../services/map.service';
 import { CommonModule } from '@angular/common';
 import { GeoserverService } from '../../services/geoserver.service';
+import { ImageService } from '../../services/image.service';
 
 @Component({
   selector: 'app-map',
@@ -16,6 +17,7 @@ export class MapComponent implements OnInit {
 
   constructor(
     private mapService: MapService,
+    private imageService: ImageService,
     private geoserverService: GeoserverService
   ) {}
 
@@ -25,9 +27,6 @@ export class MapComponent implements OnInit {
       console.log("On Map : ", this.mapService.getMap()!.getLayers().getArray());
       this.mapService.syncMapLayers();
     });
-
-    // const testLayer = this.geoserverService.createWMSLayer("Escou_non_georef_georef.tif");
-    // this.mapService.addGeorefLayertoList(testLayer);
 
     this.mapService.georefLayers$.subscribe((georefLayers) => {
       georefLayers.forEach((georefLayer) => {

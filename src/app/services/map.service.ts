@@ -190,6 +190,7 @@ export class MapService {
   }
 
   deleteGeorefLayer(georefLayer: WMSLayer): void {
+    this.imageService.clearGeorefImage();
     const currentGeorefLayers = this.georefLayersSubject.getValue();
     const updatedGeorefLayers = currentGeorefLayers.filter(layer => layer !== georefLayer);
     this.georefLayersSubject.next(updatedGeorefLayers);

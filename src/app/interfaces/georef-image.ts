@@ -7,11 +7,11 @@ export interface GeorefImage {
   wmsLayer?: WMSLayer              // WMS Geoserver Layer  
   filenameOriginal: string;        // Nom du fichier original
   originalFilePath?: string;       // Chemin de l'image originale (côté client)
-  serverFilePath?: string;         // Chemin de stockage temporaire côté serveur
-  resultFilePath?: string;         // Chemin du résultat géoréférencé
   status: GeorefStatus;            // Statut du processus
+  uploadingDate: Date              // Date d'importation de l'image
   lastGeoreferencingDate?: Date;   // Date du traitement
   settings: GeorefSettings;        // Paramètres de géoréférencement
+  totalRMSE?: number;              // Valeur de résidue totale
 }
 
 export enum GeorefStatus {

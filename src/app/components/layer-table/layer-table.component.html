@@ -10,7 +10,7 @@
 
                     <div class="layer-actions">
                         <!-- ✅ Bouton de visibilité avec une icône dynamique -->
-                        <button mat-icon-button (click)="toggleLayerVisibility(wmslayer.layer)" matTooltip="Visibilité">
+                        <button mat-icon-button (click)="toggleLayerVisibility(wmslayer)" matTooltip="Visibilité">
                             <mat-icon>{{ wmslayer.layer.getVisible() ? 'visibility' : 'visibility_off' }}</mat-icon>
                         </button>
 
@@ -20,7 +20,7 @@
                         </button>
 
                         <!-- ℹ️ Détails -->
-                        <button mat-icon-button (click)="showLayerDetails(wmslayer.layer)"
+                        <button mat-icon-button (click)="showLayerDetails()"
                             matTooltip="Détails de la couche">
                             <mat-icon>info</mat-icon>
                         </button>

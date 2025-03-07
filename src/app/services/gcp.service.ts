@@ -15,15 +15,16 @@ export class GcpService {
 
   private gcps: GCP[] = [];
   private gcpsSubject = new BehaviorSubject<GCP[]>(this.gcps);
+  private totalRMSESubject = new BehaviorSubject<number>(0); // RMSE global
 
   cursorCoordinates = new BehaviorSubject<{ x: number; y: number }>({ x: 0, y: 0 });
   gcps$ = this.gcpsSubject.asObservable(); // Observable pour suivre les changements
+  totalRMSE$ = this.totalRMSESubject.asObservable();
   gcpStyles: Style[] = [];
   isAddingGCP = false; // Gère l'ajout de points de contrôle
 
   // Variables pour la transformation et les résidus
   private transformCoefficients: number[][] = []; // Coefficients de transformation
-  private totalRMSE = 0; // RMSE global
 
   // Paramètres de géoréférencement par défaut
   private transformationType: TransformationType = TransformationType.POLYNOMIAL_1;
@@ -57,7 +58,6 @@ export class GcpService {
     this.gcps = [];
     this.gcpsSubject.next([]);
     this.transformCoefficients = [];
-    this.totalRMSE = 0;
   }
 
   toggleAddingGcp(): void {
@@ -411,7 +411,7 @@ export class GcpService {
 
       // Calculer l'erreur euclidienne (résidu) en pixels
       const dx = transformedPixel.x - gcp.sourceX;
-      const dy = transformedPixel.y - gcp.sourceY; // Utilisez invertedSourceY si nécessaire
+      const dy = transformedPixel.y - gcp.sourceY;
       const residual = Math.sqrt(dx * dx + dy * dy);
 
       // Mettre à jour le résidu du point
@@ -422,7 +422,8 @@ export class GcpService {
     });
 
     // Calculer le RMSE global en pixels
-    this.totalRMSE = Math.sqrt(sumSquaredResiduals / this.gcps.length);
+    const totalRMSE = Math.sqrt(sumSquaredResiduals / this.gcps.length);
+    this.totalRMSESubject.next(totalRMSE);
   }
 
   /**
@@ -524,7 +525,6 @@ export class GcpService {
       this.gcpsSubject.next(this.gcps);
     } else {
       this.transformCoefficients = [];
-      this.totalRMSE = 0;
       // Réinitialiser les résidus
       this.gcps.forEach(gcp => gcp.residual = undefined);
     }
@@ -534,7 +534,7 @@ export class GcpService {
    * Retourne le RMSE global pour tous les points
    */
   getTotalRMSE(): number {
-    return parseFloat(this.totalRMSE.toFixed(3));
+    return parseFloat(this.totalRMSESubject.getValue().toFixed(3));
   }
 
   private initGcpStyles(): void {

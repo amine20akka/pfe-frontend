@@ -20,6 +20,7 @@ import { BehaviorSubject } from 'rxjs';
 import Style from 'ol/style/Style';
 import { GeorefImage, GeorefStatus } from '../interfaces/georef-image';
 import { CompressionType, ResamplingMethod, SRID, TransformationType } from '../interfaces/georef-settings';
+import { GeoserverService } from './geoserver.service';
 
 @Injectable({
   providedIn: 'root'
@@ -44,11 +45,14 @@ export class ImageService {
   y = 0;
 
 
-  constructor(private gcpService: GcpService) {
+  constructor(private gcpService: GcpService, private geoserverService: GeoserverService) {
     this.gcpService.cursorCoordinates.subscribe(coords => {
       this.x = coords.x;
       this.y = coords.y;
     });
+    this.gcpService.totalRMSE$.subscribe((value) => {
+      this.updateTotalRMSE(value);
+    })
   }
 
   zoomIn(): void {
@@ -150,12 +154,12 @@ export class ImageService {
         const finishLoading = () => {
           this.isLoading = false;
           this.isImageLoaded = true;
-          this.updateGeorefStatus(GeorefStatus.UPLOADED);
           this.imageWidth = img.width;
           this.imageHeight = img.height;
           this.extent = [0, 0, this.imageWidth, this.imageHeight];
 
           const newGeorefImage = this.createGeorefImage(file, imageUrl);
+          this.updateGeorefStatus(GeorefStatus.UPLOADED);
 
           // Envoi de l'image au Subject pour mise à jour
           this.georefImageSubject.next(newGeorefImage);
@@ -182,6 +186,7 @@ export class ImageService {
       filenameOriginal: file.name,
       originalFilePath: imageUrl,
       status: GeorefStatus.PENDING,
+      uploadingDate: new Date(Date.now()),
       settings: {
         srid: SRID.WEB_MERCATOR,
         resamplingMethod: ResamplingMethod.NEAREST,
@@ -190,6 +195,10 @@ export class ImageService {
         outputFilename: ''
       }
     };
+  }
+
+  clearGeorefImage(): void {
+    this.georefImageSubject.next({} as GeorefImage);
   }
 
   createImageLayer(): ImageLayer<ImageSource> {
@@ -369,6 +378,18 @@ export class ImageService {
   updateGeorefStatus(status: GeorefStatus): void {
     const currentImage = this.georefImageSubject.getValue();
     currentImage.status = status;
+    this.georefImageSubject.next(currentImage);
+  }
+
+  updateTotalRMSE(newValue: number): void {
+    const currentImage = this.georefImageSubject.getValue();
+    currentImage.totalRMSE = newValue;
+    this.georefImageSubject.next(currentImage);
+  }
+
+  updateGeorefDate(lastGeorefDate: Date): void {
+    const currentImage = this.georefImageSubject.getValue();
+    currentImage.lastGeoreferencingDate = lastGeorefDate;
     this.georefImageSubject.next(currentImage);
   }
 }

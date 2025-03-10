@@ -1,18 +1,16 @@
 <div class="zoom-controls">
-    <button mat-mini-fab color="primary" (click)="zoomIn()">
+    <button mat-mini-fab matTooltip="Zoom-avant" color="primary" (click)="zoomIn()">
         <mat-icon>add</mat-icon>
     </button>
-    <button mat-mini-fab color="accent" (click)="zoomOut()">
+    <button mat-mini-fab matTooltip="Zoom-arrière" color="accent" (click)="zoomOut()">
         <mat-icon>remove</mat-icon>
     </button>
     <button mat-mini-fab matTooltip="Recentrer" id="reset" color="warn" (click)="resetView()">
-        <mat-icon>crop</mat-icon> <!-- Icône de réinitialisation -->
+        <mat-icon>crop_free</mat-icon> <!-- Icône de réinitialisation -->
     </button>
 </div>
 
-<div #imageContainer id="image-map" class="image-map-container" [style.height.%]="panelHeight"
-    (mousedown)="startResize($event)" [ngClass]="{'adding-gcp': isAddingGCP}" (click)="onImageClick()"
-    (keydown)="onImageKeydown($event)" [@toggleContent]="isGeorefActive ? 'open' : 'closed'" tabindex="0">
+<div #imageContainer id="image-map" class="image-map-container" [ngClass]="{'adding-gcp': isAddingGCP}"
+    (click)="onImageClick()" (keydown)="onImageKeydown($event)" [@toggleContent]="isGeorefActive ? 'open' : 'closed'"
+    tabindex="0">
 </div>
-<div class="resize-handle" (mousedown)="startResize($event)" (touchstart)="startResize($event)"
-    [class.hidden]="!isGeorefActive"></div>

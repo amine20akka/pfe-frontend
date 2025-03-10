@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit, ElementRef, ViewChild } from '@angular/core';
+import { Component, OnDestroy, OnInit, ElementRef, ViewChild, ChangeDetectorRef } from '@angular/core';
 import { trigger, state, style, animate, transition } from '@angular/animations';
 import { GeorefService } from '../../services/georef.service';
 import { MatIconModule } from '@angular/material/icon';
@@ -46,19 +46,27 @@ export class GeorefComponent implements OnInit, OnDestroy {
   cursorY = 0;
   private coordSub!: Subscription;
   georefSettings!: GeorefSettings;
-  
+
   // Propriétés pour le redimensionnement
   isResizing = false;
   panelWidth = 600; // Largeur par défaut
   minWidth = 550;   // Largeur minimum
   maxWidth = 1000;   // Largeur maximum
 
+  // Variables liées au redimensionnement vertical
+  imageHeight = 50; // Pourcentage de hauteur pour le composant image (défaut: 50%)
+  minImageHeight = 0; // Minimum en pourcentage
+  maxImageHeight = 82; // Maximum en pourcentage
+  isVerticalResizing = false;
+  startY = 0;
+  initialImageHeight = 50; // Pourcentage initial
+
   constructor(
     private georefService: GeorefService,
     private imageService: ImageService,
     private gcpService: GcpService,
     private georefSettingsService: GeorefSettingsService,
-    private el: ElementRef
+    private cdr: ChangeDetectorRef
   ) { }
 
   ngOnInit(): void {
@@ -95,6 +103,14 @@ export class GeorefComponent implements OnInit, OnDestroy {
     document.addEventListener('touchmove', this.onTouchMove.bind(this), { passive: false });
     document.addEventListener('touchend', this.onTouchEnd.bind(this));
     document.addEventListener('touchcancel', this.onTouchEnd.bind(this));
+
+    // Des écouteurs verticaux
+    document.addEventListener('mousemove', this.onVerticalMouseMove.bind(this));
+    document.addEventListener('mouseup', this.onVerticalMouseUp.bind(this));
+    document.addEventListener('mouseleave', this.onVerticalMouseUp.bind(this));
+    document.addEventListener('touchmove', this.onVerticalTouchMove.bind(this), { passive: false });
+    document.addEventListener('touchend', this.onVerticalTouchEnd.bind(this));
+    document.addEventListener('touchcancel', this.onVerticalTouchEnd.bind(this));
   }
 
   private removeResizeListeners(): void {
@@ -104,11 +120,19 @@ export class GeorefComponent implements OnInit, OnDestroy {
     document.removeEventListener('touchmove', this.onTouchMove.bind(this));
     document.removeEventListener('touchend', this.onTouchEnd.bind(this));
     document.removeEventListener('touchcancel', this.onTouchEnd.bind(this));
+
+    // écouteurs verticaux
+    document.removeEventListener('mousemove', this.onVerticalMouseMove.bind(this));
+    document.removeEventListener('mouseup', this.onVerticalMouseUp.bind(this));
+    document.removeEventListener('mouseleave', this.onVerticalMouseUp.bind(this));
+    document.removeEventListener('touchmove', this.onVerticalTouchMove.bind(this));
+    document.removeEventListener('touchend', this.onVerticalTouchEnd.bind(this));
+    document.removeEventListener('touchcancel', this.onVerticalTouchEnd.bind(this));
   }
 
   startResize(event: MouseEvent | TouchEvent): void {
     if (!this.isGeorefActive) return;
-    
+
     event.preventDefault();
     this.isResizing = true;
     document.body.style.cursor = 'ew-resize';
@@ -117,27 +141,27 @@ export class GeorefComponent implements OnInit, OnDestroy {
 
   onMouseMove(event: MouseEvent): void {
     if (!this.isResizing) return;
-    
+
     const windowWidth = window.innerWidth;
     const newWidth = windowWidth - event.clientX;
-    
+
     this.updateWidth(newWidth);
   }
 
   onTouchMove(event: TouchEvent): void {
     if (!this.isResizing) return;
-    
+
     event.preventDefault();
     const touch = event.touches[0];
     const windowWidth = window.innerWidth;
     const newWidth = windowWidth - touch.clientX;
-    
+
     this.updateWidth(newWidth);
   }
 
   onMouseUp(): void {
     if (!this.isResizing) return;
-    
+
     this.isResizing = false;
     document.body.style.cursor = '';
     document.body.style.userSelect = '';
@@ -145,7 +169,7 @@ export class GeorefComponent implements OnInit, OnDestroy {
 
   onTouchEnd(): void {
     if (!this.isResizing) return;
-    
+
     this.isResizing = false;
     document.body.style.userSelect = '';
   }
@@ -154,11 +178,87 @@ export class GeorefComponent implements OnInit, OnDestroy {
     // Limiter la largeur entre min et max
     const constrainedWidth = Math.min(Math.max(newWidth, this.minWidth), this.maxWidth);
     this.panelWidth = constrainedWidth;
-    
+
     // Mettre à jour directement le style si le panneau est ouvert
     if (this.georefContainer) {
       this.georefContainer.nativeElement.style.width = `${constrainedWidth}px`;
     }
+  }
+
+  // Méthode pour démarrer le redimensionnement vertical
+  startVerticalResize(event: MouseEvent | TouchEvent): void {
+    if (!this.isGeorefActive) return;
+
+    event.preventDefault();
+    this.isVerticalResizing = true;
+    document.body.style.cursor = 'ns-resize';
+    document.body.style.userSelect = 'none';
+
+    // Enregistrer la position de départ
+    if (event instanceof MouseEvent) {
+      this.startY = event.clientY;
+    } else {
+      this.startY = event.touches[0].clientY;
+    }
+
+    // Mémoriser la hauteur actuelle
+    this.initialImageHeight = this.imageHeight;
+  }
+
+  // Méthodes pour gérer le mouvement vertical
+  onVerticalMouseMove(event: MouseEvent): void {
+    if (!this.isVerticalResizing) return;
+
+    const containerRect = this.georefContainer.nativeElement.getBoundingClientRect();
+    const deltaY = event.clientY - this.startY;
+
+    // Convertir le delta en pourcentage de la hauteur totale du conteneur
+    const deltaPercent = (deltaY / containerRect.height) * 100;
+
+    // Calculer la nouvelle hauteur (plus le curseur descend, plus l'image grandit)
+    const newImageHeight = this.initialImageHeight + deltaPercent;
+
+    this.updateImageHeight(newImageHeight);
+  }
+
+  onVerticalTouchMove(event: TouchEvent): void {
+    if (!this.isVerticalResizing) return;
+
+    event.preventDefault();
+    const touch = event.touches[0];
+    const containerRect = this.georefContainer.nativeElement.getBoundingClientRect();
+    const deltaY = touch.clientY - this.startY;
+
+    const deltaPercent = (deltaY / containerRect.height) * 100;
+    const newImageHeight = this.initialImageHeight + deltaPercent;
+
+    this.updateImageHeight(newImageHeight);
+  }
+
+  // Méthodes pour terminer le redimensionnement vertical
+  onVerticalMouseUp(): void {
+    if (!this.isVerticalResizing) return;
+
+    this.isVerticalResizing = false;
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+  }
+
+  onVerticalTouchEnd(): void {
+    if (!this.isVerticalResizing) return;
+
+    this.isVerticalResizing = false;
+    document.body.style.userSelect = '';
+  }
+
+  // Mise à jour de la hauteur de l'image
+  private updateImageHeight(newHeight: number): void {
+    // Limiter la hauteur entre min et max
+    const constrainedHeight = Math.min(Math.max(newHeight, this.minImageHeight), this.maxImageHeight);
+    this.imageHeight = constrainedHeight;
+
+    // Forcer la mise à jour de la vue (ajoutez ChangeDetectorRef dans le constructeur)
+    this.cdr.detectChanges();
   }
 
   get isGeorefActive(): boolean {

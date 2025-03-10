@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, ElementRef, Input, OnChanges, OnDestroy, OnInit, SimpleChanges, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -43,7 +43,9 @@ import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/c
   ]
 })
 
-export class GcpComponent implements OnInit, OnDestroy {
+export class GcpComponent implements OnInit, OnDestroy, OnChanges {
+  @Input() height!: number;
+  @ViewChild('tableContainer', { static: false }) tableContainer!: ElementRef;
 
   constructor(
     private georefService: GeorefService,
@@ -115,6 +117,15 @@ export class GcpComponent implements OnInit, OnDestroy {
       console.log('GCPs Map Layers : ', mapLayers);
     });
   }
+
+  ngOnChanges(changes: SimpleChanges): void {
+      if (changes['height'] && !changes['height'].firstChange) {
+        // Mettre à jour les éléments internes si nécessaire
+        if (this.tableContainer) {
+          this.tableContainer.nativeElement.style.height = `${this.height}%`;
+        }
+      }
+    }
 
   ngOnDestroy(): void {
     this.gcpService.isAddingGCP = false;

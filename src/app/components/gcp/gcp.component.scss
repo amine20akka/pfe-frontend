@@ -1,8 +1,6 @@
 .table-container {
     position: relative;
-    max-height: 64%;
-    height: 34%;
-    min-height: 34%;
+    height: 32%;
     overflow-y: auto;
     overflow-x: hidden;
     border: 1px solid #ddd;
@@ -27,8 +25,7 @@ th {
     overflow-x: hidden;
     background: #f5f5f5;
     color: #333;
-    font-weight: bold;
-    font-size: x-small;
+    font-size: xx-small;
     padding: 1px;
     text-align: center;
 }

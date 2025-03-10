@@ -2,11 +2,39 @@
     position: absolute;
     top: 0;
     right: 0;
-    height: 100vh;
+    height: 100%;
     background-color: white;
     box-shadow: -2px 0 5px rgba(0, 0, 0, 0.2);
     opacity: 0.97;
     overflow: hidden;
+}
+
+.vertical-resize-handle {
+    position: relative;
+    width: 100%;
+    height: 8px;
+    cursor: ns-resize;
+    background-color: #f5f5f5;
+    z-index: 2000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.vertical-resize-handle:hover {
+    background-color: rgba(0, 0, 0, 0.15);
+}
+
+.vertical-resize-handle::after {
+    content: "";
+    height: 2px;
+    width: 20px;
+    background-color: #b7b7b7;
+    margin: 1px;
+}
+
+.vertical-resize-handle.hidden {
+    display: none;
 }
 
 .georef-info-container {
@@ -83,7 +111,7 @@
     height: 100%;
     cursor: ew-resize;
     background-color: transparent;
-    z-index: 2000;
+    z-index: 2001;
     display: flex;
     flex-direction: column;
     justify-content: center;

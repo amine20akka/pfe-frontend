@@ -1,4 +1,4 @@
-<div class="table-container" [@toggleContent]="isGeorefActive ? 'open' : 'closed'">
+<div #tableContainer class="table-container" [@toggleContent]="isGeorefActive ? 'open' : 'closed'">
     <table mat-table bgColor="primary" [dataSource]="dataSource" [trackBy]="trackByFn" class="mat-elevation-z8">
 
         <!-- Checkbox Column -->

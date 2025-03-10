@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
-import { GCP } from '../../interfaces/gcp';
+import { GCP } from '../../models/gcp';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { SelectionModel } from '@angular/cdk/collections';
 import { MatTooltipModule } from '@angular/material/tooltip';
@@ -17,7 +17,7 @@ import { MapService } from '../../services/map.service';
 import { FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatInputModule } from '@angular/material/input';
 import { MatDialog } from '@angular/material/dialog';
-import { ConfirmDialogData } from '../../interfaces/confirm-dialog-data';
+import { ConfirmDialogData } from '../../models/confirm-dialog-data';
 import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/confirm-dialog.component';
 
 @Component({

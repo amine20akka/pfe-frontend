@@ -19,7 +19,7 @@ export class MapComponent implements OnInit {
     private mapService: MapService,
     private imageService: ImageService,
     private geoserverService: GeoserverService
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     this.mapService.initMap('map');
@@ -33,11 +33,11 @@ export class MapComponent implements OnInit {
         this.mapService.addLayerToMap(georefLayer.layer);
       })
     })
-    
+
     this.mapService.isMapSelection$.subscribe(value => {
       this.isMapSelection = value;
     });
-    
+
     // S'abonner aux coordonnées du curseur
     this.mapService.mapCoordinates$.subscribe(coords => {
       this.cursorX = coords.x;

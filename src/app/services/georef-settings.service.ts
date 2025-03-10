@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
-import { TransformationType, SRID, ResamplingMethod, CompressionType } from '../interfaces/georef-settings';
-import { GeorefSettings } from '../interfaces/georef-settings';
+import { TransformationType, SRID, ResamplingMethod, CompressionType } from '../models/georef-settings';
+import { GeorefSettings } from '../models/georef-settings';
 
 @Injectable({
   providedIn: 'root'

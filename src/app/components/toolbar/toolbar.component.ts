@@ -10,12 +10,12 @@ import { GcpService } from '../../services/gcp.service';
 import { MapService } from '../../services/map.service';
 import { MatDialog } from '@angular/material/dialog';
 import { GeorefSettingsDialogComponent } from '../georef-settings-dialog/georef-settings-dialog.component';
-import { CompressionType, GeorefSettings, ResamplingMethod, SRID, TransformationType } from '../../interfaces/georef-settings';
+import { CompressionType, GeorefSettings, ResamplingMethod, SRID, TransformationType } from '../../models/georef-settings';
 import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/confirm-dialog.component';
-import { ConfirmDialogData } from '../../interfaces/confirm-dialog-data';
+import { ConfirmDialogData } from '../../models/confirm-dialog-data';
 import { GeorefSettingsService } from '../../services/georef-settings.service';
-import { GeorefRequestData } from '../../interfaces/georef-request-data';
-import { GeorefImage, GeorefStatus } from '../../interfaces/georef-image';
+import { GeorefRequestData } from '../../models/georef-request-data';
+import { GeorefImage, GeorefStatus } from '../../models/georef-image';
 import { GeoserverService } from '../../services/geoserver.service';
 import { MatSnackBar } from '@angular/material/snack-bar';
 

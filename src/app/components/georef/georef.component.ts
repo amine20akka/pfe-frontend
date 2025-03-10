@@ -12,7 +12,7 @@ import { ToolbarComponent } from '../toolbar/toolbar.component';
 import { GcpService } from '../../services/gcp.service';
 import { CommonModule } from '@angular/common';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { GeorefSettings } from '../../interfaces/georef-settings';
+import { GeorefSettings } from '../../models/georef-settings';
 import { GeorefSettingsService } from '../../services/georef-settings.service';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 

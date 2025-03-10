@@ -17,7 +17,7 @@ import { Point } from 'ol/geom';
 import { ImageService } from './image.service';
 import { XYZ } from 'ol/source';
 import BaseLayer from 'ol/layer/Base';
-import { WMSLayer } from '../interfaces/wms-layer';
+import { WMSLayer } from '../models/wms-layer';
 
 @Injectable({
   providedIn: 'root'

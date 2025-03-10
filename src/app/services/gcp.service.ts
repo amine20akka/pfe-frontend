@@ -1,11 +1,11 @@
 import { Injectable } from '@angular/core';
-import { GCP } from '../interfaces/gcp';
+import { GCP } from '../models/gcp';
 import { BehaviorSubject } from 'rxjs';
 import Style from 'ol/style/Style';
 import CircleStyle from 'ol/style/Circle';
 import Fill from 'ol/style/Fill';
 import { colors } from '../shared/colors';
-import { TransformationType } from '../interfaces/georef-settings';
+import { TransformationType } from '../models/georef-settings';
 import { GeorefSettingsService } from './georef-settings.service';
 
 @Injectable({

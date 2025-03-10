@@ -3,8 +3,8 @@ import { MapService } from './map.service';
 import { ImageService } from './image.service';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { GeorefRequestData } from '../interfaces/georef-request-data';
-import { GeorefStatus } from '../interfaces/georef-image';
+import { GeorefRequestData } from '../models/georef-request-data';
+import { GeorefStatus } from '../models/georef-image';
 
 @Injectable({
   providedIn: 'root'

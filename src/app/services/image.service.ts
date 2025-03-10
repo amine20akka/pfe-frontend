@@ -18,8 +18,8 @@ import Fill from 'ol/style/Fill';
 import { colors } from '../shared/colors';
 import { BehaviorSubject } from 'rxjs';
 import Style from 'ol/style/Style';
-import { GeorefImage, GeorefStatus } from '../interfaces/georef-image';
-import { CompressionType, ResamplingMethod, SRID, TransformationType } from '../interfaces/georef-settings';
+import { GeorefImage, GeorefStatus } from '../models/georef-image';
+import { CompressionType, ResamplingMethod, SRID, TransformationType } from '../models/georef-settings';
 import { GeoserverService } from './geoserver.service';
 
 @Injectable({

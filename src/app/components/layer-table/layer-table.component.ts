@@ -13,8 +13,8 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { FormsModule } from '@angular/forms';
 import { LayerDetailsComponent } from '../layer-details/layer-details.component';
 import { ImageService } from '../../services/image.service';
-import { GeorefImage } from '../../interfaces/georef-image';
-import { WMSLayer } from '../../interfaces/wms-layer';
+import { GeorefImage } from '../../models/georef-image';
+import { WMSLayer } from '../../models/wms-layer';
 
 @Component({
   selector: 'app-layer-table',

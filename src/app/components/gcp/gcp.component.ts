@@ -19,6 +19,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatDialog } from '@angular/material/dialog';
 import { ConfirmDialogData } from '../../models/confirm-dialog-data';
 import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/confirm-dialog.component';
+import { colors } from '../../shared/colors';
 
 @Component({
   selector: 'app-gcp',
@@ -269,13 +270,11 @@ export class GcpComponent implements OnInit, OnDestroy, OnChanges {
   }
 
   getFillColor(index: number): string {
-    const colors = ['red', 'blue', 'green', 'yellow', 'purple', 'orange', 'pink', 'brown', 'cyan', 'magenta'];
-    return colors[(index - 1) % colors.length]; // S'assurer de ne pas dépasser la liste
+    return colors[(index - 1) % colors.length].fill;
   }
 
   getTextColor(index: number): string {
-    const textColors = ['white', 'white', 'white', 'black', 'white', 'black', 'black', 'white', 'black', 'white'];
-    return textColors[(index - 1) % textColors.length];
+    return colors[(index - 1) % colors.length].text;
   }
 
   openDeleteConfirmDialog(index: number): void {

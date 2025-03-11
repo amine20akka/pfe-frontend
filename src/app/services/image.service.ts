@@ -264,7 +264,7 @@ export class ImageService {
   }
 
   applyLayerStyle(index: number): Style {
-    const baseStyle = this.gcpService.gcpStyles[(index - 1) % 10]; // Récupère la base
+    const baseStyle = this.gcpService.gcpStyles[(index - 1) % 20]; // Récupère la base
 
     // Crée une copie indépendante du style pour éviter les conflits
     const newStyle = new Style({
@@ -274,7 +274,7 @@ export class ImageService {
       text: new Text({
         text: index.toString(),
         font: '12px Arial',
-        fill: new Fill({ color: colors[(index - 1) % 10].text }),
+        fill: new Fill({ color: colors[(index - 1) % 20].text }),
         textAlign: 'center',
         textBaseline: 'middle',
         offsetY: 0

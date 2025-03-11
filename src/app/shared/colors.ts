@@ -1,12 +1,22 @@
 export const colors = [
-    { fill: 'red', text: 'white' },
-    { fill: 'blue', text: 'white' },
-    { fill: 'green', text: 'white' },
-    { fill: 'yellow', text: 'black' },
-    { fill: 'purple', text: 'white' },
-    { fill: 'orange', text: 'black' },
-    { fill: 'pink', text: 'black' },
-    { fill: 'brown', text: 'white' },
-    { fill: 'cyan', text: 'black' },
-    { fill: 'magenta', text: 'white' }
-  ];
+  { fill: '#27C7D4', text: 'white' },
+  { fill: '#1C2942', text: 'white' },
+  { fill: '#FE9063', text: 'white' },
+  { fill: '#EA5863', text: 'white' },
+  { fill: '#FFE361', text: 'black' },
+  { fill: '#FBBFB8', text: 'black' },
+  { fill: '#516079', text: 'white' },
+  { fill: '#96527A', text: 'white' },
+  { fill: '#5B374D', text: 'white' },
+  { fill: '#D81B60', text: 'white' },
+  { fill: '#8BC34A', text: 'white' },
+  { fill: '#7ACFB0', text: 'white' },
+  { fill: '#A62609', text: 'white' },
+  { fill: '#795548', text: 'white' },
+  { fill: '#FF5722', text: 'white' },
+  { fill: '#03A9F4', text: 'white' },
+  { fill: '#9C27B0', text: 'white' },
+  { fill: '#CDDC39', text: 'white' },
+  { fill: '#FFC107', text: 'white' },
+  { fill: '#F38071', text: 'white' }
+];

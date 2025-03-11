@@ -128,7 +128,7 @@ export class GcpService {
 
           const totalRMSE = response.rmse;
           this.totalRMSESubject.next(totalRMSE);
-          
+
           this.gcpsSubject.next(this.gcps);
         });
     } else {
@@ -144,13 +144,14 @@ export class GcpService {
   }
 
   private initGcpStyles(): void {
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < 20; i++) {
       this.gcpStyles.push(new Style({
         image: new CircleStyle({
-          radius: 10, // Augmentez le rayon pour agrandir les points
-          fill: new Fill({ color: colors[i].fill }),
+          radius: 10,
+          fill: new Fill({ color: colors[i % colors.length].fill }),
         })
       }));
     }
   }
+
 }

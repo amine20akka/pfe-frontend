@@ -1,0 +1,21 @@
+import { HttpClient } from '@angular/common/http';
+import { Injectable } from '@angular/core';
+import { ResidualsRequest, ResidualsResponse } from '../models/resiudal-models';
+import { Observable } from 'rxjs';
+import { GCP } from '../models/gcp';
+import { TransformationType } from '../models/georef-settings';
+
+@Injectable({
+  providedIn: 'root'
+})
+export class ResidualService {
+
+  private apiUrl = 'http://localhost:5000'; // URL du backend
+
+  constructor(private http: HttpClient) {}
+
+  computeResiduals(gcps: GCP[], transformationType: TransformationType, srid: number): Observable<ResidualsResponse> {
+    const requestBody: ResidualsRequest = { gcps, transformationType, srid };
+    return this.http.post<ResidualsResponse>(`${this.apiUrl}/get-residuals`, requestBody);
+  }
+}

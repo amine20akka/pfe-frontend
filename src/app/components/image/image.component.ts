@@ -106,7 +106,8 @@ export class ImageComponent implements OnInit, OnChanges {
     const dialogRef = this.dialog.open(GcpDialogComponent, {
       width: 'auto',
       height: 'auto',
-      disableClose: true
+      disableClose: true,
+      panelClass: 'custom-dialog',
     });
 
     dialogRef.afterClosed().subscribe(result => {

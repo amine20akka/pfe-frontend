@@ -141,7 +141,7 @@ export class MapService {
       const isNotInGcpLayers = !gcpLayersSet.has(layer as VectorLayer<VectorSource>);
       const isNotOSMLayer = layer !== this.OSMLayer;
       const isNotInGeorefLayers = !georefLayersSet.has(layer as TileLayer);
-    
+
       if (isNotInGcpLayers && isNotOSMLayer && isNotInGeorefLayers) {
         this.removeLayerFromMap(layer as VectorLayer<VectorSource>);
       }
@@ -176,7 +176,9 @@ export class MapService {
   }
 
   addLayerToMap(newlayer: BaseLayer): void {
-    this.map.addLayer(newlayer);
+    if (!this.map.getLayers().getArray().includes(newlayer)) {
+      this.map.addLayer(newlayer);
+    }
   }
 
   addGeorefLayertoList(georefLayer: WMSLayer): void {

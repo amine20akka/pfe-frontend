@@ -33,6 +33,8 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 })
 export class ToolbarComponent {
 
+  isMapSelection = false;
+
   private georefSettings: GeorefSettings = {
     transformationType: TransformationType.POLYNOMIAL_1,
     srid: SRID.WEB_MERCATOR,
@@ -67,6 +69,8 @@ export class ToolbarComponent {
         this.georefSettingsService.updateSettings(this.georefSettings);
       }
     })
+
+    this.mapService.isMapSelection$.subscribe(value => this.isMapSelection = value)
   }
 
   get isAddingGCP(): boolean {
@@ -100,7 +104,9 @@ export class ToolbarComponent {
         resamplingMethod: this.georefSettings.resamplingMethod,
         compressionType: this.georefSettings.compressionType,
         outputFilename: this.georefSettings.outputFilename
-      }
+      },
+      disableClose: true,
+      panelClass: 'custom-dialog'
     });
 
     dialogRef.afterClosed().subscribe((result: GeorefSettings) => {

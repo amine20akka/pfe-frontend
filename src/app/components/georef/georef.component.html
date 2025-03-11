@@ -2,7 +2,7 @@
     [@toggleContent]="{value: isGeorefActive ? 'open' : 'closed', params: getAnimationParams()}">
     <!-- Barre de redimensionnement à gauche -->
     <div class="resize-handle" (mousedown)="startResize($event)" (touchstart)="startResize($event)"
-        [class.hidden]="!isGeorefActive"></div>
+        (dblclick)="resetWidth($event)" [class.hidden]="!isGeorefActive"></div>
 
     @if (isProcessing) {
     <div class="progress-content">
@@ -22,7 +22,7 @@
     <app-toolbar></app-toolbar>
     <app-image [height]="imageHeight"></app-image>
     <!-- Poignée de redimensionnement vertical -->
-    <div class="vertical-resize-handle" (mousedown)="startVerticalResize($event)"
+    <div class="vertical-resize-handle" (mousedown)="startVerticalResize($event)" (dblclick)="resetHeight($event)"
         (touchstart)="startVerticalResize($event)" [class.hidden]="!isGeorefActive"></div>
     <app-gcp [height]="82 - imageHeight"></app-gcp>
     <div class="georef-info-container" [class.hidden]="!isGeorefActive">
@@ -33,11 +33,19 @@
         <div class="georef-parameters">
             EPSG:{{ georefSettings.srid }}
         </div>
-        <div class="georef-parameters">
+        @if (panelWidth > 51) {
+        <div class="georef-parameters" [class.hidden-params]="panelWidth < 51">
             Ré-échantillonnage: {{ georefSettings.resamplingMethod }}
         </div>
-        <div class="georef-parameters">
+        }
+        @if (panelWidth > 40) {
+        <div class="georef-parameters" [class.hidden-params]="panelWidth < 40">
             Compression: {{ georefSettings.compressionType }}
+        </div>
+        }
+
+        <div class="georef-parameters">
+            Erreur moyenne: {{ totalRMSE | number:'1.4-4' }}
         </div>
 
         <!-- Coordonnées du curseur -->

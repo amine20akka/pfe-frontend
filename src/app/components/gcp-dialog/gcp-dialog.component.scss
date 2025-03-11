@@ -6,7 +6,12 @@
   margin-bottom: 10px;
 }
 
+.mat-dialog-container {
+  border-radius: 0px !important;
+}
+
 .dialog-content {
+  border-radius: 0px !important;
   display: flex;
   flex-direction: column;
   align-items: center;

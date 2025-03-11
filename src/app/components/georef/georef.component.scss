@@ -41,13 +41,14 @@
     overflow: hidden;
     position: absolute;
     bottom: 1px;
-    left: 0;
-    right: 0;
+    left: 2px;
+    right: 2px;
     display: flex;
     flex-direction: row;
     align-items: center;
     justify-content: space-between;
     padding: 5px;
+    font-size: 10px;
     transition: visibility 0.1s ease-in-out;
 }
 
@@ -63,7 +64,6 @@
     background: rgba(0, 0, 0, 0.6);
     color: white;
     padding: 4px 4px;
-    font-size: 10px;
     border-radius: 5px;
 }
 
@@ -75,6 +75,20 @@
     background: rgba(0, 0, 0, 0.6);
     padding: 4px 4px;
     border-radius: 5px;
+    transition: opacity 0.3s;
+
+    &.hidden-params {
+        opacity: 0;
+        visibility: hidden;
+        height: 0;
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+    }
+
+    @media (max-width: 700px) {
+        display: none;
+    }
 }
 
 .loading-container {

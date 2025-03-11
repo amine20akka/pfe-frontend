@@ -17,16 +17,16 @@
 
     <!-- Section Points -->
     <div class="toolbar-section">
-        <button mat-icon-button matTooltip="Supprimer tous les GCPs" (click)="openClearConfirmDialog()">
+        <button mat-icon-button matTooltip="Supprimer tous les points" (click)="openClearConfirmDialog()">
             <mat-icon>delete</mat-icon>
         </button>
-        <button mat-icon-button matTooltip="Charger des GCPs">
+        <button mat-icon-button matTooltip="Charger les points de contrôle">
             <mat-icon>upload</mat-icon>
         </button>
-        <button mat-icon-button matTooltip="Exporter les GCPs">
+        <button mat-icon-button matTooltip="Exporter les points de contrôle">
             <mat-icon>save_alt</mat-icon>
         </button>
-        <button mat-icon-button [matTooltip]="isAddingGCP ? 'Annuler':'Ajouter un GCP'" (click)="toggleAddingGCP()">
+        <button mat-icon-button [disabled]="isMapSelection" [matTooltip]="isAddingGCP ? 'Annuler':'Ajouter un point'" (click)="toggleAddingGCP()">
             <mat-icon [fontIcon]="isAddingGCP ? 'close':'control_point'"></mat-icon>
         </button>
     </div>

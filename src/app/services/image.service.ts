@@ -128,7 +128,7 @@ export class ImageService {
   private handleFile(file: File): void {
     const allowedExtensions = ['png', 'jpg', 'jpeg', 'tiff', 'tif'];
     const fileExtension = file.name.split('.').pop()?.toLowerCase();
-    const maxSize = 5 * 1024 * 1024; // 5 Mo
+    const maxSize = 10 * 1024 * 1024; // 10 Mo
 
     if (!fileExtension || !allowedExtensions.includes(fileExtension)) {
       console.error('Format non supporté');
@@ -136,7 +136,7 @@ export class ImageService {
     }
 
     if (file.size > maxSize) {
-      console.error('Fichier trop volumineux (max 5 Mo)');
+      console.error('Fichier trop volumineux (max 10 Mo)');
       return;
     }
 

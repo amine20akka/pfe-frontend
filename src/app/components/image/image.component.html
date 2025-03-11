@@ -1,4 +1,4 @@
-<div class="zoom-controls">
+<div class="zoom-controls" [ngStyle]="{'display': height > 20 ? 'flex' : 'none'}">
     <button mat-mini-fab matTooltip="Zoom-avant" color="primary" (click)="zoomIn()">
         <mat-icon>add</mat-icon>
     </button>

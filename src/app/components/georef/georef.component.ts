@@ -34,7 +34,7 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
   animations: [
     trigger('toggleContent', [
       state('closed', style({ width: '0' })),
-      state('open', style({ width: '{{panelWidth}}px' }), { params: { panelWidth: 600 } }),
+      state('open', style({ width: '{{panelWidth}}vw' }), { params: { panelWidth: 47 } }),
       transition('* => *', animate('500ms ease-in-out')),
     ])
   ]
@@ -46,12 +46,13 @@ export class GeorefComponent implements OnInit, OnDestroy {
   cursorY = 0;
   private coordSub!: Subscription;
   georefSettings!: GeorefSettings;
+  totalRMSE!: number;
 
   // Propriétés pour le redimensionnement
   isResizing = false;
-  panelWidth = 600; // Largeur par défaut
-  minWidth = 550;   // Largeur minimum
-  maxWidth = 1000;   // Largeur maximum
+  panelWidth = 47; // Largeur par défaut
+  minWidth = 42;   // Largeur minimum
+  maxWidth = 80;   // Largeur maximum
 
   // Variables liées au redimensionnement vertical
   imageHeight = 50; // Pourcentage de hauteur pour le composant image (défaut: 50%)
@@ -77,9 +78,9 @@ export class GeorefComponent implements OnInit, OnDestroy {
     });
 
     // Observer les paramètres de géoréférencement
-    this.georefSettingsService.settings$.subscribe(settings => {
-      this.georefSettings = settings;
-    });
+    this.georefSettingsService.settings$.subscribe(settings => this.georefSettings = settings);
+
+    this.gcpService.totalRMSE$.subscribe(value => this.totalRMSE = value);
 
     // Ajouter les écouteurs d'événements pour le redimensionnement
     this.setupResizeListeners();
@@ -142,10 +143,12 @@ export class GeorefComponent implements OnInit, OnDestroy {
   onMouseMove(event: MouseEvent): void {
     if (!this.isResizing) return;
 
+    // Convertir la position en pourcentage de la largeur de la fenêtre
     const windowWidth = window.innerWidth;
-    const newWidth = windowWidth - event.clientX;
+    // Calculer en % de viewport width (vw)
+    const newWidthVw = 100 - (event.clientX / windowWidth * 100);
 
-    this.updateWidth(newWidth);
+    this.updateWidth(newWidthVw);
   }
 
   onTouchMove(event: TouchEvent): void {
@@ -154,9 +157,10 @@ export class GeorefComponent implements OnInit, OnDestroy {
     event.preventDefault();
     const touch = event.touches[0];
     const windowWidth = window.innerWidth;
-    const newWidth = windowWidth - touch.clientX;
+    // Calculer en % de viewport width (vw)
+    const newWidthVw = 100 - (touch.clientX / windowWidth * 100);
 
-    this.updateWidth(newWidth);
+    this.updateWidth(newWidthVw);
   }
 
   onMouseUp(): void {
@@ -174,15 +178,29 @@ export class GeorefComponent implements OnInit, OnDestroy {
     document.body.style.userSelect = '';
   }
 
-  private updateWidth(newWidth: number): void {
-    // Limiter la largeur entre min et max
-    const constrainedWidth = Math.min(Math.max(newWidth, this.minWidth), this.maxWidth);
-    this.panelWidth = constrainedWidth;
+  private updateWidth(newWidthVw: number): void {
+    // Limiter la largeur entre min et max (en vw)
+    const constrainedWidthVw = Math.min(Math.max(newWidthVw, this.minWidth), this.maxWidth);
+    this.panelWidth = constrainedWidthVw;
 
     // Mettre à jour directement le style si le panneau est ouvert
     if (this.georefContainer) {
-      this.georefContainer.nativeElement.style.width = `${constrainedWidth}px`;
+      this.georefContainer.nativeElement.style.width = `${constrainedWidthVw}vw`;
     }
+  }
+
+  resetWidth(event: MouseEvent | TouchEvent): void {
+    if (!this.isGeorefActive) return;
+
+    event.preventDefault();
+
+    // Réinitialisation à la largeur par défaut
+    this.updateWidth(47); // 47 est la valeur par défaut
+
+    // Forcer la fin du redimensionnement si nécessaire
+    this.isResizing = false;
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
   }
 
   // Méthode pour démarrer le redimensionnement vertical
@@ -259,6 +277,20 @@ export class GeorefComponent implements OnInit, OnDestroy {
 
     // Forcer la mise à jour de la vue (ajoutez ChangeDetectorRef dans le constructeur)
     this.cdr.detectChanges();
+  }
+
+  resetHeight(event: MouseEvent | TouchEvent): void {
+    if (!this.isGeorefActive) return;
+
+    event.preventDefault();
+
+    // Réinitialisation à la largeur par défaut
+    this.updateImageHeight(50); // 47 est la valeur par défaut
+
+    // Forcer la fin du redimensionnement si nécessaire
+    this.isVerticalResizing = false;
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
   }
 
   get isGeorefActive(): boolean {

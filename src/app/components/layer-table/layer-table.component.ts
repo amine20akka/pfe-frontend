@@ -15,6 +15,7 @@ import { LayerDetailsComponent } from '../layer-details/layer-details.component'
 import { ImageService } from '../../services/image.service';
 import { GeorefImage } from '../../models/georef-image';
 import { WMSLayer } from '../../models/wms-layer';
+import { MatTabsModule } from '@angular/material/tabs';
 
 @Component({
   selector: 'app-layer-table',
@@ -28,6 +29,7 @@ import { WMSLayer } from '../../models/wms-layer';
     MatButtonModule,
     MatTooltipModule,
     FormsModule,
+    MatTabsModule,
   ],
   templateUrl: './layer-table.component.html',
   styleUrls: ['./layer-table.component.scss'],
@@ -43,6 +45,7 @@ export class LayerTableComponent implements OnInit {
   
   georefImage!: GeorefImage;
   wmsLayers: WMSLayer[] = [];
+  isVisible = false;
 
   constructor(
     private mapService: MapService,
@@ -64,6 +67,10 @@ export class LayerTableComponent implements OnInit {
 
   get isTableActive(): boolean {
     return this.georefService.isTableActive;
+  }
+
+  toggleContent(): void {
+    this.isVisible = !this.isVisible;
   }
 
   toggleLayerVisibility(wmsLayer: WMSLayer): void {

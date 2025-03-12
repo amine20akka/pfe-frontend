@@ -20,11 +20,8 @@
     <app-upload></app-upload>
     } @else {
     <app-toolbar></app-toolbar>
-    <app-image [height]="imageHeight"></app-image>
-    <!-- Poignée de redimensionnement vertical -->
-    <div class="vertical-resize-handle" (mousedown)="startVerticalResize($event)" (dblclick)="resetHeight($event)"
-        (touchstart)="startVerticalResize($event)" [class.hidden]="!isGeorefActive"></div>
-    <app-gcp [height]="82 - imageHeight"></app-gcp>
+    <app-image></app-image>
+    <app-gcp></app-gcp>
     <div class="georef-info-container" [class.hidden]="!isGeorefActive">
         <!-- Paramètres de géoréférencement en ligne -->
         <div class="georef-parameters">

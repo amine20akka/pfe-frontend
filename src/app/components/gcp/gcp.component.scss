@@ -1,18 +1,73 @@
+/* Styles pour container principal */
 .table-container {
-    position: relative;
-    height: 32%;
+    position: relative; // Changera en 'fixed' lorsqu'on déplace
+    max-height: 34%;
     overflow-y: auto;
     overflow-x: hidden;
     border: 1px solid #ddd;
     width: 100%;
     justify-self: center;
     align-self: center;
+    transition: box-shadow 0s ease, background-color 0s ease;
+    
+    // Pour des animations fluides lors des déplacements
+    &.is-dragging {
+        transition: none;
+        opacity: 0.97;
+    }
+    
+    // Indication visuelle lorsque la table est près de sa position d'origine
+    &.near-original-position {
+        border: 2px solid #f19124;
+        background-color: rgba(76, 175, 80, 0.1);
+        box-shadow: 0 0 8px rgba(175, 129, 76, 0.5);
+    }
 }
 
+/* Poignée de déplacement */
+.drag-handle {
+    position: sticky;
+    display: flex;
+    top: 0;
+    align-items: center;
+    height: 30px;
+    padding: 2px 8px;
+    background-color: #f0f0f0;
+    cursor: move;
+    user-select: none;
+    border-bottom: 1px solid #ddd;
+    transition: background-color 0s ease;
+    
+    .handle-label {
+        justify-self: center;
+        text-align: center;
+        font-size: 12px;
+        font-weight: 500;
+        color: #444;
+        transition: color 0s ease;
+    }
+
+    mat-icon {
+        margin-top: auto;
+        justify-self: center;
+        font-size: medium;
+    }
+    
+    &:hover {
+        background-color: #e0e0e0;
+    }
+    
+    // Indication spéciale pour la poignée lorsque près de la position d'origine
+    .near-original-position & {
+        background-color: #f7d7ad;
+    }
+}
+
+/* Styles de la table */
 table {
     overflow-y: auto;
     overflow-x: hidden;
-    max-height: 36%;
+    max-height: calc(100% - 30px); // Ajusté pour tenir compte de la poignée
     min-width: 97%;
     width: 100%;
     justify-content: center;
@@ -95,3 +150,15 @@ tr:hover td {
     background-color: rgba(0, 0, 0, 0.03);
 }
 
+/* Styles pour gérer l'état flottant */
+:host {
+    display: block;
+    position: relative;
+    
+    &.floating-container {
+        .table-container {
+            position: fixed;
+            z-index: 3000;
+        }
+    }
+}

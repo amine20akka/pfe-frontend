@@ -1,4 +1,11 @@
-<div #tableContainer class="table-container" [@toggleContent]="isGeorefActive ? 'open' : 'closed'">
+<div #tableContainer class="table-container">
+
+    <div class="drag-handle" (mousedown)="canStartDrag($event) && startDrag($event)"
+        (touchstart)="canStartDrag($event) && startDrag($event)" (dblclick)="onDoubleClick()">
+        <mat-icon>drag_indicator</mat-icon>
+        <span class="handle-label">Table des points de contrôle</span>
+    </div>
+
     <table mat-table bgColor="primary" [dataSource]="dataSource" [trackBy]="trackByFn" class="mat-elevation-z8">
 
         <!-- Checkbox Column -->
@@ -64,8 +71,8 @@
                     {{ gcp.mapX | number:'1.4-4' }}
                 </ng-container>
                 <ng-template #editMapX>
-                    <input id="edit-mapX" class="edit-field" [formControl]="mapXControl" type="number"
-                        step="0.0001" (keydown)="handleKeyDown($event)">
+                    <input id="edit-mapX" class="edit-field" [formControl]="mapXControl" type="number" step="0.0001"
+                        (keydown)="handleKeyDown($event)">
                 </ng-template>
             </td>
         </ng-container>
@@ -78,8 +85,8 @@
                     {{ gcp.mapY | number:'1.4-4' }}
                 </ng-container>
                 <ng-template #editMapY>
-                    <input id="edit-mapY" class="edit-field" [formControl]="mapYControl" type="number"
-                        step="0.0001" (keydown)="handleKeyDown($event)">
+                    <input id="edit-mapY" class="edit-field" [formControl]="mapYControl" type="number" step="0.0001"
+                        (keydown)="handleKeyDown($event)">
                 </ng-template>
             </td>
         </ng-container>
@@ -116,7 +123,8 @@
         <ng-container matColumnDef="delete">
             <th mat-header-cell *matHeaderCellDef>Supprimer</th>
             <td mat-cell *matCellDef="let gcp">
-                <button mat-icon-button color="warn" (click)="openDeleteConfirmDialog(gcp.index)" matTooltip="Supprimer">
+                <button mat-icon-button color="warn" (click)="openDeleteConfirmDialog(gcp.index)"
+                    matTooltip="Supprimer">
                     <mat-icon>delete</mat-icon>
                 </button>
             </td>

@@ -1,4 +1,4 @@
-import { Component, ElementRef, Input, OnChanges, OnInit, SimpleChanges, ViewChild } from '@angular/core';
+import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
 import { ImageService } from '../../services/image.service';
 import { trigger, state, style, transition, animate } from '@angular/animations';
 import { GeorefService } from '../../services/georef.service';
@@ -29,8 +29,7 @@ import { MapService } from '../../services/map.service';
     ])
   ]
 })
-export class ImageComponent implements OnInit, OnChanges {
-  @Input() height!: number;
+export class ImageComponent implements OnInit {
   @ViewChild('imageContainer', { static: false }) imageContainer!: ElementRef;
   length = 0;
   sourceX = 0;
@@ -67,15 +66,6 @@ export class ImageComponent implements OnInit, OnChanges {
     this.gcpService.gcps$.subscribe((gcps) => {
       this.length = gcps.length;
     })
-  }
-
-  ngOnChanges(changes: SimpleChanges): void {
-    if (changes['height'] && !changes['height'].firstChange) {
-      // Mettre à jour les éléments internes si nécessaire
-      if (this.imageContainer) {
-        this.imageContainer.nativeElement.style.height = `${this.height}%`;
-      }
-    }
   }
 
   zoomIn(): void {

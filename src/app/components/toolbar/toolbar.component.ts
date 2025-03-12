@@ -146,7 +146,7 @@ export class ToolbarComponent {
       title: 'Êtes-vous sûr de supprimer tous les points de contrôles ?',
       confirmText: 'Supprimer',
       cancelText: 'Annuler',
-      icon: 'delete'
+      icon: 'delete_forever'
     };
 
     const dialogRef = this.dialog.open(ConfirmDialogComponent, {

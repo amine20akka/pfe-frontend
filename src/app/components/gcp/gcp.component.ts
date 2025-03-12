@@ -1,4 +1,4 @@
-import { Component, ElementRef, Input, OnChanges, OnDestroy, OnInit, SimpleChanges, ViewChild } from '@angular/core';
+import { Component, ElementRef, HostListener, NgZone, OnDestroy, OnInit, Renderer2, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -7,7 +7,6 @@ import { GCP } from '../../models/gcp';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { SelectionModel } from '@angular/cdk/collections';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { trigger, transition, style, animate, state } from '@angular/animations';
 import { GeorefService } from '../../services/georef.service';
 import { GcpService } from '../../services/gcp.service';
 import { ImageService } from '../../services/image.service';
@@ -35,17 +34,9 @@ import { colors } from '../../shared/colors';
   ],
   templateUrl: './gcp.component.html',
   styleUrl: './gcp.component.scss',
-  animations: [
-    trigger('toggleContent', [
-      state('closed', style({ width: '0' })),
-      state('open', style({ width: '100%' })),
-      transition('* => *', animate('500ms ease-in-out')),
-    ]),
-  ]
 })
 
-export class GcpComponent implements OnInit, OnDestroy, OnChanges {
-  @Input() height!: number;
+export class GcpComponent implements OnInit, OnDestroy {
   @ViewChild('tableContainer', { static: false }) tableContainer!: ElementRef;
 
   constructor(
@@ -55,6 +46,9 @@ export class GcpComponent implements OnInit, OnDestroy, OnChanges {
     private mapService: MapService,
     private fb: FormBuilder,
     private dialog: MatDialog,
+    private renderer: Renderer2, 
+    private el: ElementRef,
+    private ngZone: NgZone
   ) { }
 
   displayedColumns: string[] = ['select', 'index', 'sourceX', 'sourceY', 'mapX', 'mapY', 'residual', 'edit', 'delete'];
@@ -72,6 +66,17 @@ export class GcpComponent implements OnInit, OnDestroy, OnChanges {
   editingGcpId: number | null = null;
   editForm!: FormGroup;
 
+  isDragging = false;
+  startX = 0;
+  startY = 0;
+  currentX = 0;
+  currentY = 0;
+  lastX = 0;
+  lastY = 0;
+  isFloating = false;
+  isNearOriginalPosition = false;
+  originalPosition = { top: 0, left: 0, width: 0, height: 0 };
+  resetThreshold = 150;
 
   ngOnInit() {
     // Initialiser le formulaire d'édition
@@ -117,16 +122,21 @@ export class GcpComponent implements OnInit, OnDestroy, OnChanges {
       this.mapLayers = mapLayers;
       console.log('GCPs Map Layers : ', mapLayers);
     });
-  }
 
-  ngOnChanges(changes: SimpleChanges): void {
-      if (changes['height'] && !changes['height'].firstChange) {
-        // Mettre à jour les éléments internes si nécessaire
-        if (this.tableContainer) {
-          this.tableContainer.nativeElement.style.height = `${this.height}%`;
-        }
+    // Sauvegarder la position originale pour permettre de revenir
+    setTimeout(() => {
+      const element = this.el.nativeElement.querySelector('.table-container');
+      if (element) {
+        const rect = element.getBoundingClientRect();
+        this.originalPosition = {
+          top: rect.top,
+          left: rect.left,
+          width: rect.width,
+          height: rect.height
+        };
       }
-    }
+    }, 100);
+  }
 
   ngOnDestroy(): void {
     this.gcpService.isAddingGCP = false;
@@ -137,6 +147,175 @@ export class GcpComponent implements OnInit, OnDestroy, OnChanges {
 
   get isGeorefActive(): boolean {
     return this.georefService.isGeorefActive;
+  }
+
+  startDrag(event: MouseEvent | TouchEvent): void {
+    event.preventDefault();
+    this.isDragging = true;
+    
+    if (event instanceof MouseEvent) {
+      this.startX = event.clientX;
+      this.startY = event.clientY;
+    } else {
+      this.startX = event.touches[0].clientX;
+      this.startY = event.touches[0].clientY;
+    }
+    
+    const element = this.el.nativeElement.querySelector('.table-container');
+    const rect = element.getBoundingClientRect();
+    
+    if (!this.isFloating) {
+      // Si ce n'est pas encore flottant, on initialise les positions actuelles
+      this.lastX = rect.left;
+      this.lastY = rect.top;
+      
+      // On rend la table flottante
+      this.renderer.setStyle(element, 'position', 'fixed');
+      this.renderer.setStyle(element, 'z-index', '3000');
+      this.renderer.setStyle(element, 'box-shadow', '0 4px 8px rgba(0, 0, 0, 0.2)');
+      this.renderer.setStyle(element, 'width', `${rect.width}px`);
+      this.renderer.setStyle(element, 'height', `${rect.height}px`);
+      this.isFloating = true;
+    }
+    
+    this.currentX = this.lastX;
+    this.currentY = this.lastY;
+    
+    // Ajouter les event listeners pour le déplacement et la fin du drag
+    document.addEventListener('mousemove', this.dragMove);
+    document.addEventListener('touchmove', this.dragMove);
+    document.addEventListener('mouseup', this.stopDrag);
+    document.addEventListener('touchend', this.stopDrag);
+    
+    // Ajout d'une classe pour indiquer le drag
+    this.renderer.addClass(element, 'is-dragging');
+  }
+  
+  dragMove = (event: MouseEvent | TouchEvent): void => {
+    if (!this.isDragging) return;
+    
+    let clientX: number, clientY: number;
+    
+    if (event instanceof MouseEvent) {
+      clientX = event.clientX;
+      clientY = event.clientY;
+    } else {
+      clientX = event.touches[0].clientX;
+      clientY = event.touches[0].clientY;
+      // Empêcher le défilement pendant le drag sur mobile
+      event.preventDefault();
+    }
+    
+    const dx = clientX - this.startX;
+    const dy = clientY - this.startY;
+    
+    this.currentX = this.lastX + dx;
+    this.currentY = this.lastY + dy;
+    
+    const element = this.el.nativeElement.querySelector('.table-container');
+    this.renderer.setStyle(element, 'left', `${this.currentX}px`);
+    this.renderer.setStyle(element, 'top', `${this.currentY}px`);
+    
+    // Vérifier si on est proche de la position d'origine
+    this.checkIfNearOriginalPosition();
+  }
+  
+  stopDrag = (): void => {
+    if (!this.isDragging) return;
+    
+    this.isDragging = false;
+    this.lastX = this.currentX;
+    this.lastY = this.currentY;
+    
+    // Vérifier si la table est proche de sa position d'origine
+    if (this.isNearOriginalPosition && this.isGeorefActive) {
+      // Retour à la position d'origine
+      this.resetPosition();
+    }
+    
+    // Retirer les event listeners
+    document.removeEventListener('mousemove', this.dragMove);
+    document.removeEventListener('touchmove', this.dragMove);
+    document.removeEventListener('mouseup', this.stopDrag);
+    document.removeEventListener('touchend', this.stopDrag);
+    
+    // Retirer la classe de drag
+    const element = this.el.nativeElement.querySelector('.table-container');
+    this.renderer.removeClass(element, 'is-dragging');
+  }
+  
+  checkIfNearOriginalPosition(): void {
+    const element = this.el.nativeElement.querySelector('.table-container');
+    const wasNear = this.isNearOriginalPosition;
+    
+    // Vérifier si on est proche de la position d'origine
+    this.isNearOriginalPosition = 
+      Math.abs(this.currentX - this.originalPosition.left) < this.resetThreshold &&
+      Math.abs(this.currentY - this.originalPosition.top) < this.resetThreshold;
+    
+    // Si le statut a changé, mettre à jour la classe CSS
+    if (wasNear !== this.isNearOriginalPosition) {
+      this.ngZone.run(() => {
+        if (this.isNearOriginalPosition && this.isGeorefActive) {
+          this.renderer.addClass(element, 'near-original-position');
+        } else {
+          this.renderer.removeClass(element, 'near-original-position');
+        }
+      });
+    }
+  }
+  
+  // On ajoute un gestionnaire de survol (hover) pour la table entière
+  @HostListener('mouseenter')
+  onMouseEnter(): void {
+    if (this.isFloating) {
+      this.checkIfNearOriginalPosition();
+    }
+  }
+  
+  resetPosition(): void {
+    const element = this.el.nativeElement.querySelector('.table-container');
+    
+    // Animation de retour à la position d'origine
+    this.renderer.setStyle(element, 'transition', 'left 0.3s ease, top 0.3s ease');
+    this.renderer.setStyle(element, 'left', `${this.originalPosition.left}px`);
+    this.renderer.setStyle(element, 'top', `${this.originalPosition.top}px`);
+    
+    // Retirer le style "fixed" et autres styles de drag après l'animation
+    setTimeout(() => {
+      this.renderer.removeStyle(element, 'position');
+      this.renderer.removeStyle(element, 'z-index');
+      this.renderer.removeStyle(element, 'box-shadow');
+      this.renderer.removeStyle(element, 'left');
+      this.renderer.removeStyle(element, 'top');
+      this.renderer.removeStyle(element, 'width');
+      this.renderer.removeStyle(element, 'height');
+      this.renderer.removeStyle(element, 'transition');
+      this.renderer.removeClass(element, 'near-original-position');
+      
+      this.isFloating = false;
+      this.isNearOriginalPosition = false;
+    }, 300); // Durée de l'animation
+  }
+  
+  // Double-clic pour reset la position
+  onDoubleClick(): void {
+    if (this.isFloating) {
+      this.resetPosition();
+    }
+  }
+  
+  // Maintenant on ajoute un simple clic pour réinitialiser si on est près de la position d'origine
+  onClick(): void {
+    if (this.isFloating) {
+      this.resetPosition();
+    }
+  }
+  
+  // On détecte si on est en train d'éditer avant de déplacer
+  canStartDrag(event: MouseEvent | TouchEvent): boolean {
+    const target = event.target as HTMLElement;
+    return !this.editingGcpId && !target.closest('input') && !target.closest('button');
   }
 
   /** Vérifie si tous les éléments sont sélectionnés */

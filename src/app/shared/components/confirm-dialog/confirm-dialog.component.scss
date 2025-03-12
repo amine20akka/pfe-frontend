@@ -21,14 +21,17 @@
 }
 
 #cancel-button {
-  background: #e7e7e7 !important;
   color: #5f5f5f !important;
 }
 
 #cancel-button:hover {
-  background: #dedede !important;
+  background: #ebebeb !important;
 }
 
 #confirm-button {
-  background: #dbf1ffa8 !important;
+  color: #d32f2f !important;
+}
+
+#confirm-button:hover {
+  background: #fff1f1 !important;
 }

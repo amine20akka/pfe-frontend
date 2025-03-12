@@ -1,9 +1,10 @@
 .dialog-title {
-  font-size: 20px;
-  font-weight: bold;
-  color: #333;
+  color: #175a9c;
   text-align: center;
-  margin-bottom: 10px;
+  border-bottom: 1px solid #e0e0e0;
+  font-weight: 500;
+  margin-bottom: 12px;
+  font-size: 18px;
 }
 
 .mat-dialog-container {
@@ -30,6 +31,22 @@ mat-form-field input {
   font-size: 14px;
 }
 
+mat-form-field {
+  --mat-form-field-container-height: 2.4rem;
+  --mat-form-field-container-vertical-padding: 0.6rem;
+  font-size: 12px;
+}
+
+mat-select, mat-label, mat-option {
+  font-size: 12px;
+}
+
+mat-error {
+  position: absolute;
+  left: 0;
+  font-size: 9px;
+}
+
 .dialog-actions {
   display: flex;
   justify-content: space-between;
@@ -39,22 +56,27 @@ mat-form-field input {
 
 .cancel-button {
   color: #696969 !important;
-  background-color: #f1f1f1 !important;
+  // background-color: #f1f1f1 !important;
 }
 
 .cancel-button:hover {
-  background-color: #d7d7d7 !important;
+  background-color: #ececec !important;
 }
 
 .map-selection-button {
-  color: rgb(238, 116, 34) !important;
-  background-color: rgb(247, 237, 228) !important;
+  color: rgb(223, 107, 30) !important;
+  // background-color: rgb(247, 237, 228) !important;
 }
 
 .map-selection-button:hover {
-  background-color: rgb(245, 224, 206) !important;
+  background-color: rgb(250, 236, 224) !important;
 }
 
 .confirm-button {
-  background-color: #e7f0ff !important;
+  color: #175a9c !important;
+}
+
+.confirm-button:disabled {
+  color: #c0c0c0 !important;
+  background-color: #ececec !important;
 }

@@ -4,6 +4,10 @@
         (touchstart)="canStartDrag($event) && startDrag($event)" (dblclick)="onDoubleClick()">
         <mat-icon>drag_indicator</mat-icon>
         <span class="handle-label">Table des points de contrôle</span>
+        <button *ngIf="isFloating" mat-icon-button class="reset-button"
+            (click)="resetPosition(); $event.stopPropagation()" matTooltip="Réinitialiser la position">
+            <mat-icon>branding_watermark</mat-icon>
+        </button>
     </div>
 
     <table mat-table bgColor="primary" [dataSource]="dataSource" [trackBy]="trackByFn" class="mat-elevation-z8">
@@ -12,7 +16,7 @@
         <ng-container matColumnDef="select">
             <th mat-header-cell *matHeaderCellDef>
                 <mat-checkbox (change)="$event ? toggleAllRows() : null"
-                    [checked]="selection.hasValue() && isAllSelected()"
+                    [checked]="selection.hasValue() && isAllSelected()" [disabled]="!dataSource.data.length"
                     [indeterminate]="selection.hasValue() && !isAllSelected()">
                 </mat-checkbox>
             </th>
@@ -133,5 +137,21 @@
         <!-- Table Headers & Rows -->
         <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
         <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+
+        @if (selection.isEmpty()) {
+        <!-- Message quand la table est vide -->
+        <tr class="empty-row" *matNoDataRow>
+            <td class="empty-cell" [attr.colspan]="displayedColumns.length">
+                <div class="empty-message">
+                    <mat-icon>info</mat-icon>
+                    <span>Aucun point de contrôle défini</span>
+                    <button mat-raised-button color="primary" (click)="toggleAddingGCP()">
+                        <mat-icon>control_point</mat-icon>
+                        Ajouter un point
+                    </button>
+                </div>
+            </td>
+        </tr>
+        }
     </table>
 </div>

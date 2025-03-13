@@ -1,22 +1,20 @@
-/* Styles pour container principal */
 .table-container {
-    position: relative; // Changera en 'fixed' lorsqu'on déplace
-    max-height: 34%;
-    overflow-y: auto;
-    overflow-x: hidden;
+    position: relative; 
+    max-height: 34vh;
+    overflow: auto;
     border: 1px solid #ddd;
     width: 100%;
     justify-self: center;
     align-self: center;
     transition: box-shadow 0s ease, background-color 0s ease;
+    display: flex;
+    flex-direction: column; // This helps with the sticky header
     
-    // Pour des animations fluides lors des déplacements
     &.is-dragging {
         transition: none;
         opacity: 0.97;
     }
     
-    // Indication visuelle lorsque la table est près de sa position d'origine
     &.near-original-position {
         border: 2px solid #f19124;
         background-color: rgba(76, 175, 80, 0.1);
@@ -24,55 +22,65 @@
     }
 }
 
-/* Poignée de déplacement */
 .drag-handle {
     position: sticky;
     display: flex;
     top: 0;
+    z-index: 2000;
     align-items: center;
     height: 30px;
     padding: 2px 8px;
-    background-color: #f0f0f0;
+    background-color: #ebebeb;
     cursor: move;
     user-select: none;
     border-bottom: 1px solid #ddd;
     transition: background-color 0s ease;
     
     .handle-label {
-        justify-self: center;
+        flex-grow: 1;
         text-align: center;
         font-size: 12px;
         font-weight: 500;
         color: #444;
         transition: color 0s ease;
     }
-
+    
     mat-icon {
-        margin-top: auto;
-        justify-self: center;
+        margin-top: 6px;
+        align-self: center;
         font-size: medium;
+    }
+
+    .reset-button {
+        width: 28px;
+        height: 28px;
+        padding: 3px;
+        margin-right: 7px;
+        align-self: center;
+
+        mat-icon {
+            margin-top: 1.8px;
+            align-self: center;
+            font-size: medium;
+        }
     }
     
     &:hover {
         background-color: #e0e0e0;
     }
     
-    // Indication spéciale pour la poignée lorsque près de la position d'origine
     .near-original-position & {
         background-color: #f7d7ad;
     }
 }
 
-/* Styles de la table */
 table {
-    overflow-y: auto;
-    overflow-x: hidden;
-    max-height: calc(100% - 30px); // Ajusté pour tenir compte de la poignée
-    min-width: 97%;
+    overflow: auto;
     width: 100%;
     justify-content: center;
     align-items: center;
     border-collapse: collapse;
+    min-height: 50px; // Add a minimum height to prevent collapse
 }
 
 th {
@@ -161,4 +169,69 @@ tr:hover td {
             z-index: 3000;
         }
     }
+}
+
+.empty-row {
+    height: auto !important;
+    background-color: transparent !important;
+}
+
+.empty-cell {
+    padding: 8px !important;
+    text-align: center;
+    border-bottom: none !important;
+}
+
+.empty-message {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2px;
+    background-color: #ffffff;
+    border-radius: 4px;
+    border: 1px dashed #bdbdbd;
+}
+
+.empty-message mat-icon {
+    padding-top: 2px;
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+    color: #9e9e9e;
+    margin: 4px 0px;
+}
+
+.empty-message span {
+    font-size: 10px;
+    color: #666;
+    margin-bottom: 0;
+}
+
+.empty-message button {
+    margin-top: 0;
+    color: #fa7f1b;
+
+    mat-icon {
+        color: #fa7f1b;
+        font-size: 18px;
+        width: 18px;
+        height: 18px;
+        padding-right: 12px;
+    }
+}
+
+.empty-message button:hover {
+    background-color: #fde9d9;
+}
+
+/* Animation optionnelle pour attirer l'attention */
+@keyframes pulse {
+    0% { transform: scale(0.5); }
+    50% { transform: scale(0.6); }
+    100% { transform: scale(0.5); }
+}
+
+.empty-message button {
+    animation: pulse 2s infinite;
 }

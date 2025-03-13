@@ -8,6 +8,7 @@ import { colors } from '../shared/colors';
 import { SRID, TransformationType } from '../models/georef-settings';
 import { GeorefSettingsService } from './georef-settings.service';
 import { ResidualService } from './residual.service';
+import { NotificationService } from './notification.service';
 
 @Injectable({
   providedIn: 'root'
@@ -31,6 +32,7 @@ export class GcpService {
   constructor(
     private georefSettingsService: GeorefSettingsService,
     private residualService: ResidualService,
+    private notifService: NotificationService
   ) {
     this.initGcpStyles();
     this.georefSettingsService.settings$.subscribe((settings) => {
@@ -62,6 +64,9 @@ export class GcpService {
 
   toggleAddingGcp(): void {
     this.isAddingGCP = !this.isAddingGCP;
+    if (this.isAddingGCP) {
+      this.notifService.showInfo("Sélectionner un point sur l'image");
+    }
   }
 
   addGcpToList(gcp: GCP): void {
@@ -133,6 +138,8 @@ export class GcpService {
         });
     } else {
       this.gcps.forEach(gcp => gcp.residual = undefined);
+      this.gcpsSubject.next(this.gcps);
+      this.totalRMSESubject.next(0);
     }
   }
 

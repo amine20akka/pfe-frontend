@@ -52,12 +52,16 @@
 
 button {
     overflow: hidden;
-    font-size: large;
+    align-self: center;
 }
 
 mat-icon {
+    align-self: center;
+    margin-top: 3.5px;
     overflow: hidden;
-    font-size: larger;
+    font-size: 17px;
+    height: 24px;
+    width: 24px;
 }
 
 mat-divider {

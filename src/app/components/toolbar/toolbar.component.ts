@@ -17,7 +17,7 @@ import { GeorefSettingsService } from '../../services/georef-settings.service';
 import { GeorefRequestData } from '../../models/georef-request-data';
 import { GeorefImage, GeorefStatus } from '../../models/georef-image';
 import { GeoserverService } from '../../services/geoserver.service';
-import { MatSnackBar } from '@angular/material/snack-bar';
+import { NotificationService } from '../../services/notification.service';
 
 @Component({
   selector: 'app-toolbar',
@@ -34,6 +34,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 export class ToolbarComponent {
 
   isMapSelection = false;
+  georefSuccess = false;
 
   private georefSettings: GeorefSettings = {
     transformationType: TransformationType.POLYNOMIAL_1,
@@ -52,7 +53,7 @@ export class ToolbarComponent {
     private georefSettingsService: GeorefSettingsService,
     private geoserverService: GeoserverService,
     private dialog: MatDialog,
-    private snackBar: MatSnackBar
+    private notifService: NotificationService, 
   ) {
     this.georefSettingsService.settings$.subscribe((settings) => {
       if (settings.outputFilename) {
@@ -164,15 +165,6 @@ export class ToolbarComponent {
     });
   }
 
-  private showErrorSnackBar(message: string): void {
-    this.snackBar.open(message, 'Fermer', {
-      duration: 4000,
-      panelClass: ['error-snackbar'],
-      horizontalPosition: 'center',
-      verticalPosition: 'bottom'
-    });
-  }
-
   georeferenceImage(): void {
     if (!this.gcpService.hasEnoughGCPs()) {
       let message = "";
@@ -189,7 +181,7 @@ export class ToolbarComponent {
         default:
           break;
       }
-      this.showErrorSnackBar(message);
+      this.notifService.showError(message);
       return;
     }
 
@@ -215,23 +207,26 @@ export class ToolbarComponent {
         setTimeout(() => {
           this.georefImage.wmsLayer = this.geoserverService.createWMSLayer(responselayerName);
           this.imageService.updateGeorefStatus(GeorefStatus.COMPLETED);
+          this.georefSuccess = true;
           this.imageService.updateGeorefDate(new Date(Date.now()));
-          console.log('Géoréférencement terminé avec succès !', this.georefImage);
           this.mapService.addGeorefLayertoList(this.georefImage.wmsLayer);
           this.reset();
           this.georefService.toggleGeoref();
         }, 2000);
       },
       error: (error) => {
-        this.showErrorSnackBar("Géoréférencement échouée !");
+        this.notifService.showError("Géoréférencement échouée !");
         console.error('Erreur lors du géoréférencement', error);
         this.imageService.updateGeorefStatus(GeorefStatus.FAILED);
+        this.georefSuccess = false;
         this.georefService.toggleGeoref();
       }
     });
     setTimeout(() => {
-      this.imageService.updateGeorefStatus(GeorefStatus.PENDING);
-      this.showErrorSnackBar("Géoréférencement terminé avec succès !");
+      if (this.georefSuccess) {
+        this.imageService.updateGeorefStatus(GeorefStatus.PENDING);
+        this.notifService.showSuccess("Géoréférencement terminé avec succès !");
+      }
     }, 4000);
   }
 }

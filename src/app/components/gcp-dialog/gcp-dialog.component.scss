@@ -51,12 +51,11 @@ mat-error {
   display: flex;
   justify-content: space-between;
   padding: 15px;
-  font-size: small;
 }
 
 .cancel-button {
   color: #696969 !important;
-  // background-color: #f1f1f1 !important;
+  font-size: 14px;
 }
 
 .cancel-button:hover {
@@ -65,7 +64,7 @@ mat-error {
 
 .map-selection-button {
   color: rgb(223, 107, 30) !important;
-  // background-color: rgb(247, 237, 228) !important;
+  font-size: 14px;
 }
 
 .map-selection-button:hover {
@@ -74,6 +73,7 @@ mat-error {
 
 .confirm-button {
   color: #175a9c !important;
+  font-size: 14px;
 }
 
 .confirm-button:disabled {

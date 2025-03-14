@@ -16,6 +16,8 @@ import { ImageService } from '../../services/image.service';
 import { GeorefImage } from '../../models/georef-image';
 import { WMSLayer } from '../../models/wms-layer';
 import { MatTabsModule } from '@angular/material/tabs';
+import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/confirm-dialog.component';
+import { ConfirmDialogData } from '../../models/confirm-dialog-data';
 
 @Component({
   selector: 'app-layer-table',
@@ -42,7 +44,7 @@ import { MatTabsModule } from '@angular/material/tabs';
   ]
 })
 export class LayerTableComponent implements OnInit {
-  
+
   georefImage!: GeorefImage;
   wmsLayers: WMSLayer[] = [];
   isVisible = false;
@@ -101,6 +103,29 @@ export class LayerTableComponent implements OnInit {
 
   removeLayer(layer: WMSLayer): void {
     this.mapService.deleteGeorefLayer(layer);
+  }
+
+  openDeleteConfirmDialog(layer: WMSLayer): void {
+    const dialogData: ConfirmDialogData = {
+      title: 'Êtes-vous sûr de supprimer définitivement cette image géoréférencée ?',
+      confirmText: 'Supprimer',
+      cancelText: 'Annuler',
+      icon: 'delete'
+    };
+
+    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+      width: '350px',
+      data: dialogData
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        console.log('Action confirmée');
+        this.removeLayer(layer);
+      } else {
+        console.log('Action annulée');
+      }
+    });
   }
 
 }

@@ -128,7 +128,7 @@ export class ToolbarComponent {
     };
 
     const dialogRef = this.dialog.open(ConfirmDialogComponent, {
-      width: '400px',
+      width: '350px',
       data: dialogData
     });
 
@@ -151,7 +151,7 @@ export class ToolbarComponent {
     };
 
     const dialogRef = this.dialog.open(ConfirmDialogComponent, {
-      width: '400px',
+      width: '350px',
       data: dialogData
     });
 

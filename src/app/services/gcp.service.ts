@@ -64,9 +64,6 @@ export class GcpService {
 
   toggleAddingGcp(): void {
     this.isAddingGCP = !this.isAddingGCP;
-    if (this.isAddingGCP) {
-      this.notifService.showInfo("Sélectionner un point sur l'image");
-    }
   }
 
   addGcpToList(gcp: GCP): void {

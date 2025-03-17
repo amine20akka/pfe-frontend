@@ -150,4 +150,12 @@
         </tr>
         }
     </table>
+    <div *ngIf="isFloating" class="resize-handle resize-handle-right" (mousedown)="startResize($event, 'right')"
+        (touchstart)="startResize($event, 'right')"></div>
+    <div *ngIf="isFloating" class="resize-handle resize-handle-bottom" (mousedown)="startResize($event, 'bottom')"
+        (touchstart)="startResize($event, 'bottom')"></div>
+    <div *ngIf="isFloating" class="resize-handle resize-handle-both" (mousedown)="startResize($event, 'both')"
+        (touchstart)="startResize($event, 'both')"></div>
 </div>
+
+<div *ngIf="isFloating" class="anchor-zone" #anchorZone></div>

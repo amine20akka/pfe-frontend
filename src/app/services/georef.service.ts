@@ -28,6 +28,7 @@ export class GeorefService {
   isGeorefActive = false; // Gère l'affichage de la partie droite
   isTableActive = false; // Gère la TDM
   isProcessing = false;
+  panelWidth = 47; // Largeur par défaut
 
   toggleGeoref() {
     this.isGeorefActive = !this.isGeorefActive;
@@ -43,6 +44,10 @@ export class GeorefService {
 
   toggleTable(): void {
     this.isTableActive = !this.isTableActive;
+  }
+
+  updatePanelWidth(newWidth: number): void {
+    this.panelWidth = newWidth;
   }
 
   georeferenceImage(requestData: GeorefRequestData): Observable<string> {

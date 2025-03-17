@@ -8,7 +8,6 @@ import { colors } from '../shared/colors';
 import { SRID, TransformationType } from '../models/georef-settings';
 import { GeorefSettingsService } from './georef-settings.service';
 import { ResidualService } from './residual.service';
-import { NotificationService } from './notification.service';
 
 @Injectable({
   providedIn: 'root'
@@ -17,22 +16,23 @@ export class GcpService {
 
   private gcps: GCP[] = [];
   private gcpsSubject = new BehaviorSubject<GCP[]>(this.gcps);
-  private totalRMSESubject = new BehaviorSubject<number>(0); // RMSE global
+  private totalRMSESubject = new BehaviorSubject<number>(0);
+  private isFloatingSubject = new BehaviorSubject<boolean>(false);
+  private isNearOriginalPositionSubject = new BehaviorSubject<boolean>(false);
+  private transformationType!: TransformationType;
+  private srid!: SRID;
 
   cursorCoordinates = new BehaviorSubject<{ x: number; y: number }>({ x: 0, y: 0 });
-  gcps$ = this.gcpsSubject.asObservable(); // Observable pour suivre les changements
+  gcps$ = this.gcpsSubject.asObservable();
   totalRMSE$ = this.totalRMSESubject.asObservable();
   gcpStyles: Style[] = [];
   isAddingGCP = false; // Gère l'ajout de points de contrôle
-
-  // Paramètres de géoréférencement par défaut
-  private transformationType!: TransformationType;
-  private srid!: SRID;
+  isFloating$ = this.isFloatingSubject.asObservable();
+  isNearOriginalPosition$ = this.isNearOriginalPositionSubject.asObservable();
 
   constructor(
     private georefSettingsService: GeorefSettingsService,
     private residualService: ResidualService,
-    private notifService: NotificationService
   ) {
     this.initGcpStyles();
     this.georefSettingsService.settings$.subscribe((settings) => {
@@ -156,6 +156,14 @@ export class GcpService {
         })
       }));
     }
+  }
+
+  updateFloatingStatus(status: boolean): void {
+    this.isFloatingSubject.next(status);
+  }
+
+  updateNearOriginalPositionStatus(status: boolean): void {
+    this.isNearOriginalPositionSubject.next(status);
   }
 
 }

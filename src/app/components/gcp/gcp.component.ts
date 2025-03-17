@@ -38,6 +38,7 @@ import { colors } from '../../shared/colors';
 
 export class GcpComponent implements OnInit, OnDestroy {
   @ViewChild('tableContainer', { static: false }) tableContainer!: ElementRef;
+  @ViewChild('anchorZone', { static: true }) anchorZone!: ElementRef;
 
   constructor(
     private georefService: GeorefService,
@@ -67,16 +68,20 @@ export class GcpComponent implements OnInit, OnDestroy {
   editForm!: FormGroup;
 
   isDragging = false;
-  startX = 0;
-  startY = 0;
-  currentX = 0;
-  currentY = 0;
-  lastX = 0;
-  lastY = 0;
   isFloating = false;
   isNearOriginalPosition = false;
-  originalPosition = { top: 0, left: 0, width: 0, height: 0 };
-  resetThreshold = 150;
+  private isResizing = false;
+  private resizeDirection: 'right' | 'bottom' | 'both' = 'both';
+  private startWidth!: number;
+  private startHeight!: number;
+  private startX = 0;
+  private startY = 0;
+  private currentX = 0;
+  private currentY = 0;
+  private lastX = 0;
+  private lastY = 0;
+  private originalPosition = { top: 0, left: 0, width: 0, height: 0 };
+  private resetThreshold = 150;
 
   ngOnInit() {
     // Initialiser le formulaire d'édition
@@ -97,7 +102,7 @@ export class GcpComponent implements OnInit, OnDestroy {
       if (gcps.length > 0 && !this.isDeleting) {
         this.selection.select(gcps[gcps.length - 1]);
       }
-      
+
       setTimeout(() => {
         // Restaurer la sélection depuis le stockage local
         const savedSelection = localStorage.getItem('selectedGCPs');
@@ -124,6 +129,9 @@ export class GcpComponent implements OnInit, OnDestroy {
       this.mapLayers = mapLayers;
       console.log('GCPs Map Layers : ', mapLayers);
     });
+
+    this.gcpService.isFloating$.subscribe(value => this.isFloating = value);
+    this.gcpService.isNearOriginalPosition$.subscribe(value => this.isNearOriginalPosition = value);
 
     // Subscribe to data changes to update dimensions
     this.dataSource.connect().subscribe(() => {
@@ -158,6 +166,85 @@ export class GcpComponent implements OnInit, OnDestroy {
 
   toggleAddingGCP(): void {
     this.gcpService.toggleAddingGcp();
+  }
+
+  startResize(event: MouseEvent | TouchEvent, direction: 'right' | 'bottom' | 'both'): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isResizing = true;
+    this.resizeDirection = direction;
+
+    const element = this.el.nativeElement.querySelector('.table-container');
+    const rect = element.getBoundingClientRect();
+
+    if (event instanceof MouseEvent) {
+      this.startX = event.clientX;
+      this.startY = event.clientY;
+    } else {
+      this.startX = event.touches[0].clientX;
+      this.startY = event.touches[0].clientY;
+    }
+
+    this.startWidth = rect.width;
+    this.startHeight = rect.height;
+
+    // Ajouter la classe de redimensionnement
+    this.renderer.addClass(element, 'is-resizing');
+
+    // Ajouter les écouteurs d'événements
+    document.addEventListener('mousemove', this.resizeMove);
+    document.addEventListener('touchmove', this.resizeMove);
+    document.addEventListener('mouseup', this.stopResize);
+    document.addEventListener('touchend', this.stopResize);
+  }
+
+  // Méthode pour gérer le déplacement pendant le redimensionnement
+  resizeMove = (event: MouseEvent | TouchEvent): void => {
+    if (!this.isResizing) return;
+
+    let clientX: number, clientY: number;
+
+    if (event instanceof MouseEvent) {
+      clientX = event.clientX;
+      clientY = event.clientY;
+    } else {
+      clientX = event.touches[0].clientX;
+      clientY = event.touches[0].clientY;
+      event.preventDefault(); // Empêcher le défilement sur mobile
+    }
+
+    const dx = clientX - this.startX;
+    const dy = clientY - this.startY;
+    const element = this.el.nativeElement.querySelector('.table-container');
+
+    // Appliquer le redimensionnement selon la direction
+    if (this.resizeDirection === 'right' || this.resizeDirection === 'both') {
+      const newWidth = Math.max(this.startWidth + dx, 200); // Largeur minimale de 200px
+      this.renderer.setStyle(element, 'width', `${newWidth}px`);
+    }
+
+    if (this.resizeDirection === 'bottom' || this.resizeDirection === 'both') {
+      const newHeight = Math.max(this.startHeight + dy, 100); // Hauteur minimale de 100px
+      this.renderer.setStyle(element, 'height', `${newHeight}px`);
+    }
+  }
+
+  // Méthode pour arrêter le redimensionnement
+  stopResize = (): void => {
+    if (!this.isResizing) return;
+
+    this.isResizing = false;
+    this.resizeDirection = 'both';
+
+    // Retirer la classe de redimensionnement
+    const element = this.el.nativeElement.querySelector('.table-container');
+    this.renderer.removeClass(element, 'is-resizing');
+
+    // Retirer les écouteurs d'événements
+    document.removeEventListener('mousemove', this.resizeMove);
+    document.removeEventListener('touchmove', this.resizeMove);
+    document.removeEventListener('mouseup', this.stopResize);
+    document.removeEventListener('touchend', this.stopResize);
   }
 
   startDrag(event: MouseEvent | TouchEvent): void {
@@ -196,7 +283,7 @@ export class GcpComponent implements OnInit, OnDestroy {
       this.renderer.setStyle(element, 'height', `${rect.height}px`);
       this.renderer.setStyle(element, 'left', `${rect.left}px`);
       this.renderer.setStyle(element, 'top', `${rect.top}px`);
-      this.isFloating = true;
+      this.gcpService.updateFloatingStatus(true);
     }
 
     this.currentX = this.lastX;
@@ -229,10 +316,53 @@ export class GcpComponent implements OnInit, OnDestroy {
     const dx = clientX - this.startX;
     const dy = clientY - this.startY;
 
-    this.currentX = this.lastX + dx;
-    this.currentY = this.lastY + dy;
+    // Calculer la nouvelle position
+    let newX = this.lastX + dx;
+    let newY = this.lastY + dy;
 
     const element = this.el.nativeElement.querySelector('.table-container');
+    const elementRect = element.getBoundingClientRect();
+    const dragHandle = this.el.nativeElement.querySelector('.drag-handle') || element;
+    const dragHandleRect = dragHandle.getBoundingClientRect();
+
+    // Calcul des dimensions du handle par rapport à l'élément
+    const handleOffsetX = dragHandleRect.left - elementRect.left;
+    const handleOffsetY = dragHandleRect.top - elementRect.top;
+    const handleWidth = dragHandleRect.width;
+    const handleHeight = dragHandleRect.height;
+
+    // Obtenir les dimensions de la fenêtre
+    const windowWidth = window.innerWidth;
+    const windowHeight = window.innerHeight;
+
+    // Calculer les marges pour garder le handle visible (au moins 20px du handle doivent rester visibles)
+    const minVisiblePx = 0;
+
+    // Contraintes pour la position X
+    // Empêcher de dépasser à gauche
+    if (newX + handleOffsetX < 0) {
+      newX = -handleOffsetX + minVisiblePx;
+    }
+    // Empêcher de dépasser à droite
+    if (newX + handleOffsetX + handleWidth > windowWidth) {
+      newX = windowWidth - handleOffsetX - handleWidth - minVisiblePx;
+    }
+
+    // Contraintes pour la position Y
+    // Empêcher de dépasser en haut
+    if (newY + handleOffsetY < 0) {
+      newY = -handleOffsetY + minVisiblePx;
+    }
+    // Empêcher de dépasser en bas
+    if (newY + handleOffsetY + handleHeight > windowHeight) {
+      newY = windowHeight - handleOffsetY - handleHeight - minVisiblePx;
+    }
+
+    // Mettre à jour les positions
+    this.currentX = newX;
+    this.currentY = newY;
+
+    // Appliquer les nouvelles positions
     this.renderer.setStyle(element, 'left', `${this.currentX}px`);
     this.renderer.setStyle(element, 'top', `${this.currentY}px`);
 
@@ -266,20 +396,23 @@ export class GcpComponent implements OnInit, OnDestroy {
 
   checkIfNearOriginalPosition(): void {
     const element = this.el.nativeElement.querySelector('.table-container');
+    const anchorElement = this.el.nativeElement.querySelector('.anchor-zone');
     const wasNear = this.isNearOriginalPosition;
 
     // Vérifier si on est proche de la position d'origine
-    this.isNearOriginalPosition =
+    this.gcpService.updateNearOriginalPositionStatus(
       Math.abs(this.currentX - this.originalPosition.left) < this.resetThreshold &&
-      Math.abs(this.currentY - this.originalPosition.top) < this.resetThreshold;
+      Math.abs(this.currentY - this.originalPosition.top) < this.resetThreshold);
 
     // Si le statut a changé, mettre à jour la classe CSS
     if (wasNear !== this.isNearOriginalPosition) {
       this.ngZone.run(() => {
         if (this.isNearOriginalPosition && this.isGeorefActive) {
           this.renderer.addClass(element, 'near-original-position');
+          this.renderer.addClass(anchorElement, 'active');
         } else {
           this.renderer.removeClass(element, 'near-original-position');
+          this.renderer.removeClass(anchorElement, 'active');
         }
       });
     }
@@ -295,12 +428,12 @@ export class GcpComponent implements OnInit, OnDestroy {
 
   resetPosition(): void {
     const element = this.el.nativeElement.querySelector('.table-container');
-    
+
     // Animation de retour à la position d'origine
     this.renderer.setStyle(element, 'transition', 'left 0.3s ease, top 0.3s ease');
     this.renderer.setStyle(element, 'left', `${this.originalPosition.left}px`);
     this.renderer.setStyle(element, 'top', `${this.originalPosition.top}px`);
-    
+
     // Retirer le style "fixed" et autres styles de drag après l'animation
     setTimeout(() => {
       this.renderer.removeStyle(element, 'position');
@@ -313,8 +446,8 @@ export class GcpComponent implements OnInit, OnDestroy {
       this.renderer.removeStyle(element, 'transition');
       this.renderer.removeClass(element, 'near-original-position');
 
-      this.isFloating = false;
-      this.isNearOriginalPosition = false;
+      this.gcpService.updateFloatingStatus(false);
+      this.gcpService.updateNearOriginalPositionStatus(false);
     }, 300);
   }
 

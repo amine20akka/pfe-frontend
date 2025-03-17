@@ -50,7 +50,6 @@ export class GeorefComponent implements OnInit, OnDestroy {
 
   // Propriétés pour le redimensionnement
   isResizing = false;
-  panelWidth = 47; // Largeur par défaut
   minWidth = 42;   // Largeur minimum
   maxWidth = 80;   // Largeur maximum
 
@@ -86,6 +85,10 @@ export class GeorefComponent implements OnInit, OnDestroy {
 
     // Supprimer les écouteurs d'événements
     this.removeResizeListeners();
+  }
+
+  get panelWidth() : number {
+    return this.georefService.panelWidth;
   }
 
   private setupResizeListeners(): void {
@@ -157,7 +160,7 @@ export class GeorefComponent implements OnInit, OnDestroy {
   private updateWidth(newWidthVw: number): void {
     // Limiter la largeur entre min et max (en vw)
     const constrainedWidthVw = Math.min(Math.max(newWidthVw, this.minWidth), this.maxWidth);
-    this.panelWidth = constrainedWidthVw;
+    this.georefService.updatePanelWidth(constrainedWidthVw);
 
     // Mettre à jour directement le style si le panneau est ouvert
     if (this.georefContainer) {

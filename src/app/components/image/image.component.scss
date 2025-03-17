@@ -8,6 +8,12 @@
     top: 0;
     border: 1px solid #ddd;
     background-color: #f6f6f6;
+    transition: ease-in-out 0.2s
+}
+
+.image-map-container.extended {
+    height: calc(50% + 34vh);
+    transition: ease-in-out 0.2s;
 }
 
 .image-map-container.adding-gcp {

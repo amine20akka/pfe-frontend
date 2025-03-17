@@ -1,4 +1,4 @@
-import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
+import { Component, ElementRef, OnInit, Renderer2, ViewChild } from '@angular/core';
 import { ImageService } from '../../services/image.service';
 import { trigger, state, style, transition, animate } from '@angular/animations';
 import { GeorefService } from '../../services/georef.service';
@@ -34,6 +34,8 @@ export class ImageComponent implements OnInit {
   length = 0;
   sourceX = 0;
   sourceY = 0;
+  isFloating = false;
+  isNearOriginalPosition = false;
 
   constructor(
     private imageService: ImageService,
@@ -41,6 +43,7 @@ export class ImageComponent implements OnInit {
     private gcpService: GcpService,
     private mapService: MapService,
     private dialog: MatDialog,
+    private renderer: Renderer2,
   ) { }
 
   get isGeorefActive() {
@@ -66,6 +69,16 @@ export class ImageComponent implements OnInit {
     this.gcpService.gcps$.subscribe((gcps) => {
       this.length = gcps.length;
     })
+
+    this.gcpService.isFloating$.subscribe(value => this.isFloating = value);
+    this.gcpService.isNearOriginalPosition$.subscribe(value => {
+      this.isNearOriginalPosition = value;
+      if (this.isFloating && !this.isNearOriginalPosition) {
+        this.renderer.addClass(this.imageContainer.nativeElement, 'extended');
+      } else {
+        this.renderer.removeClass(this.imageContainer.nativeElement, 'extended');
+      }
+    });
   }
 
   zoomIn(): void {

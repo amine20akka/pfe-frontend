@@ -96,9 +96,15 @@ export class GcpComponent implements OnInit, OnDestroy {
       if (gcps.length === 0) {
         this.selection.clear();
         this.dataSource.data = [];
+      } else {
+        this.dataSource.data = gcps;
       }
-      this.dataSource.data = gcps;
-      // Sélectionner automatiquement les nouveaux GCPs et les rendre visibles
+
+      if (this.loadingGCPs) {
+        this.selection.select(...gcps);
+        this.gcpService.updateLoadingGCPs(false);
+      }
+
       if (gcps.length > 0 && !this.isDeleting) {
         this.selection.select(gcps[gcps.length - 1]);
       }
@@ -118,7 +124,6 @@ export class GcpComponent implements OnInit, OnDestroy {
         this.updateGcpLayerVisibility();
       }, 300);
       console.log('GCPs Data : ', gcps);
-      console.log(this.dataSource.data);
       console.log('GCPs Selection : ', this.selection);
     });
     this.imageService.imageLayers$.subscribe((imageLayers) => {
@@ -162,6 +167,10 @@ export class GcpComponent implements OnInit, OnDestroy {
 
   get isGeorefActive(): boolean {
     return this.georefService.isGeorefActive;
+  }
+
+  get loadingGCPs(): boolean {
+    return this.gcpService.loadingGCPs;
   }
 
   toggleAddingGCP(): void {
@@ -644,10 +653,7 @@ export class GcpComponent implements OnInit, OnDestroy {
 
     dialogRef.afterClosed().subscribe(result => {
       if (result) {
-        console.log('Action confirmée');
         this.deleteGcp(index);
-      } else {
-        console.log('Action annulée');
       }
     });
   }

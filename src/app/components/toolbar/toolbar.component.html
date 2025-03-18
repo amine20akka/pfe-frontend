@@ -20,13 +20,15 @@
         <button mat-icon-button matTooltip="Supprimer tous les points" (click)="openClearConfirmDialog()">
             <mat-icon>delete_forever</mat-icon>
         </button>
-        <button mat-icon-button matTooltip="Charger les points de contrôle">
-            <mat-icon>upload</mat-icon>
+        <input type="file" accept=".json" (change)="loadGCPs($event)" hidden #fileInput />
+        <button mat-icon-button matTooltip="Charger les points" (click)="fileInput.click()">
+            <mat-icon>folder_open</mat-icon>
         </button>
-        <button mat-icon-button matTooltip="Exporter les points de contrôle">
-            <mat-icon>save_alt</mat-icon>
+        <button mat-icon-button matTooltip="Enregistrer les points" (click)="saveGCPs()">
+            <mat-icon>save</mat-icon>
         </button>
-        <button mat-icon-button [disabled]="isMapSelection" [matTooltip]="isAddingGCP ? 'Annuler':'Ajouter un point'" (click)="toggleAddingGCP()">
+        <button mat-icon-button [disabled]="isMapSelection" [matTooltip]="isAddingGCP ? 'Annuler':'Ajouter un point'"
+            (click)="toggleAddingGCP()">
             <mat-icon [fontIcon]="isAddingGCP ? 'close':'control_point'"></mat-icon>
         </button>
     </div>

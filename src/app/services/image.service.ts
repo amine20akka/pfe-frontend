@@ -392,4 +392,8 @@ export class ImageService {
     currentImage.lastGeoreferencingDate = lastGeorefDate;
     this.georefImageSubject.next(currentImage);
   }
+
+  loadImageLayers() {
+    throw new Error('Method not implemented.');
+  }
 }

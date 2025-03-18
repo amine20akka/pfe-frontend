@@ -1,4 +1,4 @@
-import { Component, ElementRef, OnInit, Renderer2, ViewChild } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, OnInit, Renderer2, ViewChild } from '@angular/core';
 import { ImageService } from '../../services/image.service';
 import { trigger, state, style, transition, animate } from '@angular/animations';
 import { GeorefService } from '../../services/georef.service';
@@ -29,7 +29,7 @@ import { MapService } from '../../services/map.service';
     ])
   ]
 })
-export class ImageComponent implements OnInit {
+export class ImageComponent implements OnInit, AfterViewInit {
   @ViewChild('imageContainer', { static: false }) imageContainer!: ElementRef;
   length = 0;
   sourceX = 0;
@@ -69,7 +69,9 @@ export class ImageComponent implements OnInit {
     this.gcpService.gcps$.subscribe((gcps) => {
       this.length = gcps.length;
     })
-
+  }
+  
+  ngAfterViewInit(): void {
     this.gcpService.isFloating$.subscribe(value => this.isFloating = value);
     this.gcpService.isNearOriginalPosition$.subscribe(value => {
       this.isNearOriginalPosition = value;

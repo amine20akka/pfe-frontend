@@ -138,7 +138,7 @@
         <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
         <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
 
-        @if (selection.isEmpty()) {
+        @if (!dataSource.data.length) {
         <!-- Message quand la table est vide -->
         <tr class="empty-row" *matNoDataRow>
             <td class="empty-cell" [attr.colspan]="displayedColumns.length">

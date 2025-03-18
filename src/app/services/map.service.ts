@@ -308,4 +308,8 @@ export class MapService {
     layer.setVisible(!layer.getVisible());
   }
 
+  loadMapLayers() {
+    throw new Error('Method not implemented.');
+  }
+
 }

@@ -97,6 +97,16 @@ export class ToolbarComponent {
     this.mapService.clearAllGcpLayers();
   }
 
+  saveGCPs(): void {
+    this.gcpService.saveGCPs();
+  }
+
+  loadGCPs(event: Event): void {
+    this.gcpService.loadGCPs(event);
+    this.imageService.loadImageLayers()
+    this.mapService.loadMapLayers();
+  }
+
   openGeorefSettings(): void {
     const dialogRef = this.dialog.open(GeorefSettingsDialogComponent, {
       data: {
@@ -134,10 +144,7 @@ export class ToolbarComponent {
 
     dialogRef.afterClosed().subscribe(result => {
       if (result) {
-        console.log('Action confirmée');
         this.reset();
-      } else {
-        console.log('Action annulée');
       }
     });
   }
@@ -157,10 +164,7 @@ export class ToolbarComponent {
 
     dialogRef.afterClosed().subscribe(result => {
       if (result) {
-        console.log('Action confirmée');
         this.clearGCPs();
-      } else {
-        console.log('Action annulée');
       }
     });
   }

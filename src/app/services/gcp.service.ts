@@ -8,6 +8,7 @@ import { colors } from '../shared/colors';
 import { SRID, TransformationType } from '../models/georef-settings';
 import { GeorefSettingsService } from './georef-settings.service';
 import { ResidualService } from './residual.service';
+import { NotificationService } from './notification.service';
 
 @Injectable({
   providedIn: 'root'
@@ -29,10 +30,12 @@ export class GcpService {
   isAddingGCP = false; // Gère l'ajout de points de contrôle
   isFloating$ = this.isFloatingSubject.asObservable();
   isNearOriginalPosition$ = this.isNearOriginalPositionSubject.asObservable();
+  loadingGCPs = false;
 
   constructor(
     private georefSettingsService: GeorefSettingsService,
     private residualService: ResidualService,
+    private notifService: NotificationService,
   ) {
     this.initGcpStyles();
     this.georefSettingsService.settings$.subscribe((settings) => {
@@ -59,7 +62,7 @@ export class GcpService {
 
   clearGCPs(): void {
     this.gcps = [];
-    this.gcpsSubject.next([]);
+    this.gcpsSubject.next(this.gcps);
   }
 
   toggleAddingGcp(): void {
@@ -76,10 +79,12 @@ export class GcpService {
     this.gcps = this.gcps.filter(gcp => gcp.index !== index); // Supprimer le GCP
     this.gcps.forEach((gcp, i) => gcp.index = i + 1); // Réindexer les GCPs
 
-    // Recalculer la transformation et les résidus si suffisamment de points
+    // Recalculer les résidus
     this.updateResiduals();
 
-    this.gcpsSubject.next(this.gcps);
+    setTimeout(() => {
+      this.gcpsSubject.next(this.gcps)
+    }, 300);
   }
 
   updateGcp(updatedGcp: GCP): void {
@@ -87,7 +92,7 @@ export class GcpService {
     if (index !== -1) {
       this.gcps[index] = updatedGcp;
 
-      // Recalculer la transformation et les résidus
+      // Recalculer les résidus
       this.updateResiduals();
 
       this.gcpsSubject.next(this.gcps);
@@ -124,7 +129,7 @@ export class GcpService {
         .subscribe((response) => {
           if (response.residuals.length === this.gcps.length) {
             for (let i = 0; i < this.gcps.length; i++) {
-              this.gcps[i].residual = response.residuals[i];
+              this.gcps[i].residual = parseFloat(response.residuals[i].toFixed(4));
             }
           }
 
@@ -164,6 +169,60 @@ export class GcpService {
 
   updateNearOriginalPositionStatus(status: boolean): void {
     this.isNearOriginalPositionSubject.next(status);
+  }
+
+  async saveGCPs(): Promise<void> {
+    if (this.gcps.length === 0) {
+      this.notifService.showError("Aucun point n'est encore défini");
+      return;
+    }
+
+    const gcpData = JSON.stringify(this.gcps, null, 2);
+
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const fileHandle = await (window as any).showSaveFilePicker({
+        suggestedName: 'gcps.json',
+        types: [
+          {
+            description: 'Fichier JSON',
+            accept: { 'application/json': ['.json'] }
+          }
+        ]
+      });
+
+      const writableStream = await fileHandle.createWritable();
+      await writableStream.write(gcpData);
+      await writableStream.close();
+    } catch (error) {
+      console.error('Erreur lors de l\'enregistrement des points: ', error);
+    }
+  }
+
+  loadGCPs(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files.length > 0) {
+      const file = input.files[0];
+      const reader = new FileReader();
+
+      reader.onload = () => {
+        try {
+          this.clearGCPs();
+          this.updateLoadingGCPs(true);
+          this.gcps = JSON.parse(reader.result as string);
+          this.gcpsSubject.next(this.gcps);
+          this.updateResiduals();
+        } catch (error) {
+          console.error('Erreur de parsing JSON', error);
+        }
+      };
+
+      reader.readAsText(file);
+    }
+  }
+
+  updateLoadingGCPs(status: boolean): void {
+    this.loadingGCPs = status;
   }
 
 }

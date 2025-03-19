@@ -18,6 +18,7 @@ import { ImageService } from './image.service';
 import { XYZ } from 'ol/source';
 import BaseLayer from 'ol/layer/Base';
 import { WMSLayer } from '../models/wms-layer';
+import { GCP } from '../models/gcp';
 
 @Injectable({
   providedIn: 'root'
@@ -308,8 +309,11 @@ export class MapService {
     layer.setVisible(!layer.getVisible());
   }
 
-  loadMapLayers() {
-    throw new Error('Method not implemented.');
+  loadMapLayers(gcps: GCP[]): void {
+    gcps.forEach((gcp) => {
+      const newGcpLayer = this.createGcpLayer(gcp.mapX!, gcp.mapY!);
+      this.addGcpLayerToList(newGcpLayer);
+    });
   }
 
 }

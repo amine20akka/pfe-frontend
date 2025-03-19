@@ -24,7 +24,6 @@ export class MapComponent implements OnInit {
   ngOnInit(): void {
     this.mapService.initMap('map');
     this.mapService.mapLayers$.subscribe(() => {
-      console.log("On Map : ", this.mapService.getMap()!.getLayers().getArray());
       this.mapService.syncMapLayers();
     });
 

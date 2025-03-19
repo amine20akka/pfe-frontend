@@ -20,7 +20,7 @@ import { BehaviorSubject } from 'rxjs';
 import Style from 'ol/style/Style';
 import { GeorefImage, GeorefStatus } from '../models/georef-image';
 import { CompressionType, ResamplingMethod, SRID, TransformationType } from '../models/georef-settings';
-import { GeoserverService } from './geoserver.service';
+import { GCP } from '../models/gcp';
 
 @Injectable({
   providedIn: 'root'
@@ -41,15 +41,9 @@ export class ImageService {
   isLoading = false;
   imageWidth = 0;
   imageHeight = 0;
-  x = 0;
-  y = 0;
 
 
-  constructor(private gcpService: GcpService, private geoserverService: GeoserverService) {
-    this.gcpService.cursorCoordinates.subscribe(coords => {
-      this.x = coords.x;
-      this.y = coords.y;
-    });
+  constructor(private gcpService: GcpService) {
     this.gcpService.totalRMSE$.subscribe((value) => {
       this.updateTotalRMSE(value);
     })
@@ -289,9 +283,9 @@ export class ImageService {
     updatedGcpLayer.setStyle(updatedStyle);
   }
 
-  createGcpLayer(): VectorLayer {
+  createGcpLayer(x: number, y: number): VectorLayer {
     const feature = new Feature({
-      geometry: new Point([this.x, this.y + this.imageHeight])
+      geometry: new Point([x, y])
     });
 
     const pointStyle = this.applyLayerStyle(this.imageLayers.size + 1);
@@ -310,7 +304,9 @@ export class ImageService {
   }
 
   addGcpLayerToImage(newGcplayer: VectorLayer): void {
-    this.imageMap.addLayer(newGcplayer);
+    if (!this.imageMap.getLayers().getArray().includes(newGcplayer)) {
+      this.imageMap.addLayer(newGcplayer);
+    }
   }
 
   removeGcpLayerFromImage(removedGcpLayer: VectorLayer): void {
@@ -393,7 +389,10 @@ export class ImageService {
     this.georefImageSubject.next(currentImage);
   }
 
-  loadImageLayers() {
-    throw new Error('Method not implemented.');
+  loadImageLayers(gcps: GCP[]): void {
+    gcps.forEach((gcp) => {
+      const newGcpLayer = this.createGcpLayer(gcp.sourceX, gcp.sourceY + this.imageHeight);
+      this.addGcpLayerToList(newGcpLayer);
+    });
   }
 }

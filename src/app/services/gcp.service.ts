@@ -177,7 +177,15 @@ export class GcpService {
       return;
     }
 
-    const gcpData = JSON.stringify(this.gcps, null, 2);
+    // Transformer les données au format simplifié avant de les enregistrer
+    const simplifiedGcps = this.gcps.map(gcp => ({
+      sourceX: gcp.sourceX,
+      sourceY: gcp.sourceY,
+      mapX: gcp.mapX,
+      mapY: gcp.mapY
+    }));
+
+    const gcpData = JSON.stringify(simplifiedGcps, null, 2);
 
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -199,30 +207,64 @@ export class GcpService {
     }
   }
 
-  loadGCPs(event: Event): void {
+  async loadGCPs(event: Event): Promise<GCP[]> {
     const input = event.target as HTMLInputElement;
     if (input.files && input.files.length > 0) {
       const file = input.files[0];
       const reader = new FileReader();
 
-      reader.onload = () => {
-        try {
-          this.clearGCPs();
-          this.updateLoadingGCPs(true);
-          this.gcps = JSON.parse(reader.result as string);
-          this.gcpsSubject.next(this.gcps);
-          this.updateResiduals();
-        } catch (error) {
-          console.error('Erreur de parsing JSON', error);
-        }
-      };
+      return new Promise<GCP[]>((resolve, reject) => {
+        reader.onload = () => {
+          try {
+            this.updateLoadingGCPs(true);
 
-      reader.readAsText(file);
+            // Charger les données simplifiées
+            const simplifiedGcps = JSON.parse(reader.result as string);
+
+            // Transformer en objets GCP complets en utilisant la méthode createGCP
+            const gcps: GCP[] = [];
+
+            // Sauvegarde temporaire de la longueur actuelle pour pouvoir réinitialiser les index
+            const currentLength = this.gcps.length;
+
+            // Transformer chaque point simplifié en utilisant createGCP
+            simplifiedGcps.forEach((simplifiedGcp: {sourceX: number, sourceY: number, mapX: number, mapY: number}) => {
+              // Nous devons modifier temporairement this.gcps.length pour que les index soient corrects
+              this.gcps.length = gcps.length + currentLength;
+              const newGCP = this.createGCP(simplifiedGcp.sourceX, simplifiedGcp.sourceY, simplifiedGcp.mapX, simplifiedGcp.mapY);
+              gcps.push(newGCP);
+            });
+
+            // Restaurer la longueur d'origine
+            this.gcps.length = currentLength;
+
+            console.log('Les GCPs chargés : ', gcps);
+            resolve(gcps);
+          } catch (error) {
+            console.error('Erreur de parsing JSON', error);
+            reject([]);
+          }
+        };
+
+        reader.onerror = () => {
+          console.error('Erreur de lecture du fichier');
+          reject([]);
+        };
+
+        reader.readAsText(file);
+      });
     }
+    return [];
   }
 
   updateLoadingGCPs(status: boolean): void {
     this.loadingGCPs = status;
   }
 
+  addGCPs(gcps: GCP[]): void {
+    const updatedGcps = [...this.gcps, ...gcps];
+    this.gcps = updatedGcps;
+    this.gcpsSubject.next(this.gcps);
+    this.updateResiduals();
+  }
 }

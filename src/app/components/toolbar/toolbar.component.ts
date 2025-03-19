@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, ViewChild, ElementRef } from '@angular/core';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatToolbarModule } from '@angular/material/toolbar';
@@ -32,9 +32,11 @@ import { NotificationService } from '../../services/notification.service';
   ]
 })
 export class ToolbarComponent {
+  @ViewChild('fileInput') fileInput!: ElementRef<HTMLInputElement>;
 
   isMapSelection = false;
   georefSuccess = false;
+  clearAndLoad = false;
 
   private georefSettings: GeorefSettings = {
     transformationType: TransformationType.POLYNOMIAL_1,
@@ -53,7 +55,7 @@ export class ToolbarComponent {
     private georefSettingsService: GeorefSettingsService,
     private geoserverService: GeoserverService,
     private dialog: MatDialog,
-    private notifService: NotificationService, 
+    private notifService: NotificationService,
   ) {
     this.georefSettingsService.settings$.subscribe((settings) => {
       if (settings.outputFilename) {
@@ -101,10 +103,42 @@ export class ToolbarComponent {
     this.gcpService.saveGCPs();
   }
 
+  openLoadConfirmDialog(): void {
+    const dialogData: ConfirmDialogData = {
+      title: 'Voulez-vous écraser les points existants ?',
+      confirmText: 'Oui',
+      cancelText: 'Non',
+      icon: 'warning'
+    };
+
+    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+      width: '350px',
+      data: dialogData,
+      disableClose: true
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        this.clearAndLoad = true;
+      } else {
+        this.clearAndLoad = false;
+      }
+      this.fileInput.nativeElement.click();
+    });
+  }
+
   loadGCPs(event: Event): void {
-    this.gcpService.loadGCPs(event);
-    this.imageService.loadImageLayers()
-    this.mapService.loadMapLayers();
+    if (this.clearAndLoad) {
+      this.clearGCPs();
+    }
+    this.gcpService.loadGCPs(event).then((gcps) => {
+      this.gcpService.addGCPs(gcps);
+      this.imageService.loadImageLayers(gcps);
+      this.mapService.loadMapLayers(gcps);
+      this.gcpService.updateLoadingGCPs(false);
+    }).catch(() => {
+      this.gcpService.updateLoadingGCPs(false);
+    });
   }
 
   openGeorefSettings(): void {
@@ -150,6 +184,11 @@ export class ToolbarComponent {
   }
 
   openClearConfirmDialog(): void {
+    if (this.gcpService.getGCPs().length === 0) {
+      this.notifService.showError("Aucun point n'est encore défini");
+      return;
+    }
+
     const dialogData: ConfirmDialogData = {
       title: 'Êtes-vous sûr de supprimer tous les points de contrôles ?',
       confirmText: 'Supprimer',

@@ -54,10 +54,17 @@ export class ImageComponent implements OnInit, AfterViewInit {
     return this.gcpService.isAddingGCP;
   }
 
+  get imageHeight() {
+    return this.imageService.imageHeight;
+  }
+
+  get loadingGCPs(): boolean {
+    return this.gcpService.loadingGCPs;
+  }
+
   ngOnInit(): void {
     this.imageService.initImageLayer('image-map');
     this.imageService.imageLayers$.subscribe(() => {
-      console.log("On Image Map : ", this.imageService.getImageMap()!.getLayers().getArray());
       this.imageService.syncImageLayers();
     });
     this.gcpService.cursorCoordinates.subscribe((coords) => {
@@ -104,7 +111,7 @@ export class ImageComponent implements OnInit, AfterViewInit {
   onImageClick(): void {
     if (!this.isAddingGCP) return;
 
-    const newGcpLayer = this.imageService.createGcpLayer();
+    const newGcpLayer = this.imageService.createGcpLayer(this.sourceX, this.sourceY + this.imageHeight);
     this.imageService.addGcpLayerToList(newGcpLayer);
 
     // Ouvrir le dialogue pour la sélection de la méthode

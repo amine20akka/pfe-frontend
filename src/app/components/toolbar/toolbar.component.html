@@ -8,7 +8,7 @@
 
     <!-- Section Image -->
     <div class="toolbar-section">
-        <button mat-icon-button matTooltip="Réinitialiser l'image" (click)="openResetConfirmDialog()">
+        <button mat-icon-button [disabled]="isMapSelection" matTooltip="Réinitialiser l'image" (click)="openResetConfirmDialog()">
             <mat-icon>refresh</mat-icon>
         </button>
     </div>
@@ -17,14 +17,14 @@
 
     <!-- Section Points -->
     <div class="toolbar-section">
-        <button mat-icon-button matTooltip="Supprimer tous les points" (click)="openClearConfirmDialog()">
+        <button mat-icon-button [disabled]="isMapSelection" matTooltip="Supprimer tous les points" (click)="openClearConfirmDialog()">
             <mat-icon>delete_forever</mat-icon>
         </button>
         <input type="file" accept=".json" (change)="loadGCPs($event)" hidden #fileInput />
-        <button mat-icon-button matTooltip="Charger les points" (click)="fileInput.click()">
+        <button mat-icon-button [disabled]="isMapSelection" matTooltip="Charger les points" (click)="openLoadConfirmDialog()">
             <mat-icon>folder_open</mat-icon>
         </button>
-        <button mat-icon-button matTooltip="Enregistrer les points" (click)="saveGCPs()">
+        <button mat-icon-button [disabled]="isMapSelection" matTooltip="Enregistrer les points" (click)="saveGCPs()">
             <mat-icon>save</mat-icon>
         </button>
         <button mat-icon-button [disabled]="isMapSelection" [matTooltip]="isAddingGCP ? 'Annuler':'Ajouter un point'"

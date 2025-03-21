@@ -48,7 +48,7 @@
     user-select: none;
     border-bottom: 1px solid #ddd;
     transition: background-color 0s ease;
-
+    
     .handle-label {
         flex-grow: 1;
         text-align: center;
@@ -57,31 +57,31 @@
         color: #444;
         transition: color 0s ease;
     }
-
+    
     mat-icon {
         margin-top: 6px;
         align-self: center;
         font-size: medium;
     }
-
+    
     .reset-button {
         width: 28px;
         height: 28px;
         padding: 3px;
         margin-right: 7px;
         align-self: center;
-
+        
         mat-icon {
             margin-top: 1.8px;
             align-self: center;
             font-size: medium;
         }
     }
-
+    
     &:hover {
         background-color: #e0e0e0;
     }
-
+    
     .near-original-position & {
         background-color: #f7d7ad;
     }
@@ -185,7 +185,7 @@ tr:hover td {
 :host {
     display: block;
     position: relative;
-
+    
     &.floating-container {
         .table-container {
             position: fixed;
@@ -281,4 +281,10 @@ tr:hover td {
     border: 1.5px dashed #f19124;
     background-color: rgba(255, 165, 0, 0.2);
     transition: background-color 0s ease, border 0s ease;
+}
+
+@media (min-width: 1601px) {
+    .table-container {
+        height: 40vh;
+    }
 }

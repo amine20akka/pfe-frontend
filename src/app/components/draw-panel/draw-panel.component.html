@@ -1,0 +1,31 @@
+<div
+  cdkDrag
+  [cdkDragBoundary]="'.container'"
+  (cdkDragEnded)="onDragEnded($event)"
+  class="drawing-tools-panel"
+  *ngIf="isDrawToolsActive"
+  [style.top.px]="panelPosition.top"
+  [style.left.px]="panelPosition.left"
+  [style.right.px]="panelPosition.right"
+  [style.bottom.px]="panelPosition.bottom"
+  [ngClass]="anchoredClass">
+  
+  <div class="panel-content">
+    <mat-icon cdkDragHandle id="drag-handle">drag_indicator</mat-icon>
+    <button mat-icon-button matTooltip="Point" (click)="selectDrawTool('point')">
+        <mat-icon>add_location</mat-icon>
+    </button>
+    <button mat-icon-button matTooltip="Ligne" (click)="selectDrawTool('line')">
+      <mat-icon>timeline</mat-icon>
+    </button>
+    <button mat-icon-button matTooltip="Polygone" (click)="selectDrawTool('polygon')">
+      <mat-icon>category</mat-icon>
+    </button>
+    <button mat-icon-button matTooltip="Rectangle" (click)="selectDrawTool('rectangle')">
+      <mat-icon>crop_square</mat-icon>
+    </button>
+    <button mat-icon-button matTooltip="Cercle" (click)="selectDrawTool('circle')">
+      <mat-icon>radio_button_unchecked</mat-icon>
+    </button>
+  </div>
+</div>

@@ -15,11 +15,11 @@ export class GeorefService {
     private mapService: MapService,
     private imageService: ImageService,
     private http: HttpClient
-  ) { 
+  ) {
     this.imageService.georefImage$.subscribe((georefImage) => {
-      if(georefImage.status === GeorefStatus.PROCESSING) this.isProcessing = true;
-      if(georefImage.status === GeorefStatus.COMPLETED) this.isProcessing = false;
-      if(georefImage.status === GeorefStatus.FAILED) this.isProcessing = false;
+      if (georefImage.status === GeorefStatus.PROCESSING) this.isProcessing = true;
+      if (georefImage.status === GeorefStatus.COMPLETED) this.isProcessing = false;
+      if (georefImage.status === GeorefStatus.FAILED) this.isProcessing = false;
     })
   }
 
@@ -27,10 +27,14 @@ export class GeorefService {
 
   isGeorefActive = false; // Gère l'affichage de la partie droite
   isTableActive = false; // Gère la TDM
+  isDrawToolsActive = false; // Gère les outils de dessin
   isProcessing = false;
   panelWidth = 47; // Largeur par défaut
 
   toggleGeoref() {
+    if (this.isDrawToolsActive) {
+      this.toggleDrawTools();
+    }
     this.isGeorefActive = !this.isGeorefActive;
     if (this.isGeorefActive) {
       this.mapService.syncMapLayers();
@@ -42,8 +46,19 @@ export class GeorefService {
     }
   }
 
-  toggleTable(): void {
+  toggleTable() {
     this.isTableActive = !this.isTableActive;
+    if (this.isDrawToolsActive) {
+      this.toggleDrawTools();
+    }
+  }
+
+  toggleDrawTools() {
+    this.isDrawToolsActive = !this.isDrawToolsActive;
+    if (this.isDrawToolsActive) {
+      this.isGeorefActive = false;
+      this.isTableActive = false;
+    }
   }
 
   updatePanelWidth(newWidth: number): void {

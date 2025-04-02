@@ -12,8 +12,13 @@
       <button mat-icon-button [matTooltip]="isTableActive ? 'Fermer' : 'TDM'" (click)="toggleTable()">
         <mat-icon [fontIcon]="isTableActive ? 'close' : 'layers'"></mat-icon>
       </button>
+      <button mat-icon-button [matTooltip]="isDrawToolsActive ? 'Fermer' : 'Dessiner'" 
+        (click)="toggleDrawTools()">
+        <mat-icon [fontIcon]="isDrawToolsActive ? 'close' : 'edit'"></mat-icon>
+      </button>
     </div>
   </mat-sidenav>
 </mat-sidenav-container>
 
+<app-draw-panel></app-draw-panel>
 <app-layer-table></app-layer-table>

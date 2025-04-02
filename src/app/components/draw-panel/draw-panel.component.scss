@@ -1,0 +1,63 @@
+.drawing-tools-panel {
+    position: absolute;
+    width: fit-content;
+    background-color: white;
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    z-index: 100;
+    transition: all 0s ease;
+
+    &.anchored-top-left {
+        top: 10px !important;
+        left: 70px !important;
+        right: auto !important;
+        bottom: auto !important;
+    }
+
+    &.anchored-top-right {
+        top: 10px !important;
+        right: 10px !important;
+        left: auto !important;
+        bottom: auto !important;
+    }
+
+    &.anchored-bottom-left {
+        bottom: 10px !important;
+        left: 70px !important;
+        top: auto !important;
+        right: auto !important;
+    }
+
+    &.anchored-bottom-right {
+        bottom: 10px !important;
+        right: 10px !important;
+        top: auto !important;
+        left: auto !important;
+    }
+
+    .panel-content {
+        padding: 2px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+
+        button {
+            transform: scale(0.7);
+            margin: 0px;
+            text-align: left;
+        }
+
+        #drag-handle {
+            transform: scale(0.6);
+            margin-right: 4px;
+            cursor: move;
+        }
+    }
+}
+
+.cdk-drag-preview {
+    box-sizing: border-box;
+    border-radius: 4px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    opacity: 0.8;
+}

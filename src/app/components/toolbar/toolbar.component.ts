@@ -104,27 +104,31 @@ export class ToolbarComponent {
   }
 
   openLoadConfirmDialog(): void {
-    const dialogData: ConfirmDialogData = {
-      title: 'Voulez-vous écraser les points existants ?',
-      confirmText: 'Oui',
-      cancelText: 'Non',
-      icon: 'warning'
-    };
+    if (this.gcpService.getGCPs().length > 0) {
+      const dialogData: ConfirmDialogData = {
+        title: 'Voulez-vous écraser les points existants ?',
+        confirmText: 'Oui',
+        cancelText: 'Non',
+        icon: 'warning'
+      };
 
-    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
-      width: '350px',
-      data: dialogData,
-      disableClose: true
-    });
+      const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+        width: '350px',
+        data: dialogData,
+        disableClose: true
+      });
 
-    dialogRef.afterClosed().subscribe(result => {
-      if (result) {
-        this.clearAndLoad = true;
-      } else {
-        this.clearAndLoad = false;
-      }
+      dialogRef.afterClosed().subscribe(result => {
+        if (result) {
+          this.clearAndLoad = true;
+        } else {
+          this.clearAndLoad = false;
+        }
+        this.fileInput.nativeElement.click();
+      });
+    } else {
       this.fileInput.nativeElement.click();
-    });
+    }
   }
 
   loadGCPs(event: Event): void {

@@ -7,6 +7,8 @@ import { CdkDragEnd, DragDropModule } from '@angular/cdk/drag-drop';
 import { CommonModule } from '@angular/common';
 import { GeorefService } from '../../services/georef.service';
 import { PanelPosition } from '../../models/panel-position';
+import { DrawService } from '../../services/draw.service';
+import { DrawMode, DrawModes } from '../../models/draw-mode';
 
 // Type pour les coins d'ancrage
 type AnchorPosition = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
@@ -26,9 +28,12 @@ type AnchorPosition = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
 })
 export class DrawPanelComponent implements OnInit {
 
-  constructor(private georefService: GeorefService) { }
-
-  // Propriétés pour l'ancrage aux coins
+  constructor(
+    private georefService: GeorefService,
+    private drawService: DrawService
+  ) { }
+  
+  DrawModes = DrawModes;
   panelPosition: PanelPosition = { top: 10, left: 70 };
   currentAnchor: AnchorPosition = 'top-left'; // Par défaut
 
@@ -49,6 +54,10 @@ export class DrawPanelComponent implements OnInit {
     return this.georefService.isDrawToolsActive;
   }
 
+  get activeDrawTool(): DrawMode | null {
+    return this.drawService.activeDrawTool;
+  }
+
   get anchoredClass(): Record<string, boolean> {
     return {
       [`anchored-${this.currentAnchor}`]: true
@@ -59,8 +68,12 @@ export class DrawPanelComponent implements OnInit {
     this.georefService.toggleDrawTools();
   }
 
-  selectDrawTool(tool: string) {
-    console.log('Outil de dessin sélectionné:', tool);
+  toggleDrawTool(tool: DrawMode | null): void {
+    if (tool === this.activeDrawTool || tool === null) {
+      this.drawService.clearDrawInteractions(); // Désactiver l'outil de dessin
+      return;
+    }
+    this.drawService.activateDrawingTool(tool);
   }
 
   // Gérer la fin du drag pour déterminer le coin le plus proche

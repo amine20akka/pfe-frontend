@@ -3,7 +3,7 @@ import { BehaviorSubject, filter, Observable, switchMap } from 'rxjs';
 import OLMap from 'ol/Map';
 import View from 'ol/View';
 import { defaults as defaultControls } from 'ol/control';
-import { defaults as defaultInteractions } from 'ol/interaction';
+import { defaults as defaultInteractions, Interaction } from 'ol/interaction';
 import TileLayer from 'ol/layer/Tile';
 // import OSM from 'ol/source/OSM';
 import { MatDialog, MatDialogRef } from '@angular/material/dialog';
@@ -262,8 +262,8 @@ export class MapService {
     }
   }
 
-  startMapSelection() {
-    this.isMapSelectionSubject.next(true); // Activate map selection mode
+  updateMapSelection(status: boolean): void {
+    this.isMapSelectionSubject.next(status); // Activate map selection mode
   }
 
   selectGcpFromMap(): Observable<{ x: number, y: number }> {
@@ -315,5 +315,18 @@ export class MapService {
       this.addGcpLayerToList(newGcpLayer);
     });
   }
+
+  removeInteraction(DrawInteraction: Interaction): void {
+    if (this.map) {
+      this.map.removeInteraction(DrawInteraction);
+    }
+  }
+
+  addInteraction(DrawInteraction: Interaction): void {
+    if (this.map) {
+      this.map.addInteraction(DrawInteraction);
+    }
+  }
+
 
 }

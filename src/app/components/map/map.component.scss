@@ -6,8 +6,7 @@
   position: relative;
 }
 
-.map-container.map-selection {
-  /* Curseur en croix pour indiquer qu'on est en mode ajout */
+.map-container.map-selection, .map-container.drawing {
   cursor: crosshair;
 }
 

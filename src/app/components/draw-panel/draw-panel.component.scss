@@ -61,3 +61,15 @@
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
     opacity: 0.8;
 }
+
+.active-tool {
+    background-color: rgba(0, 123, 255, 0.2);
+    color: #0066cc;
+}
+
+.tools-separator {
+    height: 20px;
+    width: 1px;
+    background-color: #ddd;
+    margin: 0 4px;
+}

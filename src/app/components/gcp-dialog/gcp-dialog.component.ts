@@ -56,7 +56,7 @@ export class GcpDialogComponent implements OnInit {
   }
 
   startMapSelection() {
-    this.mapService.startMapSelection();
+    this.mapService.updateMapSelection(true); // Activer la sélection sur la carte
     this.dialogRef.close(); // Fermer le dialogue pour permettre l'interaction avec la carte
   }  
 

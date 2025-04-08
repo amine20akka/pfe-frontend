@@ -1,31 +1,82 @@
-<div
-  cdkDrag
-  [cdkDragBoundary]="'.container'"
-  (cdkDragEnded)="onDragEnded($event)"
-  class="drawing-tools-panel"
-  *ngIf="isDrawToolsActive"
-  [style.top.px]="panelPosition.top"
-  [style.left.px]="panelPosition.left"
-  [style.right.px]="panelPosition.right"
-  [style.bottom.px]="panelPosition.bottom"
-  [ngClass]="anchoredClass">
-  
-  <div class="panel-content">
-    <mat-icon cdkDragHandle id="drag-handle">drag_indicator</mat-icon>
-    <button mat-icon-button matTooltip="Point" (click)="selectDrawTool('point')">
-        <mat-icon>add_location</mat-icon>
-    </button>
-    <button mat-icon-button matTooltip="Ligne" (click)="selectDrawTool('line')">
-      <mat-icon>timeline</mat-icon>
-    </button>
-    <button mat-icon-button matTooltip="Polygone" (click)="selectDrawTool('polygon')">
-      <mat-icon>category</mat-icon>
-    </button>
-    <button mat-icon-button matTooltip="Rectangle" (click)="selectDrawTool('rectangle')">
-      <mat-icon>crop_square</mat-icon>
-    </button>
-    <button mat-icon-button matTooltip="Cercle" (click)="selectDrawTool('circle')">
-      <mat-icon>radio_button_unchecked</mat-icon>
-    </button>
-  </div>
+<div cdkDrag [cdkDragBoundary]="'.container'" (cdkDragEnded)="onDragEnded($event)" class="drawing-tools-panel"
+    *ngIf="isDrawToolsActive" [style.top.px]="panelPosition.top" [style.left.px]="panelPosition.left"
+    [style.right.px]="panelPosition.right" [style.bottom.px]="panelPosition.bottom" [ngClass]="anchoredClass">
+
+    <div class="panel-content">
+        <mat-icon cdkDragHandle id="drag-handle">drag_indicator</mat-icon>
+
+        <!-- Bouton retour au mode curseur normal -->
+        <div class="disable-drawing-button">
+            <button mat-icon-button matTooltip="Désactiver dessin" (click)="toggleDrawTool(null)">
+                <mat-icon>pan_tool</mat-icon>
+            </button>
+        </div>
+
+        <!-- Séparateur -->
+        <div class="tools-separator"></div>
+
+        <!-- Section des outils simples -->
+        <div class="tool-section simple-tools">
+            <!-- Point -->
+            <button mat-icon-button matTooltip="Point"
+                [ngClass]="{'active-tool': activeDrawTool === DrawModes['POINT']}"
+                (click)="toggleDrawTool(DrawModes['POINT'])">
+                <mat-icon>place</mat-icon>
+            </button>
+
+            <!-- LineString -->
+            <button mat-icon-button matTooltip="Ligne"
+                [ngClass]="{'active-tool': activeDrawTool === DrawModes['LINE_STRING']}"
+                (click)="toggleDrawTool(DrawModes['LINE_STRING'])">
+                <mat-icon>timeline</mat-icon>
+            </button>
+
+            <!-- Polygon -->
+            <button mat-icon-button matTooltip="Polygone"
+                [ngClass]="{'active-tool': activeDrawTool === DrawModes['POLYGON']}"
+                (click)="toggleDrawTool(DrawModes['POLYGON'])">
+                <mat-icon>pentagon</mat-icon>
+            </button>
+
+            <!-- Circle -->
+            <button mat-icon-button matTooltip="Cercle"
+                [ngClass]="{'active-tool': activeDrawTool === DrawModes['CIRCLE']}"
+                (click)="toggleDrawTool(DrawModes['CIRCLE'])">
+                <mat-icon>radio_button_unchecked</mat-icon>
+            </button>
+        </div>
+
+        <!-- Séparateur -->
+        <div class="tools-separator"></div>
+
+        <!-- Section des outils avancés -->
+        <div class="tool-section advanced-tools">
+            <!-- Arc -->
+            <button mat-icon-button matTooltip="Arc" [ngClass]="{'active-tool': activeDrawTool === DrawModes['ARC']}"
+                (click)="toggleDrawTool(DrawModes['ARC'])">
+                <img [src]="'assets/icons/arc.png'" alt="Arc" style="width: 22px; height: 22px;">
+            </button>
+
+            <!-- Tracing -->
+            <button mat-icon-button matTooltip="Tracing"
+                [ngClass]="{'active-tool': activeDrawTool === DrawModes['TRACING']}"
+                (click)="toggleDrawTool(DrawModes['TRACING'])">
+                <img [src]="'assets/icons/tracing.webp'" alt="Arc" style="width: 24px; height: 24px;">
+            </button>
+
+            <!-- Perpendicular -->
+            <button mat-icon-button matTooltip="Perpendiculaire"
+                [ngClass]="{'active-tool': activeDrawTool === DrawModes['PERPENDICULAR']}"
+                (click)="toggleDrawTool(DrawModes['PERPENDICULAR'])">
+                <img [src]="'assets/icons/perp.png'" alt="Arc" style="width: 22px; height: 22px;">
+            </button>
+
+            <!-- TracingBuffer -->
+            <button mat-icon-button matTooltip="Tracing avec buffer"
+                [ngClass]="{'active-tool': activeDrawTool === DrawModes['TRACING_BUFFER']}"
+                (click)="toggleDrawTool(DrawModes['TRACING_BUFFER'])">
+                <mat-icon>filter_tilt_shift</mat-icon>
+            </button>
+        </div>
+    </div>
 </div>

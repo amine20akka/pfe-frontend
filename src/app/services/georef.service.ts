@@ -5,6 +5,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { GeorefRequestData } from '../models/georef-request-data';
 import { GeorefStatus } from '../models/georef-image';
+import { DrawService } from './draw.service';
 
 @Injectable({
   providedIn: 'root'
@@ -14,6 +15,7 @@ export class GeorefService {
   constructor(
     private mapService: MapService,
     private imageService: ImageService,
+    private drawService: DrawService,
     private http: HttpClient
   ) {
     this.imageService.georefImage$.subscribe((georefImage) => {
@@ -58,6 +60,10 @@ export class GeorefService {
     if (this.isDrawToolsActive) {
       this.isGeorefActive = false;
       this.isTableActive = false;
+    }
+
+    if (!this.isDrawToolsActive) {
+      this.drawService.stopDrawing();
     }
   }
 

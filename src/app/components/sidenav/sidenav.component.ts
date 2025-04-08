@@ -50,7 +50,7 @@ export class SidenavComponent {
     this.georefService.toggleTable()
   }
 
-  toggleDrawTools() {
+  toggleDrawTools(): void {
     this.georefService.toggleDrawTools();
   }
 }

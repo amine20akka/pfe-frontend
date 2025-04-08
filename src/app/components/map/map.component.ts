@@ -1,8 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { MapService } from '../../services/map.service';
 import { CommonModule } from '@angular/common';
-import { GeoserverService } from '../../services/geoserver.service';
-import { ImageService } from '../../services/image.service';
+import { DrawService } from '../../services/draw.service';
 
 @Component({
   selector: 'app-map',
@@ -12,13 +11,14 @@ import { ImageService } from '../../services/image.service';
 })
 export class MapComponent implements OnInit {
   isMapSelection = false;
+  isDrawing = false;
+  activeDrawTool: string | null = null;
   cursorX = 0;
   cursorY = 0;
 
   constructor(
     private mapService: MapService,
-    private imageService: ImageService,
-    private geoserverService: GeoserverService
+    private drawService: DrawService,
   ) { }
 
   ngOnInit(): void {
@@ -41,6 +41,20 @@ export class MapComponent implements OnInit {
     this.mapService.mapCoordinates$.subscribe(coords => {
       this.cursorX = coords.x;
       this.cursorY = coords.y;
+    });
+
+    this.drawService.drawedLayers$.subscribe(drawedLayers => {
+      drawedLayers.forEach(drawedLayer => {
+        this.mapService.addLayerToMap(drawedLayer);
+      });
+    });
+
+    this.drawService.isDrawing$.subscribe(isDrawing => {
+      this.isDrawing = isDrawing;
+    });
+
+    this.drawService.activeDrawTool$.subscribe(activeDrawTool => {
+      this.activeDrawTool = activeDrawTool;
     });
   }
 }

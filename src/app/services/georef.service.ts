@@ -25,7 +25,7 @@ export class GeorefService {
     })
   }
 
-  private apiUrl = 'http://localhost:5000'; // URL du backend
+  private apiUrl = 'http://localhost:5000'; // URL du backend GDAL
 
   isGeorefActive = false; // Gère l'affichage de la partie droite
   isTableActive = false; // Gère la TDM

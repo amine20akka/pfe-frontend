@@ -5,7 +5,12 @@ import { Vector as VectorLayer } from 'ol/layer';
 import { Style, Stroke } from 'ol/style';
 import { MapService } from './map.service';
 import { BehaviorSubject } from 'rxjs';
-import { AdvancedDrawMode, DrawMode, SimpleDrawMode } from '../models/draw-mode';
+import { AdvancedDrawMode, DrawMode, DrawModes, SimpleDrawMode } from '../models/draw-mode';
+import Feature from 'ol/Feature';
+import { lineArc, bearing, distance, midpoint, point } from '@turf/turf';
+import { LineString } from 'ol/geom';
+import { GeometryFunction } from 'ol/interaction/Draw';
+import { Coordinate } from 'ol/coordinate';
 
 @Injectable({
   providedIn: 'root'
@@ -13,20 +18,20 @@ import { AdvancedDrawMode, DrawMode, SimpleDrawMode } from '../models/draw-mode'
 export class DrawService {
 
   drawedLayers: VectorLayer[] = [];
-  isDrawing = false;
-  activeDrawTool: DrawMode | null = null;
   private drawedLayersSubject = new BehaviorSubject<VectorLayer[]>(this.drawedLayers);
-  private isDrawingSubject = new BehaviorSubject<boolean>(this.isDrawing);
-  private activeDrawToolSubject = new BehaviorSubject<DrawMode | null>(this.activeDrawTool);
+  private activeDrawToolSubject = new BehaviorSubject<DrawMode | null>(null);
+  private isDrawingSubject = new BehaviorSubject<boolean>(false);
+  activeDrawTool$ = this.activeDrawToolSubject.asObservable();
   drawedLayers$ = this.drawedLayersSubject.asObservable();
   isDrawing$ = this.isDrawingSubject.asObservable();
-  activeDrawTool$ = this.activeDrawToolSubject.asObservable();
+  DrawModes = DrawModes;
 
-  private source: VectorSource | undefined;
+  private modifyInteraction: Modify | undefined;
   private drawedLayer: VectorLayer | undefined;
   private drawInteraction: Draw | undefined;
-  private modifyInteraction: Modify | undefined;
   private snapInteraction: Snap | undefined;
+  private source: VectorSource | undefined;
+  private previewFeature: Feature | undefined;
 
   constructor(
     private mapService: MapService,
@@ -48,7 +53,7 @@ export class DrawService {
   isSimpleDrawMode(mode: DrawMode): mode is SimpleDrawMode {
     return ['Point', 'LineString', 'Polygon', 'Circle'].includes(mode);
   }
-  
+
   // Méthode pour vérifier si un outil est avancé
   isAdvancedDrawMode(mode: DrawMode): mode is AdvancedDrawMode {
     return ['Arc', 'Tracing', 'Perpendicular', 'TracingBuffer'].includes(mode);
@@ -60,7 +65,22 @@ export class DrawService {
 
     this.updateDrawingStatus(true); // Mettre à jour l'état de dessin
     this.updateActiveDrawTool(toolType);  // Mettre à jour l'outil actif
-    this.activateDrawing(toolType); // Activer le nouvel outil de dessin
+    switch (toolType) {
+      case DrawModes['ARC']:
+        this.activateArcDrawing();
+        break;
+      case DrawModes['TRACING']:
+        // this.activateTracingDrawing();
+        break;
+      case DrawModes['PERPENDICULAR']:
+        // this.activatePerpendicularDrawing();
+        break;
+      case DrawModes['TRACING_BUFFER']:
+        // this.activateTracingBufferDrawing();
+        break;
+      default:
+        this.activateDrawing(toolType); // Activer le nouvel outil de dessin
+    }
     this.activateModifyInteraction();
     this.activateSnapInteraction();
   }
@@ -90,7 +110,6 @@ export class DrawService {
     if (!this.mapService.getMap() || !this.source) return;
 
     if (this.isSimpleDrawMode(toolType)) {
-      console.log('Simple draw mode activated:', toolType);
       this.drawInteraction = new Draw({
         source: this.source,
         type: toolType,
@@ -101,10 +120,9 @@ export class DrawService {
         //   })
         // })
       });
-      
+
       this.mapService.addInteraction(this.drawInteraction);
 
-      // Écouter l'événement de fin de dessin
       this.drawInteraction.on('drawend', () => {
         this.addDrawedLayer(this.drawedLayer!);
       });
@@ -125,26 +143,70 @@ export class DrawService {
     this.mapService.addInteraction(this.snapInteraction);
   }
 
-  // Méthode pour arrêter le dessin
+  activateArcDrawing(): void {
+    if (!this.mapService.getMap() || !this.source) return;
+  
+    this.drawInteraction = new Draw({
+      source: this.source,
+      type: 'LineString',
+      maxPoints: 3,
+      geometryFunction: this.arcGeometryFunction
+    });
+  
+    this.mapService.addInteraction(this.drawInteraction);
+  
+    this.drawInteraction.on('drawend', () => {
+      this.addDrawedLayer(this.drawedLayer!);
+    });
+  }
+  
+  arcGeometryFunction: GeometryFunction = (coordinates, geometry) => {
+    if (coordinates.length < 2) {
+      return new LineString(coordinates.flat(1) as Coordinate[]); // rien à dessiner
+    }
+  
+    const start = coordinates[0];
+    const end = coordinates.length >= 2 ? coordinates[1] : coordinates[0];
+    const control = coordinates.length >= 3 ? coordinates[2] : coordinates[1];
+  
+    if (!start || !end || !control) {
+      return new LineString([start as Coordinate, end as Coordinate]);
+    }
+  
+    // Calcul du centre
+    const turfStart = point(start as Coordinate);
+    const turfEnd = point(end as Coordinate);
+    const turfControl = point(control as Coordinate);
+    const turfMid = midpoint(turfStart, turfEnd);
+    const center = turfMid.geometry.coordinates;
+    const radius = distance(turfStart, turfControl);
+    const startAngle = bearing(center, start as Coordinate);
+    const endAngle = bearing(center, end as Coordinate);
+  
+    const arc = lineArc(center, radius, startAngle, endAngle, { steps: 64 });
+    const arcCoords = arc.geometry.coordinates;
+  
+    if (!geometry) geometry = new LineString([]);
+    geometry.setCoordinates(arcCoords);
+    return geometry;
+  };  
+
   stopDrawing(): void {
     this.updateDrawingStatus(false);
     this.clearDrawInteractions();
   }
 
-  // Méthode pour effacer tous les dessins
-  clearDrawings(): void {
+  clearDrawing(): void {
     if (this.source) {
       this.source.clear();
     }
   }
 
   updateDrawingStatus(isDrawing: boolean): void {
-    this.isDrawing = isDrawing;
     this.isDrawingSubject.next(isDrawing);
   }
 
   updateActiveDrawTool(toolType: DrawMode | null): void {
-    this.activeDrawTool = toolType;
     this.activeDrawToolSubject.next(toolType);
   }
 

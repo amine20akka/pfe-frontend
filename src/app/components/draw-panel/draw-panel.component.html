@@ -51,6 +51,13 @@
 
         <!-- Section des outils avancés -->
         <div class="tool-section advanced-tools">
+            <!-- Perpendicular -->
+            <button mat-icon-button matTooltip="Perpendiculaire"
+                [ngClass]="{'active-tool': activeDrawTool === DrawModes['PERPENDICULAR']}"
+                (click)="toggleDrawTool(DrawModes['PERPENDICULAR'])">
+                <img [src]="'assets/icons/perp.png'" alt="Arc" style="width: 22px; height: 22px;">
+            </button>
+            
             <!-- Arc -->
             <button mat-icon-button matTooltip="Arc" [ngClass]="{'active-tool': activeDrawTool === DrawModes['ARC']}"
                 (click)="toggleDrawTool(DrawModes['ARC'])">
@@ -62,13 +69,6 @@
                 [ngClass]="{'active-tool': activeDrawTool === DrawModes['TRACING']}"
                 (click)="toggleDrawTool(DrawModes['TRACING'])">
                 <img [src]="'assets/icons/tracing.webp'" alt="Arc" style="width: 24px; height: 24px;">
-            </button>
-
-            <!-- Perpendicular -->
-            <button mat-icon-button matTooltip="Perpendiculaire"
-                [ngClass]="{'active-tool': activeDrawTool === DrawModes['PERPENDICULAR']}"
-                (click)="toggleDrawTool(DrawModes['PERPENDICULAR'])">
-                <img [src]="'assets/icons/perp.png'" alt="Arc" style="width: 22px; height: 22px;">
             </button>
 
             <!-- TracingBuffer -->

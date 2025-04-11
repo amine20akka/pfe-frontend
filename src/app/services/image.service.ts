@@ -16,16 +16,20 @@ import Point from 'ol/geom/Point';
 import Text from 'ol/style/Text';
 import Fill from 'ol/style/Fill';
 import { colors } from '../shared/colors';
-import { BehaviorSubject } from 'rxjs';
+import { BehaviorSubject, filter, map, Observable } from 'rxjs';
 import Style from 'ol/style/Style';
 import { GeorefImage, GeorefStatus } from '../models/georef-image';
 import { CompressionType, ResamplingMethod, SRID, TransformationType } from '../models/georef-settings';
 import { GCP } from '../models/gcp';
+import { HttpClient, HttpEventType } from '@angular/common/http';
+import { UploadResponse } from '../models/upload-response';
 
 @Injectable({
   providedIn: 'root'
 })
 export class ImageService {
+
+  private apiUrl = 'http://localhost:8081'; // URL du backend
   private georefImageSubject = new BehaviorSubject<GeorefImage>({} as GeorefImage);
   private imageLayers: Map<number, VectorLayer<VectorSource>> = new Map<number, VectorLayer<VectorSource>>();
   private imageLayersSubject = new BehaviorSubject<Map<number, VectorLayer<VectorSource>>>(this.imageLayers);
@@ -33,6 +37,7 @@ export class ImageService {
   private extent: number[] = [];
   private imageMap: OLMap = new OLMap();
   private imageMapSubject = new BehaviorSubject<OLMap>(this.imageMap);
+  private imageUrl = "";
   georefImage$ = this.georefImageSubject.asObservable();
   imageMap$ = this.imageMapSubject;
   imageLayers$ = this.imageLayersSubject;
@@ -43,7 +48,10 @@ export class ImageService {
   imageHeight = 0;
 
 
-  constructor(private gcpService: GcpService) {
+  constructor(
+    private gcpService: GcpService,
+    private http: HttpClient
+  ) {
     this.gcpService.totalRMSE$.subscribe((value) => {
       this.updateTotalRMSE(value);
     })
@@ -119,67 +127,96 @@ export class ImageService {
     }
   }
 
+  uploadImage(file: File): Observable<UploadResponse> {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    return this.http.post<UploadResponse>(`${this.apiUrl}/georef/images/upload`, formData, {
+      reportProgress: true,
+      observe: 'events'
+    }).pipe(
+      filter(event => event.type === HttpEventType.Response),
+      map(event => event.body as UploadResponse)
+    );
+  }
+
   private handleFile(file: File): void {
+    // Validation du fichier
     const allowedExtensions = ['png', 'jpg', 'jpeg', 'tiff', 'tif'];
     const fileExtension = file.name.split('.').pop()?.toLowerCase();
     const maxSize = 10 * 1024 * 1024; // 10 Mo
-
+    
     if (!fileExtension || !allowedExtensions.includes(fileExtension)) {
       console.error('Format non supporté');
       return;
     }
-
+    
     if (file.size > maxSize) {
       console.error('Fichier trop volumineux (max 10 Mo)');
       return;
     }
-
+    
     this.isImageLoaded = false;
-    const reader = new FileReader();
-
-    reader.onload = () => {
-      const imageUrl = URL.createObjectURL(file);
-      const img = new Image();
-
-      img.onload = () => {
-        const minLoadingTime = 1000; // 1 seconde
-        const startTime = Date.now();
-
-        const finishLoading = () => {
+    this.isLoading = true;
+    
+    // Préchargement de l'image pour obtenir ses dimensions
+    const imageUrl = URL.createObjectURL(file);
+    const img = new Image();
+    
+    img.onload = () => {
+      const imageWidth = img.width;
+      const imageHeight = img.height;
+      
+      // Upload de l'image au serveur
+      this.uploadImage(file).subscribe({
+        next: (uploadResponse: UploadResponse) => {
+          if (uploadResponse) {
+            console.log('Avant : ', this.georefImageSubject.getValue());
+            console.log('Réponse du serveur:', uploadResponse);
+            
+            const startTime = Date.now();
+            const minLoadingTime = 1000; // 1 seconde
+            
+            const finishLoading = () => {
+              this.isLoading = false;
+              this.isImageLoaded = true;
+              this.imageUrl = imageUrl;
+              this.imageWidth = imageWidth;
+              this.imageHeight = imageHeight;
+              this.extent = [0, 0, this.imageWidth, this.imageHeight];
+              
+              const newGeorefImage = this.createGeorefImage(file, uploadResponse);
+              this.updateGeorefStatus(GeorefStatus.UPLOADED);
+              
+              // Envoi de l'image au Subject pour mise à jour
+              this.georefImageSubject.next(newGeorefImage);
+            };
+            
+            // Garantir un temps de chargement minimum pour l'UX
+            const elapsedTime = Date.now() - startTime;
+            if (elapsedTime < minLoadingTime) {
+              setTimeout(finishLoading, minLoadingTime - elapsedTime);
+            } else {
+              finishLoading();
+            }
+          }
+        },
+        error: (err) => {
+          console.error("Erreur lors du chargement de l'image", err);
           this.isLoading = false;
-          this.isImageLoaded = true;
-          this.imageWidth = img.width;
-          this.imageHeight = img.height;
-          this.extent = [0, 0, this.imageWidth, this.imageHeight];
-
-          const newGeorefImage = this.createGeorefImage(file, imageUrl);
-          this.updateGeorefStatus(GeorefStatus.UPLOADED);
-
-          // Envoi de l'image au Subject pour mise à jour
-          this.georefImageSubject.next(newGeorefImage);
-        };
-
-        // Vérifier si le chargement a duré au moins 1s
-        const elapsedTime = Date.now() - startTime;
-        if (elapsedTime < minLoadingTime) {
-          setTimeout(finishLoading, minLoadingTime - elapsedTime);
-        } else {
-          finishLoading();
+          URL.revokeObjectURL(imageUrl); // Libérer la ressource
         }
-      };
-
-      img.src = imageUrl;
+      });
     };
-
-    reader.readAsDataURL(file);
+    
+    img.src = imageUrl;
   }
 
-  createGeorefImage(file: File, imageUrl: string): GeorefImage {
+  createGeorefImage(file: File, uploadResponse: UploadResponse): GeorefImage {
     return {
       imageFile: file,
-      filenameOriginal: file.name,
-      originalFilePath: imageUrl,
-      status: GeorefStatus.PENDING,
+      filenameOriginal: uploadResponse.filepathOriginal,
+      status: uploadResponse.status,
       uploadingDate: new Date(Date.now()),
       settings: {
         srid: SRID.WEB_MERCATOR,
@@ -198,7 +235,7 @@ export class ImageService {
   createImageLayer(): ImageLayer<ImageSource> {
     this.imageLayer = new ImageLayer({
       source: new Static({
-        url: this.georefImageSubject.getValue().originalFilePath!,
+        url: this.imageUrl,
         imageExtent: this.extent,
         projection: new Projection({ code: 'PIXEL', units: 'pixels', extent: this.extent })
       })

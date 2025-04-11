@@ -33,6 +33,7 @@ export class DrawPanelComponent implements OnInit {
     private drawService: DrawService
   ) { }
   
+  activeDrawTool: DrawMode | null = null;
   DrawModes = DrawModes;
   panelPosition: PanelPosition = { top: 10, left: 70 };
   currentAnchor: AnchorPosition = 'top-left'; // Par défaut
@@ -48,14 +49,14 @@ export class DrawPanelComponent implements OnInit {
       // Si pas d'ancrage sauvegardé, définir l'ancrage par défaut
       this.anchorToCorner('top-left');
     }
+
+    this.drawService.activeDrawTool$.subscribe((tool) => {
+      this.activeDrawTool = tool;
+    });
   }
 
   get isDrawToolsActive(): boolean {
     return this.georefService.isDrawToolsActive;
-  }
-
-  get activeDrawTool(): DrawMode | null {
-    return this.drawService.activeDrawTool;
   }
 
   get anchoredClass(): Record<string, boolean> {

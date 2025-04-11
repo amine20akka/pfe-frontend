@@ -6,7 +6,6 @@ export interface GeorefImage {
   imageFile: File;                 // Le fichier de l'image
   wmsLayer?: WMSLayer              // WMS Geoserver Layer  
   filenameOriginal: string;        // Nom du fichier original
-  originalFilePath?: string;       // Chemin de l'image originale (côté client)
   status: GeorefStatus;            // Statut du processus
   uploadingDate: Date              // Date d'importation de l'image
   lastGeoreferencingDate?: Date;   // Date du traitement

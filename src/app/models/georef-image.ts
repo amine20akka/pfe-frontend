@@ -2,7 +2,7 @@ import { GeorefSettings } from "./georef-settings";
 import { WMSLayer } from "./wms-layer";
 
 export interface GeorefImage {
-  id?: string;                     // ID unique pour le suivi
+  id: string;                      // ID unique pour le suivi
   imageFile: File;                 // Le fichier de l'image
   wmsLayer?: WMSLayer              // WMS Geoserver Layer  
   filenameOriginal: string;        // Nom du fichier original

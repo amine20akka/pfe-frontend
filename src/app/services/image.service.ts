@@ -23,6 +23,7 @@ import { CompressionType, ResamplingMethod, SRID, TransformationType } from '../
 import { GCP } from '../models/gcp';
 import { HttpClient, HttpEventType } from '@angular/common/http';
 import { UploadResponse } from '../models/upload-response';
+import { NotificationService } from './notification.service';
 
 @Injectable({
   providedIn: 'root'
@@ -50,6 +51,7 @@ export class ImageService {
 
   constructor(
     private gcpService: GcpService,
+    private notifService: NotificationService,
     private http: HttpClient
   ) {
     this.gcpService.totalRMSE$.subscribe((value) => {
@@ -120,14 +122,14 @@ export class ImageService {
   }
 
   onFileSelected(event: Event): void {
-    this.isLoading = true; // Afficher immédiatement le spinner
     const input = event.target as HTMLInputElement;
     if (input.files?.length) {
+      this.isLoading = true; // Afficher immédiatement le spinner
       this.handleFile(input.files[0]);
     }
   }
 
-  uploadImage(file: File): Observable<UploadResponse> {
+  private uploadImage(file: File): Observable<UploadResponse> {
     const formData = new FormData();
     formData.append('file', file);
 
@@ -140,80 +142,97 @@ export class ImageService {
     );
   }
 
+  private validateFile(file: File): boolean {
+    const MAX_SIZE = 10 * 1024 * 1024;
+    const ALLOWED_TYPES = ['image/png', 'image/jpeg', 'image/jpg'];
+
+    if (!ALLOWED_TYPES.includes(file.type)) {
+      this.notifService.showError("Format d'image non supporté");
+      this.resetLoadingState();
+      return false;
+    }
+
+    if (file.size > MAX_SIZE) {
+      this.notifService.showError('Fichier trop volumineux (max 10 Mo)');
+      this.resetLoadingState();
+      return false;
+    }
+
+    return true;
+  }
+
   private handleFile(file: File): void {
-    // Validation du fichier
-    const allowedExtensions = ['png', 'jpg', 'jpeg', 'tiff', 'tif'];
-    const fileExtension = file.name.split('.').pop()?.toLowerCase();
-    const maxSize = 10 * 1024 * 1024; // 10 Mo
-    
-    if (!fileExtension || !allowedExtensions.includes(fileExtension)) {
-      console.error('Format non supporté');
-      return;
-    }
-    
-    if (file.size > maxSize) {
-      console.error('Fichier trop volumineux (max 10 Mo)');
-      return;
-    }
-    
+    if (!this.validateFile(file)) return;
+
     this.isImageLoaded = false;
-    this.isLoading = true;
-    
-    // Préchargement de l'image pour obtenir ses dimensions
+    this.initialiseImage(file);
+    this.georefImage$.subscribe((image) => {
+      if (image.status === GeorefStatus.UPLOADED) {
+        this.renderImage(file);
+        if (this.imageUrl) {
+          URL.revokeObjectURL(this.imageUrl);
+        }
+      }
+    });
+  }
+
+  private initialiseImage(file: File): void {
+    this.uploadImage(file).subscribe({
+      next: (uploadResponse: UploadResponse) => {
+        if (uploadResponse) {
+          const newGeorefImage = this.createGeorefImage(file, uploadResponse);
+          this.updateGeorefStatus(GeorefStatus.UPLOADED);
+          this.georefImageSubject.next(newGeorefImage);
+        }
+      },
+      error: (err) => {
+        this.resetLoadingState();
+        if (err.status === 415) {
+          this.notifService.showError("Format d'image non supporté");
+        }
+        return;
+      }
+    });
+  }
+
+  private renderImage(file: File): void {
     const imageUrl = URL.createObjectURL(file);
     const img = new Image();
-    
+
     img.onload = () => {
       const imageWidth = img.width;
       const imageHeight = img.height;
-      
-      // Upload de l'image au serveur
-      this.uploadImage(file).subscribe({
-        next: (uploadResponse: UploadResponse) => {
-          if (uploadResponse) {
-            console.log('Avant : ', this.georefImageSubject.getValue());
-            console.log('Réponse du serveur:', uploadResponse);
-            
-            const startTime = Date.now();
-            const minLoadingTime = 1000; // 1 seconde
-            
-            const finishLoading = () => {
-              this.isLoading = false;
-              this.isImageLoaded = true;
-              this.imageUrl = imageUrl;
-              this.imageWidth = imageWidth;
-              this.imageHeight = imageHeight;
-              this.extent = [0, 0, this.imageWidth, this.imageHeight];
-              
-              const newGeorefImage = this.createGeorefImage(file, uploadResponse);
-              this.updateGeorefStatus(GeorefStatus.UPLOADED);
-              
-              // Envoi de l'image au Subject pour mise à jour
-              this.georefImageSubject.next(newGeorefImage);
-            };
-            
-            // Garantir un temps de chargement minimum pour l'UX
-            const elapsedTime = Date.now() - startTime;
-            if (elapsedTime < minLoadingTime) {
-              setTimeout(finishLoading, minLoadingTime - elapsedTime);
-            } else {
-              finishLoading();
-            }
-          }
-        },
-        error: (err) => {
-          console.error("Erreur lors du chargement de l'image", err);
-          this.isLoading = false;
-          URL.revokeObjectURL(imageUrl); // Libérer la ressource
-        }
-      });
+
+      const startTime = Date.now();
+      const minLoadingTime = 1000; // Minimum d’attente visuelle
+
+      const finishLoading = () => {
+        this.isLoading = false;
+        this.isImageLoaded = true;
+        this.imageUrl = imageUrl;
+        this.imageWidth = imageWidth;
+        this.imageHeight = imageHeight;
+        this.extent = [0, 0, imageWidth, imageHeight];
+      };
+
+      const elapsedTime = Date.now() - startTime;
+      if (elapsedTime < minLoadingTime) {
+        setTimeout(finishLoading, minLoadingTime - elapsedTime);
+      } else {
+        finishLoading();
+      }
     };
-    
     img.src = imageUrl;
   }
 
+  private resetLoadingState(): void {
+    this.isLoading = false;
+    this.isImageLoaded = false;
+  }  
+
   createGeorefImage(file: File, uploadResponse: UploadResponse): GeorefImage {
     return {
+      id: uploadResponse.id,
       imageFile: file,
       filenameOriginal: uploadResponse.filepathOriginal,
       status: uploadResponse.status,

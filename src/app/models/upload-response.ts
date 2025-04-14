@@ -1,7 +1,7 @@
 import { GeorefStatus } from "./georef-image";
 
 export interface UploadResponse {
-    id: number;
+    id: string;
     filepathOriginal: string;
     uploadingDate: string;
     status: GeorefStatus;

@@ -5,7 +5,7 @@ import { Vector as VectorLayer } from 'ol/layer';
 import { Style, Stroke } from 'ol/style';
 import { MapService } from './map.service';
 import { BehaviorSubject } from 'rxjs';
-import { AdvancedDrawMode, DrawMode, DrawModes, SimpleDrawMode } from '../models/draw-mode';
+import { AdvancedDrawMode, DrawMode, DrawModes, SimpleDrawMode } from '../interfaces/draw-mode';
 import Feature from 'ol/Feature';
 import { lineArc, bearing, distance, midpoint, point } from '@turf/turf';
 import { LineString } from 'ol/geom';

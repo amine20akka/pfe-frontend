@@ -13,11 +13,11 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { FormsModule } from '@angular/forms';
 import { LayerDetailsComponent } from '../layer-details/layer-details.component';
 import { ImageService } from '../../services/image.service';
-import { GeorefImage } from '../../models/georef-image';
-import { WMSLayer } from '../../models/wms-layer';
+import { GeorefImage } from '../../models/georef-image.model';
+import { WMSLayer } from '../../models/wms-layer.model';
 import { MatTabsModule } from '@angular/material/tabs';
 import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/confirm-dialog.component';
-import { ConfirmDialogData } from '../../models/confirm-dialog-data';
+import { ConfirmDialogData } from '../../shared/components/confirm-dialog/confirm-dialog-data';
 import { LayerService } from '../../services/layer.service';
 
 @Component({

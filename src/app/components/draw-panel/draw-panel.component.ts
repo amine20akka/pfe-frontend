@@ -6,9 +6,9 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { CdkDragEnd, DragDropModule } from '@angular/cdk/drag-drop';
 import { CommonModule } from '@angular/common';
 import { GeorefService } from '../../services/georef.service';
-import { PanelPosition } from '../../models/panel-position';
+import { PanelPosition } from '../../interfaces/panel-position';
 import { DrawService } from '../../services/draw.service';
-import { DrawMode, DrawModes } from '../../models/draw-mode';
+import { DrawMode, DrawModes } from '../../interfaces/draw-mode';
 
 // Type pour les coins d'ancrage
 type AnchorPosition = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';

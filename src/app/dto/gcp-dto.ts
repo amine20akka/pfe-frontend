@@ -1,4 +1,4 @@
-import { GCP } from "../models/gcp";
+import { GCP } from "../models/gcp.model";
 
 export interface GcpDto {
     id?: string;

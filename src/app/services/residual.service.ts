@@ -2,8 +2,8 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { ResidualsRequest, ResidualsResponse } from '../dto/resiudal-dtos';
 import { Observable } from 'rxjs';
-import { GCP } from '../models/gcp';
-import { TransformationType } from '../models/georef-settings';
+import { GCP } from '../models/gcp.model';
+import { TransformationType } from '../enums/transformation-type';
 
 @Injectable({
   providedIn: 'root'

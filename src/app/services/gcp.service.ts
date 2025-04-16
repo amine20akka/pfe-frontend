@@ -1,16 +1,17 @@
 import { Injectable } from '@angular/core';
-import { GCP } from '../models/gcp';
+import { GCP } from '../models/gcp.model';
 import { BehaviorSubject } from 'rxjs';
 import Style from 'ol/style/Style';
 import CircleStyle from 'ol/style/Circle';
 import Fill from 'ol/style/Fill';
 import { colors } from '../shared/colors';
-import { SRID, TransformationType } from '../models/georef-settings';
 import { GeorefSettingsService } from './georef-settings.service';
 import { ResidualService } from './residual.service';
 import { NotificationService } from './notification.service';
 import { FromDto, GcpDto } from '../dto/gcp-dto';
 import { GcpApiService } from './gcp-api.service';
+import { SRID } from '../enums/srid';
+import { TransformationType } from '../enums/transformation-type';
 
 @Injectable({
   providedIn: 'root'

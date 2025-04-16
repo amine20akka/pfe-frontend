@@ -1,5 +1,6 @@
-import { GeorefSettings } from "./georef-settings";
-import { WMSLayer } from "./wms-layer";
+import { GeorefStatus } from "../enums/georef-status";
+import { GeorefSettings } from "../interfaces/georef-settings";
+import { WMSLayer } from "./wms-layer.model";
 
 export interface GeorefImage {
   id: string;                      // ID unique pour le suivi
@@ -11,12 +12,4 @@ export interface GeorefImage {
   lastGeoreferencingDate?: Date;   // Date du traitement
   settings: GeorefSettings;        // Paramètres de géoréférencement
   totalRMSE?: number;              // Valeur de résidue totale
-}
-
-export enum GeorefStatus {
-  PENDING = 'pending',            // En attente de traitement
-  UPLOADED = 'uploaded',          // Uploaded
-  PROCESSING = 'processing',      // Traitement GDAL en cours
-  COMPLETED = 'completed',        // Traitement réussi
-  FAILED = 'failed',              // Échec du traitement
 }

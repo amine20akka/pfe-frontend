@@ -10,15 +10,22 @@ import { GcpService } from '../../services/gcp.service';
 import { MapService } from '../../services/map.service';
 import { MatDialog } from '@angular/material/dialog';
 import { GeorefSettingsDialogComponent } from '../georef-settings-dialog/georef-settings-dialog.component';
-import { CompressionType, GeorefSettings, ResamplingMethod, SRID, TransformationType } from '../../models/georef-settings';
 import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/confirm-dialog.component';
-import { ConfirmDialogData } from '../../models/confirm-dialog-data';
+import { ConfirmDialogData } from '../../shared/components/confirm-dialog/confirm-dialog-data';
 import { GeorefSettingsService } from '../../services/georef-settings.service';
-import { GeorefRequestData } from '../../dto/georef-request-data';
-import { GeorefImage, GeorefStatus } from '../../models/georef-image';
+import { GeorefImage } from '../../models/georef-image.model';
 import { GeoserverService } from '../../services/geoserver.service';
 import { NotificationService } from '../../services/notification.service';
 import { LayerService } from '../../services/layer.service';
+import { GeorefRequest } from '../../dto/georef-request';
+import { CompressionType } from '../../enums/compression-type';
+import { GeorefStatus } from '../../enums/georef-status';
+import { ResamplingMethod } from '../../enums/resampling-method';
+import { SRID } from '../../enums/srid';
+import { TransformationType } from '../../enums/transformation-type';
+import { GeorefSettings } from '../../interfaces/georef-settings';
+import { ImageApiService } from '../../services/image-api.service';
+import { GeorefImageDto } from '../../dto/georef-image-dto';
 
 @Component({
   selector: 'app-toolbar',
@@ -51,6 +58,7 @@ export class ToolbarComponent {
   constructor(
     private georefService: GeorefService,
     private imageService: ImageService,
+    private imageApiService: ImageApiService,
     private gcpService: GcpService,
     private mapService: MapService,
     private layerService: LayerService,
@@ -161,11 +169,21 @@ export class ToolbarComponent {
       panelClass: 'custom-dialog'
     });
 
-    dialogRef.afterClosed().subscribe((result: GeorefSettings) => {
-      if (result) {
-        this.georefSettingsService.updateSettings(result);
+    dialogRef.afterClosed().subscribe((newSettings: GeorefSettings) => {
+      if (newSettings) {
+        this.georefSettingsService.updateSettings(newSettings);
         this.gcpService.updateResiduals();
-        console.log('Paramètres de géoréférencement mis à jour:', result);
+        this.imageApiService.updateGeorefParams(this.georefImage.id, newSettings).subscribe({
+          next: (updatedGeorefImage: GeorefImageDto) => {
+            this.notifService.showSuccess("Paramètres de géoréférencement mis à jour avec succès !");
+            console.log("Géoréférencement mis à jour avec succès", updatedGeorefImage);
+          },
+          error: (error) => {
+            if (error.status === 400) {
+              this.notifService.showError("Erreur lors de la mise à jour des paramètres de géoréférencement !");
+            }
+          }
+        })
       }
     });
   }
@@ -240,7 +258,7 @@ export class ToolbarComponent {
 
     const gcpData = this.gcpService.getGCPs();
 
-    const requestData: GeorefRequestData = {
+    const requestData: GeorefRequest = {
       settings: {
         transformationType: this.georefSettings.transformationType,
         srid: this.georefSettings.srid,

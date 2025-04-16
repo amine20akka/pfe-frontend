@@ -16,11 +16,11 @@ import { Projection } from 'ol/proj';
 import { Style, Fill } from 'ol/style';
 import Text from 'ol/style/Text';
 import { colors } from '../shared/colors';
-import { WMSLayer } from '../models/wms-layer';
+import { WMSLayer } from '../models/wms-layer.model';
 import { GcpService } from './gcp.service';
 import TileLayer from 'ol/layer/Tile';
 import BaseLayer from 'ol/layer/Base';
-import { GCP } from '../models/gcp';
+import { GCP } from '../models/gcp.model';
 import MapBrowserEvent from 'ol/MapBrowserEvent';
 
 @Injectable({

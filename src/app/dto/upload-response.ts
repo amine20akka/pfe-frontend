@@ -1,17 +1,8 @@
-import { GeorefStatus } from "../models/georef-image";
+import { GeorefStatus } from "../enums/georef-status";
 
 export interface UploadResponse {
     id: string;
     filepathOriginal: string;
     uploadingDate: string;
     status: GeorefStatus;
-    filepathGeoreferenced?: unknown;
-    lastGeoreferencingDate?: unknown;
-    transformationType?: unknown;
-    srid?: unknown;
-    resamplingMethod?: unknown;
-    compression?: unknown;
-    meanResidual?: unknown;
-    gcps?: unknown;
-    layer?: unknown;
 }

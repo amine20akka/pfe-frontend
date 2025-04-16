@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import TileLayer from 'ol/layer/Tile';
 import { TileWMS } from 'ol/source';
-import { WMSLayer } from '../models/wms-layer';
+import { WMSLayer } from '../models/wms-layer.model';
 import { Extent } from 'ol/extent';
 
 @Injectable({

@@ -3,10 +3,10 @@ import { MapService } from './map.service';
 import { ImageService } from './image.service';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { GeorefRequestData } from '../dto/georef-request-data';
-import { GeorefStatus } from '../models/georef-image';
 import { DrawService } from './draw.service';
 import { LayerService } from './layer.service';
+import { GeorefStatus } from '../enums/georef-status';
+import { GeorefRequest } from '../dto/georef-request';
 
 @Injectable({
   providedIn: 'root'
@@ -73,7 +73,7 @@ export class GeorefService {
     this.panelWidth = newWidth;
   }
 
-  georeferenceImage(requestData: GeorefRequestData): Observable<string> {
+  georeferenceImage(requestData: GeorefRequest): Observable<string> {
     const formData = new FormData();
 
     // Ajoutez le fichier image s'il est disponible

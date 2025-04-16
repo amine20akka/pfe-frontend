@@ -15,7 +15,7 @@ import { GcpApiService } from './gcp-api.service';
 import { LayerService } from './layer.service';
 import { ImageService } from './image.service';
 import BaseLayer from 'ol/layer/Base';
-import { WMSLayer } from '../models/wms-layer';
+import { WMSLayer } from '../models/wms-layer.model';
 import { NotificationService } from './notification.service';
 
 @Injectable({

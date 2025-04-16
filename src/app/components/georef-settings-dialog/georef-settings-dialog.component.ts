@@ -1,7 +1,7 @@
 import { Component, Inject } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
-import { COMPRESSION_TYPES, GeorefSettings, RESAMPLING_METHODS, SRIDS, TRANSFORMATION_TYPES } from '../../models/georef-settings';
+import { COMPRESSION_TYPES, GeorefSettings, RESAMPLING_METHODS, SRIDS, TRANSFORMATION_TYPES } from '../../interfaces/georef-settings';
 import { CommonModule } from '@angular/common';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';

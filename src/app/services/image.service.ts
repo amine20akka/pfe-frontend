@@ -1,8 +1,6 @@
 import { Injectable } from '@angular/core';
 import { GcpService } from './gcp.service';
 import { BehaviorSubject } from 'rxjs';
-import { GeorefImage, GeorefStatus } from '../models/georef-image';
-import { CompressionType, ResamplingMethod, SRID, TransformationType } from '../models/georef-settings';
 import { UploadResponse } from '../dto/upload-response';
 import { NotificationService } from './notification.service';
 import { ImageApiService } from './image-api.service';
@@ -10,6 +8,13 @@ import { GeorefSettingsService } from './georef-settings.service';
 import { FromDto, GcpDto } from '../dto/gcp-dto';
 import { GcpApiService } from './gcp-api.service';
 import { LayerService } from './layer.service';
+import { GeorefImage } from '../models/georef-image.model';
+import { GeorefStatus } from '../enums/georef-status';
+import { TransformationType } from '../enums/transformation-type';
+import { CompressionType } from '../enums/compression-type';
+import { ResamplingMethod } from '../enums/resampling-method';
+import { SRID } from '../enums/srid';
+import { GeorefImageDto } from '../dto/georef-image-dto';
 
 @Injectable({
   providedIn: 'root'
@@ -125,6 +130,16 @@ export class ImageService {
           this.updateGeorefStatus(GeorefStatus.UPLOADED);
           this.georefImageSubject.next(newGeorefImage);
           localStorage.setItem("GeorefImage", JSON.stringify(newGeorefImage));
+          this.imageApiService.updateGeorefParams(uploadResponse.id, newGeorefImage.settings).subscribe({
+            next: (updateGeorefImage: GeorefImageDto) => {
+              console.log("Params Set : ", updateGeorefImage);
+            }, 
+            error: (err) => {
+              if (err.status === 404) {
+                this.notifService.showError("Image introuvable !");
+              }
+            }
+          })
         }
       },
       error: (err) => {

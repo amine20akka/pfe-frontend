@@ -19,6 +19,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { ConfirmDialogData } from '../../models/confirm-dialog-data';
 import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/confirm-dialog.component';
 import { colors } from '../../shared/colors';
+import { LayerService } from '../../services/layer.service';
 
 @Component({
   selector: 'app-gcp',
@@ -45,6 +46,7 @@ export class GcpComponent implements OnInit, OnDestroy {
     private gcpService: GcpService,
     private imageService: ImageService,
     private mapService: MapService,
+    private layerService: LayerService,
     private fb: FormBuilder,
     private dialog: MatDialog,
     private renderer: Renderer2,
@@ -126,11 +128,11 @@ export class GcpComponent implements OnInit, OnDestroy {
       console.log('GCPs Data : ', gcps);
       console.log('GCPs Selection : ', this.selection);
     });
-    this.imageService.imageLayers$.subscribe((imageLayers) => {
+    this.layerService.imageLayers$.subscribe((imageLayers) => {
       this.imageLayers = imageLayers;
       console.log('GCPs Image Layers : ', imageLayers);
     });
-    this.mapService.mapLayers$.subscribe((mapLayers) => {
+    this.layerService.mapLayers$.subscribe((mapLayers) => {
       this.mapLayers = mapLayers;
       console.log('GCPs Map Layers : ', mapLayers);
     });
@@ -545,8 +547,8 @@ export class GcpComponent implements OnInit, OnDestroy {
     this.isDeleting = true;
     this.selection.deselect(this.dataSource.data.find(gcp => gcp.index === index)!);
     this.gcpService.deleteGcpData(index);
-    this.imageService.deleteGcpLayer(index);
-    this.mapService.deleteGcpLayer(index);
+    this.layerService.deleteGcpImageLayer(index);
+    this.layerService.deleteGcpMapLayer(index);
     this.updateGcpLayerVisibility();
 
     // Ajoute cette ligne pour réinitialiser après suppression
@@ -601,8 +603,8 @@ export class GcpComponent implements OnInit, OnDestroy {
       this.gcpService.updateGcp(updatedGcp);
 
       // Mettre à jour les couches visuelles si nécessaire
-      this.imageService.updateGcpPosition(this.editingGcpId, updatedGcp.sourceX, updatedGcp.sourceY);
-      this.mapService.updateGcpPosition(this.editingGcpId, updatedGcp.mapX, updatedGcp.mapY);
+      this.layerService.updateImageGcpPosition(this.editingGcpId, updatedGcp.sourceX, updatedGcp.sourceY);
+      this.layerService.updateMapGcpPosition(this.editingGcpId, updatedGcp.mapX, updatedGcp.mapY);
 
       // Réinitialiser l'état d'édition
       this.editingGcpId = null;

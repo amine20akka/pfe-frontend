@@ -14,10 +14,11 @@ import { CompressionType, GeorefSettings, ResamplingMethod, SRID, Transformation
 import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/confirm-dialog.component';
 import { ConfirmDialogData } from '../../models/confirm-dialog-data';
 import { GeorefSettingsService } from '../../services/georef-settings.service';
-import { GeorefRequestData } from '../../models/georef-request-data';
+import { GeorefRequestData } from '../../dto/georef-request-data';
 import { GeorefImage, GeorefStatus } from '../../models/georef-image';
 import { GeoserverService } from '../../services/geoserver.service';
 import { NotificationService } from '../../services/notification.service';
+import { LayerService } from '../../services/layer.service';
 
 @Component({
   selector: 'app-toolbar',
@@ -43,7 +44,7 @@ export class ToolbarComponent {
     srid: SRID.WEB_MERCATOR,
     resamplingMethod: ResamplingMethod.NEAREST,
     compressionType: CompressionType.NONE,
-    outputFilename: ''
+    outputFilename: '.tif'
   };
   private georefImage!: GeorefImage;
 
@@ -52,6 +53,7 @@ export class ToolbarComponent {
     private imageService: ImageService,
     private gcpService: GcpService,
     private mapService: MapService,
+    private layerService: LayerService,
     private georefSettingsService: GeorefSettingsService,
     private geoserverService: GeoserverService,
     private dialog: MatDialog,
@@ -61,6 +63,7 @@ export class ToolbarComponent {
       if (settings.outputFilename) {
         this.georefSettings = settings
         this.georefImage.settings = settings
+        localStorage.setItem('GeorefImage', JSON.stringify(this.imageService.getGeorefImage()));
       }
     })
     this.imageService.georefImage$.subscribe((image) => {
@@ -95,8 +98,8 @@ export class ToolbarComponent {
 
   clearGCPs(): void {
     this.gcpService.clearGCPs();
-    this.imageService.clearAllGcpLayers();
-    this.mapService.clearAllGcpLayers();
+    this.layerService.clearAllGcpImageLayers();
+    this.layerService.clearAllGcpMapLayers();
   }
 
   saveGCPs(): void {
@@ -137,8 +140,8 @@ export class ToolbarComponent {
     }
     this.gcpService.loadGCPs(event).then((gcps) => {
       this.gcpService.addGCPs(gcps);
-      this.imageService.loadImageLayers(gcps);
-      this.mapService.loadMapLayers(gcps);
+      this.layerService.loadImageLayers(gcps);
+      this.layerService.loadMapLayers(gcps);
       this.gcpService.updateLoadingGCPs(false);
     }).catch(() => {
       this.gcpService.updateLoadingGCPs(false);
@@ -256,7 +259,7 @@ export class ToolbarComponent {
           this.imageService.updateGeorefStatus(GeorefStatus.COMPLETED);
           this.georefSuccess = true;
           this.imageService.updateGeorefDate(new Date(Date.now()));
-          this.mapService.addGeorefLayertoList(this.georefImage.wmsLayer);
+          this.layerService.addGeorefLayertoList(this.georefImage.wmsLayer);
           this.reset();
           this.georefService.toggleGeoref();
         }, 2000);

@@ -9,7 +9,8 @@ import { MatDialog } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { MapService } from '../../services/map.service';
+import { FromDto } from '../../dto/gcp-dto';
+import { LayerService } from '../../services/layer.service';
 
 @Component({
   selector: 'app-image',
@@ -38,10 +39,10 @@ export class ImageComponent implements OnInit, AfterViewInit {
   isNearOriginalPosition = false;
 
   constructor(
+    private layerService: LayerService,
     private imageService: ImageService,
     private georefService: GeorefService,
     private gcpService: GcpService,
-    private mapService: MapService,
     private dialog: MatDialog,
     private renderer: Renderer2,
   ) { }
@@ -55,7 +56,7 @@ export class ImageComponent implements OnInit, AfterViewInit {
   }
 
   get imageHeight() {
-    return this.imageService.imageHeight;
+    return this.layerService.imageHeight;
   }
 
   get loadingGCPs(): boolean {
@@ -63,9 +64,22 @@ export class ImageComponent implements OnInit, AfterViewInit {
   }
 
   ngOnInit(): void {
-    this.imageService.initImageLayer('image-map');
-    this.imageService.imageLayers$.subscribe(() => {
-      this.imageService.syncImageLayers();
+    this.imageService.restoreCachedImage();
+
+    setInterval(() => {
+      const cached = localStorage.getItem('cachedImage');
+      if (cached) {
+        const { timestamp } = JSON.parse(cached);
+        if (Date.now() - timestamp > 5 * 60 * 1000) {
+          localStorage.removeItem('cachedImage');
+        }
+      }
+    }, 60 * 1000);
+
+    this.layerService.initImageLayer('image-map');
+
+    this.layerService.imageLayers$.subscribe(() => {
+      this.layerService.syncImageLayers();
     });
     this.gcpService.cursorCoordinates.subscribe((coords) => {
       if (this.isAddingGCP) {
@@ -77,7 +91,7 @@ export class ImageComponent implements OnInit, AfterViewInit {
       this.length = gcps.length;
     })
   }
-  
+
   ngAfterViewInit(): void {
     this.gcpService.isFloating$.subscribe(value => this.isFloating = value);
     this.gcpService.isNearOriginalPosition$.subscribe(value => {
@@ -91,15 +105,15 @@ export class ImageComponent implements OnInit, AfterViewInit {
   }
 
   zoomIn(): void {
-    this.imageService.zoomIn();
+    this.layerService.zoomIn();
   }
 
   zoomOut(): void {
-    this.imageService.zoomOut();
+    this.layerService.zoomOut();
   }
 
-  resetView(): void {
-    this.imageService.resetView();
+  recenterView(): void {
+    this.layerService.recenterView();
   }
 
   onImageKeydown(event: KeyboardEvent): void {
@@ -111,8 +125,8 @@ export class ImageComponent implements OnInit, AfterViewInit {
   onImageClick(): void {
     if (!this.isAddingGCP) return;
 
-    const newGcpLayer = this.imageService.createGcpLayer(this.sourceX, this.sourceY + this.imageHeight);
-    this.imageService.addGcpLayerToList(newGcpLayer);
+    const newGcpLayer = this.layerService.createGcpImageLayer(this.sourceX, this.sourceY + this.imageHeight);
+    this.layerService.addGcpImageLayerToList(newGcpLayer);
 
     // Ouvrir le dialogue pour la sélection de la méthode
     const dialogRef = this.dialog.open(GcpDialogComponent, {
@@ -126,9 +140,9 @@ export class ImageComponent implements OnInit, AfterViewInit {
       if (result) {
         // Créer un GCP avec les coordonnées destinations
         const newGcp = this.gcpService.createGCP(this.sourceX, this.sourceY, result.mapX, result.mapY);
-        this.gcpService.addGcpToList(newGcp);
-        const newGcpLayer = this.mapService.createGcpLayer(result.mapX, result.mapY);
-        this.mapService.addGcpLayerToList(newGcpLayer);
+        this.gcpService.addGcpToList(FromDto(newGcp));
+        const newGcpLayer = this.layerService.createGcpMapLayer(result.mapX, result.mapY);
+        this.layerService.addGcpMapLayerToList(newGcpLayer);
       }
       this.gcpService.isAddingGCP = false;
     });

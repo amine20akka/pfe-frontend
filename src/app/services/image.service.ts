@@ -1,100 +1,53 @@
 import { Injectable } from '@angular/core';
-import OLMap from 'ol/Map';
-import View from 'ol/View';
-import { Image as ImageLayer } from 'ol/layer';
-import { defaults as defaultControls } from 'ol/control';
-import ImageSource from 'ol/source/Image';
-import { defaults as defaultInteractions } from 'ol/interaction';
-import { getCenter } from 'ol/extent';
-import Static from 'ol/source/ImageStatic';
-import { Projection } from 'ol/proj';
 import { GcpService } from './gcp.service';
-import VectorLayer from 'ol/layer/Vector';
-import VectorSource from 'ol/source/Vector';
-import Feature from 'ol/Feature';
-import Point from 'ol/geom/Point';
-import Text from 'ol/style/Text';
-import Fill from 'ol/style/Fill';
-import { colors } from '../shared/colors';
-import { BehaviorSubject, filter, map, Observable } from 'rxjs';
-import Style from 'ol/style/Style';
+import { BehaviorSubject } from 'rxjs';
 import { GeorefImage, GeorefStatus } from '../models/georef-image';
 import { CompressionType, ResamplingMethod, SRID, TransformationType } from '../models/georef-settings';
-import { GCP } from '../models/gcp';
-import { HttpClient, HttpEventType } from '@angular/common/http';
-import { UploadResponse } from '../models/upload-response';
+import { UploadResponse } from '../dto/upload-response';
 import { NotificationService } from './notification.service';
+import { ImageApiService } from './image-api.service';
+import { GeorefSettingsService } from './georef-settings.service';
+import { FromDto, GcpDto } from '../dto/gcp-dto';
+import { GcpApiService } from './gcp-api.service';
+import { LayerService } from './layer.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class ImageService {
 
-  private apiUrl = 'http://localhost:8081'; // URL du backend
   private georefImageSubject = new BehaviorSubject<GeorefImage>({} as GeorefImage);
-  private imageLayers: Map<number, VectorLayer<VectorSource>> = new Map<number, VectorLayer<VectorSource>>();
-  private imageLayersSubject = new BehaviorSubject<Map<number, VectorLayer<VectorSource>>>(this.imageLayers);
-  private imageLayer: ImageLayer<ImageSource> = new ImageLayer<ImageSource>();
-  private extent: number[] = [];
-  private imageMap: OLMap = new OLMap();
-  private imageMapSubject = new BehaviorSubject<OLMap>(this.imageMap);
-  private imageUrl = "";
   georefImage$ = this.georefImageSubject.asObservable();
-  imageMap$ = this.imageMapSubject;
-  imageLayers$ = this.imageLayersSubject;
   isDragging = false;
   isImageLoaded = false;
   isLoading = false;
-  imageWidth = 0;
-  imageHeight = 0;
-
 
   constructor(
     private gcpService: GcpService,
     private notifService: NotificationService,
-    private http: HttpClient
+    private imageApiService: ImageApiService,
+    private gcpApiService: GcpApiService,
+    private georefSettingsService: GeorefSettingsService,
+    private layerService: LayerService,
   ) {
     this.gcpService.totalRMSE$.subscribe((value) => {
       this.updateTotalRMSE(value);
     })
   }
 
-  zoomIn(): void {
-    const view = this.imageMap.getView();
-    view.animate({
-      zoom: view.getZoom()! + 0.5,  // Augmente le zoom
-      duration: 300 // Durée de l'animation (500ms)
-    });
-  }
-
-  zoomOut(): void {
-    const view = this.imageMap.getView();
-    view.animate({
-      zoom: view.getZoom()! - 0.5,  // Diminue le zoom
-      duration: 300 // Durée de l'animation (500ms)
-    });
-  }
-
-  resetView(): void {
-    if (this.imageMap) {
-      const view = this.imageMap.getView();
-      view.animate({
-        center: getCenter(this.extent), // Recentre sur l’image
-        zoom: 1, // Zoom initial
-        duration: 300 // Animation fluide
-      });
-    }
-  }
-
   resetImage(): void {
     this.isImageLoaded = false;
-    this.imageWidth = 0;
-    this.imageHeight = 0;
-    this.imageMap.setTarget('');
+    localStorage.setItem("isImageLoaded", JSON.stringify(this.isImageLoaded));
+    this.layerService.setImageWidth(0);
+    this.layerService.setImageHeight(0);
+    this.layerService.resetImage();
     this.gcpService.cursorCoordinates.next({ x: 0, y: 0 });
     this.gcpService.clearGCPs()
-    this.clearAllGcpLayers();
+    this.layerService.clearAllGcpImageLayers();
     this.georefImageSubject.next({} as GeorefImage);
+    this.georefSettingsService.resetSettings();
+    localStorage.removeItem("GeorefImage");
+    localStorage.removeItem("cachedImage");
   }
 
   onDragOver(event: DragEvent): void {
@@ -129,19 +82,6 @@ export class ImageService {
     }
   }
 
-  private uploadImage(file: File): Observable<UploadResponse> {
-    const formData = new FormData();
-    formData.append('file', file);
-
-    return this.http.post<UploadResponse>(`${this.apiUrl}/georef/images/upload`, formData, {
-      reportProgress: true,
-      observe: 'events'
-    }).pipe(
-      filter(event => event.type === HttpEventType.Response),
-      map(event => event.body as UploadResponse)
-    );
-  }
-
   private validateFile(file: File): boolean {
     const MAX_SIZE = 10 * 1024 * 1024;
     const ALLOWED_TYPES = ['image/png', 'image/jpeg', 'image/jpg'];
@@ -165,24 +105,26 @@ export class ImageService {
     if (!this.validateFile(file)) return;
 
     this.isImageLoaded = false;
+    localStorage.setItem("isImageLoaded", JSON.stringify(this.isImageLoaded));
     this.initialiseImage(file);
     this.georefImage$.subscribe((image) => {
       if (image.status === GeorefStatus.UPLOADED) {
         this.renderImage(file);
-        if (this.imageUrl) {
-          URL.revokeObjectURL(this.imageUrl);
+        if (this.layerService.getCurrentImageUrl()) {
+          URL.revokeObjectURL(this.layerService.getCurrentImageUrl());
         }
       }
     });
   }
 
   private initialiseImage(file: File): void {
-    this.uploadImage(file).subscribe({
+    this.imageApiService.uploadImage(file).subscribe({
       next: (uploadResponse: UploadResponse) => {
         if (uploadResponse) {
           const newGeorefImage = this.createGeorefImage(file, uploadResponse);
           this.updateGeorefStatus(GeorefStatus.UPLOADED);
           this.georefImageSubject.next(newGeorefImage);
+          localStorage.setItem("GeorefImage", JSON.stringify(newGeorefImage));
         }
       },
       error: (err) => {
@@ -209,10 +151,12 @@ export class ImageService {
       const finishLoading = () => {
         this.isLoading = false;
         this.isImageLoaded = true;
-        this.imageUrl = imageUrl;
-        this.imageWidth = imageWidth;
-        this.imageHeight = imageHeight;
-        this.extent = [0, 0, imageWidth, imageHeight];
+        localStorage.setItem("isImageLoaded", JSON.stringify(this.isImageLoaded));
+        this.layerService.setNewImageUrl(imageUrl);
+        this.layerService.setImageWidth(imageWidth);
+        this.layerService.setImageHeight(imageHeight);
+        this.layerService.setNewExtent([0, 0, imageWidth, imageHeight]);
+        this.cacheImage(file, imageWidth, imageHeight);
       };
 
       const elapsedTime = Date.now() - startTime;
@@ -225,10 +169,57 @@ export class ImageService {
     img.src = imageUrl;
   }
 
+  private cacheImage(file: File, width: number, height: number): void {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const cache = {
+        imageUrl: reader.result as string,
+        width,
+        height,
+        timestamp: Date.now()
+      };
+      localStorage.setItem('cachedImage', JSON.stringify(cache));
+    };
+    reader.readAsDataURL(file);
+  }
+
+  restoreCachedImage(): void {
+    const cached = localStorage.getItem('cachedImage');
+    if (!cached) return;
+
+    const { imageUrl, width, height, timestamp } = JSON.parse(cached);
+    const expiration = 5 * 60 * 1000;
+
+    if (Date.now() - timestamp > expiration) {
+      localStorage.removeItem('cachedImage');
+      return;
+    }
+
+    const img = new Image();
+    img.onload = () => {
+      this.layerService.setNewImageUrl(imageUrl);
+      this.layerService.setImageWidth(width);
+      this.layerService.setImageHeight(height);
+      this.layerService.setNewExtent([0, 0, width, height]);
+      this.isImageLoaded = true;
+      localStorage.setItem("isImageLoaded", JSON.stringify(this.isImageLoaded));
+      const georefImage = localStorage.getItem("GeorefImage");
+      if (georefImage) {
+        const parsedGeorefImage = JSON.parse(georefImage);
+        this.georefImageSubject.next(parsedGeorefImage);
+      }
+      console.log("Image restaurée depuis le cache :", this.georefImageSubject.getValue());
+      this.isLoading = false;
+      this.addGcpsByImageId(this.georefImageSubject.getValue().id);
+    };
+    img.src = imageUrl;
+  }
+
   private resetLoadingState(): void {
     this.isLoading = false;
     this.isImageLoaded = false;
-  }  
+    localStorage.setItem("isImageLoaded", JSON.stringify(this.isImageLoaded));
+  }
 
   createGeorefImage(file: File, uploadResponse: UploadResponse): GeorefImage {
     return {
@@ -242,213 +233,60 @@ export class ImageService {
         resamplingMethod: ResamplingMethod.NEAREST,
         compressionType: CompressionType.NONE,
         transformationType: TransformationType.POLYNOMIAL_1,
-        outputFilename: ''
+        outputFilename: '.tif'
       }
     };
   }
 
+  getGeorefImage(): GeorefImage {
+    return this.georefImageSubject.getValue();
+  }
+
   clearGeorefImage(): void {
     this.georefImageSubject.next({} as GeorefImage);
-  }
-
-  createImageLayer(): ImageLayer<ImageSource> {
-    this.imageLayer = new ImageLayer({
-      source: new Static({
-        url: this.imageUrl,
-        imageExtent: this.extent,
-        projection: new Projection({ code: 'PIXEL', units: 'pixels', extent: this.extent })
-      })
-    })
-    return this.imageLayer;
-  }
-
-  initImageLayer(target: string): void {
-    setTimeout(() => {
-      this.imageMap = new OLMap({
-        target: target,
-        interactions: defaultInteractions(),
-        view: new View({
-          projection: new Projection({ code: 'PIXEL', units: 'pixels', extent: this.extent }),
-          showFullExtent: true,
-          center: [this.imageWidth / 2, this.imageHeight / 2],
-          zoom: 1
-        }),
-        layers: [this.createImageLayer()],
-        controls: defaultControls({ zoom: false, attribution: false, rotate: false })
-      });
-      this.imageMapSubject.next(this.imageMap);
-
-      this.imageMap.on('pointermove', (event) => {
-        const coords = event.coordinate;
-        this.gcpService.cursorCoordinates.next({
-          x: parseFloat(coords[0].toFixed(4)),
-          y: parseFloat(coords[1].toFixed(4)) - this.imageHeight,
-        });
-      });
-    }, 200); // Petit délai pour s'assurer que le DOM est prêt
-  }
-
-  getImageMap(): OLMap | null {
-    return this.imageMapSubject.getValue(); // Récupération de l'état actuel
-  }
-
-  syncImageLayers(): void {
-    const imageMap = this.getImageMap(); // Récupérer la carte OpenLayers
-    if (!imageMap) return;
-
-    const mapLayers = imageMap.getLayers().getArray(); // Liste des couches actuelles
-    const gcpLayersSet = new Set(this.imageLayers.values()); // Set des couches de imageLayers
-
-    mapLayers.forEach(layer => {
-      if (!gcpLayersSet.has(layer as VectorLayer<VectorSource>) && layer !== this.imageLayer) {
-        this.removeGcpLayerFromImage(layer as VectorLayer<VectorSource>);
-      }
-    });
-
-    this.imageLayers.forEach((layer, index) => {
-      this.updateLayerStyle(index, layer);
-      if (!mapLayers.includes(layer)) {
-        this.addGcpLayerToImage(layer);
-      }
-    });
-  }
-
-  applyLayerStyle(index: number): Style {
-    const baseStyle = this.gcpService.gcpStyles[(index - 1) % 20]; // Récupère la base
-
-    // Crée une copie indépendante du style pour éviter les conflits
-    const newStyle = new Style({
-      image: baseStyle.getImage()!, // Réutilise l'icône du style
-      fill: baseStyle.getFill()!,
-      stroke: baseStyle.getStroke()!,
-      text: new Text({
-        text: index.toString(),
-        font: '12px Arial',
-        fill: new Fill({ color: colors[(index - 1) % 20].text }),
-        textAlign: 'center',
-        textBaseline: 'middle',
-        offsetY: 0
-      })
-    });
-
-    return newStyle;
-  }
-
-  updateLayerStyle(index: number, updatedGcpLayer: VectorLayer): void {
-    const updatedStyle = this.applyLayerStyle(index);
-    updatedGcpLayer.setStyle(updatedStyle);
-  }
-
-  createGcpLayer(x: number, y: number): VectorLayer {
-    const feature = new Feature({
-      geometry: new Point([x, y])
-    });
-
-    const pointStyle = this.applyLayerStyle(this.imageLayers.size + 1);
-
-    const newGcpLayer = new VectorLayer({
-      source: new VectorSource(
-        { features: [feature] }
-      ),
-      extent: this.extent,
-      style: pointStyle,
-    });
-    newGcpLayer.setVisible(true);
-    newGcpLayer.setZIndex(1000);
-
-    return newGcpLayer;
-  }
-
-  addGcpLayerToImage(newGcplayer: VectorLayer): void {
-    if (!this.imageMap.getLayers().getArray().includes(newGcplayer)) {
-      this.imageMap.addLayer(newGcplayer);
-    }
-  }
-
-  removeGcpLayerFromImage(removedGcpLayer: VectorLayer): void {
-    this.imageMap.removeLayer(removedGcpLayer);
-  }
-
-  reindex(): Map<number, VectorLayer<VectorSource>> {
-    // Réindexer les GCPs dans gcpLayers
-    const newImageLayers = new Map<number, VectorLayer<VectorSource>>();
-    let newIndex = 1;
-
-    this.imageLayers.forEach((layer) => {
-      newImageLayers.set(newIndex++, layer);
-    });
-    return newImageLayers;
-  }
-
-  addGcpLayerToList(newGcplayer: VectorLayer): void {
-    // Cloner la Map pour forcer la détection du changement
-    const updatedImageLayers = new Map(this.imageLayers);
-    updatedImageLayers.set(updatedImageLayers.size + 1, newGcplayer);
-
-    this.imageLayers = updatedImageLayers;
-    this.imageLayersSubject.next(this.imageLayers);
-  }
-
-  deleteLastGcpLayer(): number {
-    const size = this.imageLayers.size;
-    const newImageLayers = new Map<number, VectorLayer<VectorSource>>(this.imageLayers);
-    if (size > 0) {
-      newImageLayers.delete(size);
-      this.imageLayers = newImageLayers;
-      this.imageLayersSubject.next(this.imageLayers);
-    }
-    return size;
-  }
-
-  deleteGcpLayer(index: number): void {
-    const layerToRemove = this.imageLayers.get(index);
-    if (!layerToRemove) return;
-
-    this.imageLayers.delete(index);
-    const newImageLayers = this.reindex();
-    this.imageLayers = newImageLayers;
-    this.imageLayersSubject.next(this.imageLayers);
-  }
-
-  clearAllGcpLayers(): void {
-    for (; this.imageLayers.size > 0;) {
-      this.deleteGcpLayer(this.imageLayers.size);
-    }
-  }
-
-  updateGcpPosition(index: number, sourceX: number, sourceY: number): void {
-    const gcpLayer = this.imageLayers.get(index);
-    if (gcpLayer) {
-      // Mettre à jour la position de la couche (exemple avec OpenLayers)
-      const feature = gcpLayer.getSource()?.getFeatures()[0];
-      if (feature) {
-        feature.setGeometry(new Point([sourceX, sourceY + this.imageHeight]));
-      }
-    }
+    localStorage.removeItem("GeorefImage");
   }
 
   updateGeorefStatus(status: GeorefStatus): void {
     const currentImage = this.georefImageSubject.getValue();
     currentImage.status = status;
     this.georefImageSubject.next(currentImage);
+    localStorage.setItem("GeorefImage", JSON.stringify(currentImage));
   }
 
   updateTotalRMSE(newValue: number): void {
     const currentImage = this.georefImageSubject.getValue();
     currentImage.totalRMSE = newValue;
     this.georefImageSubject.next(currentImage);
+    if (currentImage.totalRMSE > 0) {
+      localStorage.setItem("GeorefImage", JSON.stringify(currentImage));
+    }
   }
 
   updateGeorefDate(lastGeorefDate: Date): void {
     const currentImage = this.georefImageSubject.getValue();
     currentImage.lastGeoreferencingDate = lastGeorefDate;
     this.georefImageSubject.next(currentImage);
+    localStorage.setItem("GeorefImage", JSON.stringify(currentImage));
   }
 
-  loadImageLayers(gcps: GCP[]): void {
-    gcps.forEach((gcp) => {
-      const newGcpLayer = this.createGcpLayer(gcp.sourceX, gcp.sourceY + this.imageHeight);
-      this.addGcpLayerToList(newGcpLayer);
+  addGcpsByImageId(imageId: string): void {
+    this.gcpApiService.getGcpsByImageId(imageId).subscribe({
+      next: (response: GcpDto[]) => {
+        response.map((gcpDto: GcpDto) => {
+          const gcp = this.gcpService.createGCP(gcpDto.sourceX, gcpDto.sourceY, gcpDto.mapX!, gcpDto.mapY!, imageId);
+          this.gcpService.addGcpToList(FromDto(gcp));
+          const newGcpLayer = this.layerService.createGcpImageLayer(gcp.sourceX, gcp.sourceY + this.layerService.imageHeight);
+          this.layerService.addGcpImageLayerToList(newGcpLayer);
+          this.layerService.addGcpMapLayerToList(newGcpLayer);
+        });
+
+      },
+      error: (err) => {
+        if (err.status === 404) {
+          this.notifService.showError("Image non trouvée !");
+        }
+      }
     });
   }
 }

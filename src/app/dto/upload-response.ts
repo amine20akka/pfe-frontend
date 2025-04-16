@@ -1,4 +1,4 @@
-import { GeorefStatus } from "./georef-image";
+import { GeorefStatus } from "../models/georef-image";
 
 export interface UploadResponse {
     id: string;

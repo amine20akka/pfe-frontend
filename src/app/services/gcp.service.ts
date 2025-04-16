@@ -9,6 +9,8 @@ import { SRID, TransformationType } from '../models/georef-settings';
 import { GeorefSettingsService } from './georef-settings.service';
 import { ResidualService } from './residual.service';
 import { NotificationService } from './notification.service';
+import { FromDto, GcpDto } from '../dto/gcp-dto';
+import { GcpApiService } from './gcp-api.service';
 
 @Injectable({
   providedIn: 'root'
@@ -36,6 +38,7 @@ export class GcpService {
     private georefSettingsService: GeorefSettingsService,
     private residualService: ResidualService,
     private notifService: NotificationService,
+    private gcpApiService: GcpApiService
   ) {
     this.initGcpStyles();
     this.georefSettingsService.settings$.subscribe((settings) => {
@@ -44,9 +47,10 @@ export class GcpService {
     })
   }
 
-  createGCP(sourceX: number, sourceY: number, mapX: number, mapY: number): GCP {
-    const newGCP: GCP = {
+  createGCP(sourceX: number, sourceY: number, mapX: number, mapY: number, imageId?: string): GcpDto {
+    const newGCP: GcpDto = {
       index: this.gcps.length + 1,
+      imageId: imageId,
       sourceX: sourceX,
       sourceY: sourceY,
       mapX: mapX,
@@ -228,11 +232,11 @@ export class GcpService {
             const currentLength = this.gcps.length;
 
             // Transformer chaque point simplifié en utilisant createGCP
-            simplifiedGcps.forEach((simplifiedGcp: {sourceX: number, sourceY: number, mapX: number, mapY: number}) => {
+            simplifiedGcps.forEach((simplifiedGcp: { sourceX: number, sourceY: number, mapX: number, mapY: number }) => {
               // Nous devons modifier temporairement this.gcps.length pour que les index soient corrects
               this.gcps.length = gcps.length + currentLength;
               const newGCP = this.createGCP(simplifiedGcp.sourceX, simplifiedGcp.sourceY, simplifiedGcp.mapX, simplifiedGcp.mapY);
-              gcps.push(newGCP);
+              gcps.push(FromDto(newGCP));
             });
 
             // Restaurer la longueur d'origine

@@ -30,4 +30,14 @@ export class GeorefSettingsService {
     }
     this.settingsSubject.next(settings);
   }
+
+  resetSettings(): void {
+    this.settingsSubject.next({
+      transformationType: TransformationType.POLYNOMIAL_1,
+      srid: SRID.WEB_MERCATOR,
+      resamplingMethod: ResamplingMethod.NEAREST,
+      compressionType: CompressionType.NONE,
+      outputFilename: '.tif'
+    });
+  }
 }

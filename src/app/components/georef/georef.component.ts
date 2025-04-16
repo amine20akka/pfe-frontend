@@ -187,7 +187,8 @@ export class GeorefComponent implements OnInit, OnDestroy {
   }
 
   get isImageLoaded(): boolean {
-    return this.imageService.isImageLoaded;
+    const value = localStorage.getItem("isImageLoaded");
+    return value ? JSON.parse(value) : false;
   }
 
   get isLoading(): boolean {

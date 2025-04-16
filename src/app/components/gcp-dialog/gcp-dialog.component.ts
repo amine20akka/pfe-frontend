@@ -7,9 +7,9 @@ import { MatRadioModule } from '@angular/material/radio';
 import { MatFormFieldModule, MatLabel } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { ImageService } from '../../services/image.service';
 import { MapService } from '../../services/map.service';
 import { CommonModule } from '@angular/common';
+import { LayerService } from '../../services/layer.service';
 
 @Component({
   selector: 'app-gcp-dialog',
@@ -34,7 +34,7 @@ export class GcpDialogComponent implements OnInit {
     private dialogRef: MatDialogRef<GcpDialogComponent>,
     private fb: FormBuilder, // FormBuilder pour initialiser le FormGroup
     private gcpService: GcpService,
-    private imageService: ImageService,
+    private layerService: LayerService,
     private mapService: MapService,
     @Inject(MAT_DIALOG_DATA) public data: { x: number, y: number }
   ) { }
@@ -57,12 +57,12 @@ export class GcpDialogComponent implements OnInit {
 
   startMapSelection() {
     this.mapService.updateMapSelection(true); // Activer la sélection sur la carte
-    this.dialogRef.close(); // Fermer le dialogue pour permettre l'interaction avec la carte
+    this.dialogRef.close();
   }  
 
   onCancel() {
-    const deletedIndex = this.imageService.deleteLastGcpLayer();
-    this.mapService.deleteLastGcpLayer(deletedIndex);
+    const deletedIndex = this.layerService.deleteLastGcpImageLayer();
+    this.layerService.deleteLastGcpMapLayer(deletedIndex);
     this.gcpService.isAddingGCP = false;
     this.dialogRef.close();
   }

@@ -1,5 +1,5 @@
-import { GCP } from "./gcp";
-import { GeorefSettings } from "./georef-settings";
+import { GCP } from "../models/gcp";
+import { GeorefSettings } from "../models/georef-settings";
 
 export interface GeorefRequestData {
     imageFile: File;

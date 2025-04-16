@@ -1,5 +1,5 @@
-import { GCP } from "./gcp";
-import { TransformationType } from "./georef-settings";
+import { GCP } from "../models/gcp";
+import { TransformationType } from "../models/georef-settings";
 
 export interface ResidualsResponse {
     residuals: number[];

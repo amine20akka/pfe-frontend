@@ -3,9 +3,10 @@ import { MapService } from './map.service';
 import { ImageService } from './image.service';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { GeorefRequestData } from '../models/georef-request-data';
+import { GeorefRequestData } from '../dto/georef-request-data';
 import { GeorefStatus } from '../models/georef-image';
 import { DrawService } from './draw.service';
+import { LayerService } from './layer.service';
 
 @Injectable({
   providedIn: 'root'
@@ -15,6 +16,7 @@ export class GeorefService {
   constructor(
     private mapService: MapService,
     private imageService: ImageService,
+    private layerService: LayerService,
     private drawService: DrawService,
     private http: HttpClient
   ) {
@@ -41,7 +43,7 @@ export class GeorefService {
     if (this.isGeorefActive) {
       this.mapService.syncMapLayers();
       setTimeout(() => {
-        this.imageService.syncImageLayers();
+        this.layerService.syncImageLayers();
       }, 300)
     } else {
       this.mapService.removeAllGcpLayersFromMap();

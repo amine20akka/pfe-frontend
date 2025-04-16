@@ -1,4 +1,6 @@
 export interface GCP {
+    id?: string;
+    imageId?: string;
     index: number;
     sourceX: number;
     sourceY: number;

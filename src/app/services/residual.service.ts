@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { ResidualsRequest, ResidualsResponse } from '../models/resiudal-models';
+import { ResidualsRequest, ResidualsResponse } from '../dto/resiudal-dtos';
 import { Observable } from 'rxjs';
 import { GCP } from '../models/gcp';
 import { TransformationType } from '../models/georef-settings';

@@ -18,6 +18,7 @@ import { WMSLayer } from '../../models/wms-layer';
 import { MatTabsModule } from '@angular/material/tabs';
 import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/confirm-dialog.component';
 import { ConfirmDialogData } from '../../models/confirm-dialog-data';
+import { LayerService } from '../../services/layer.service';
 
 @Component({
   selector: 'app-layer-table',
@@ -53,6 +54,7 @@ export class LayerTableComponent implements OnInit {
     private mapService: MapService,
     private imageService: ImageService,
     private georefService: GeorefService,
+    private layerService: LayerService,
     private dialog: MatDialog,
   ) { }
 
@@ -62,7 +64,7 @@ export class LayerTableComponent implements OnInit {
         this.georefImage = georefImage;
       }
     });
-    this.mapService.georefLayers$.subscribe((georeflayers) => {
+    this.layerService.georefLayers$.subscribe((georeflayers) => {
       this.wmsLayers = georeflayers;
     })
   }
@@ -102,7 +104,7 @@ export class LayerTableComponent implements OnInit {
   }
 
   removeLayer(layer: WMSLayer): void {
-    this.mapService.deleteGeorefLayer(layer);
+    this.mapService.deleteGeorefLayerFromMap(layer);
   }
 
   openDeleteConfirmDialog(layer: WMSLayer): void {

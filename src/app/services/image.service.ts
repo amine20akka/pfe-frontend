@@ -14,7 +14,6 @@ import { TransformationType } from '../enums/transformation-type';
 import { CompressionType } from '../enums/compression-type';
 import { ResamplingMethod } from '../enums/resampling-method';
 import { SRID } from '../enums/srid';
-import { GeorefImageDto } from '../dto/georef-image-dto';
 
 @Injectable({
   providedIn: 'root'
@@ -41,18 +40,28 @@ export class ImageService {
   }
 
   resetImage(): void {
-    this.isImageLoaded = false;
-    localStorage.setItem("isImageLoaded", JSON.stringify(this.isImageLoaded));
-    this.layerService.setImageWidth(0);
-    this.layerService.setImageHeight(0);
-    this.layerService.resetImage();
-    this.gcpService.cursorCoordinates.next({ x: 0, y: 0 });
-    this.gcpService.clearGCPs()
-    this.layerService.clearAllGcpImageLayers();
-    this.georefImageSubject.next({} as GeorefImage);
-    this.georefSettingsService.resetSettings();
-    localStorage.removeItem("GeorefImage");
-    localStorage.removeItem("cachedImage");
+    this.imageApiService.deleteGeorefImageById(this.georefImageSubject.getValue().id).subscribe({
+      next: () => {
+        this.isImageLoaded = false;
+        localStorage.setItem("isImageLoaded", JSON.stringify(this.isImageLoaded));
+        this.layerService.setImageWidth(0);
+        this.layerService.setImageHeight(0);
+        this.layerService.resetImage();
+        this.gcpService.cursorCoordinates.next({ x: 0, y: 0 });
+        this.gcpService.clearGCPs()
+        this.layerService.clearAllGcpImageLayers();
+        this.georefImageSubject.next({} as GeorefImage);
+        this.georefSettingsService.resetSettings();
+        localStorage.removeItem("GeorefImage");
+        localStorage.removeItem("cachedImage");
+        this.notifService.showSuccess("Image supprimée avec succès !");
+      },
+      error: (err) => {
+        if (err.status === 404) {
+          this.notifService.showError("Image introuvable !");
+        }
+      }
+    })
   }
 
   onDragOver(event: DragEvent): void {
@@ -131,9 +140,6 @@ export class ImageService {
           this.georefImageSubject.next(newGeorefImage);
           localStorage.setItem("GeorefImage", JSON.stringify(newGeorefImage));
           this.imageApiService.updateGeorefParams(uploadResponse.id, newGeorefImage.settings).subscribe({
-            next: (updateGeorefImage: GeorefImageDto) => {
-              console.log("Params Set : ", updateGeorefImage);
-            }, 
             error: (err) => {
               if (err.status === 404) {
                 this.notifService.showError("Image introuvable !");
@@ -223,7 +229,6 @@ export class ImageService {
         const parsedGeorefImage = JSON.parse(georefImage);
         this.georefImageSubject.next(parsedGeorefImage);
       }
-      console.log("Image restaurée depuis le cache :", this.georefImageSubject.getValue());
       this.isLoading = false;
       this.addGcpsByImageId(this.georefImageSubject.getValue().id);
     };

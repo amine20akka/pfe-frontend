@@ -38,4 +38,8 @@ export class ImageApiService {
     };
     return this.http.put<GeorefImageDto>(`${this.apiUrl}/georef-params`, requestPayload);
   }
+
+  deleteGeorefImageById(imageId: string): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/${imageId}`);
+  }
 }

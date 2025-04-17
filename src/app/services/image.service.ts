@@ -294,7 +294,7 @@ export class ImageService {
     this.gcpApiService.getGcpsByImageId(imageId).subscribe({
       next: (response: GcpDto[]) => {
         response.map((gcpDto: GcpDto) => {
-          const gcp = this.gcpService.createGCP(gcpDto.sourceX, gcpDto.sourceY, gcpDto.mapX!, gcpDto.mapY!, imageId);
+          const gcp = this.gcpService.createGCP(gcpDto.sourceX, gcpDto.sourceY, gcpDto.mapX!, gcpDto.mapY!, imageId, gcpDto.id);
           this.gcpService.addGcpToList(FromDto(gcp));
           const newGcpLayer = this.layerService.createGcpImageLayer(gcp.sourceX, gcp.sourceY + this.layerService.imageHeight);
           this.layerService.addGcpImageLayerToList(newGcpLayer);

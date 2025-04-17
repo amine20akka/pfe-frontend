@@ -2,6 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { GcpDto } from '../dto/gcp-dto';
 import { Observable } from 'rxjs';
+import { AddGcpRequest } from '../dto/add-gcp-request';
 
 @Injectable({
   providedIn: 'root'
@@ -12,8 +13,8 @@ export class GcpApiService {
 
   constructor(private http: HttpClient) { }
 
-  addGcp(gcp: GcpDto): Observable<GcpDto> {
-    return this.http.post<GcpDto>(`${this.apiUrl}/add`, gcp);
+  addGcp(newGcp: AddGcpRequest): Observable<GcpDto> {
+    return this.http.post<GcpDto>(`${this.apiUrl}/add`, newGcp);
   }
 
   getGcpsByImageId(imageId: string): Observable<GcpDto[]> {

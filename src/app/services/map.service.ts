@@ -54,16 +54,20 @@ export class MapService {
 
           dialogRef.afterClosed().subscribe(result => {
             if (result) {
-              const newGcp = this.gcpService.createGCP(
+              const addGcpRequest = this.gcpService.createAddGcpRequest(
+                this.imageService.getGeorefImage().id,
                 this.gcpService.cursorCoordinates.getValue().x,
                 this.gcpService.cursorCoordinates.getValue().y,
                 result.mapX,
                 result.mapY,
-                this.imageService.getGeorefImage()?.id
               );
-              this.gcpApiService.addGcp(newGcp).subscribe({
+
+              this.gcpApiService.addGcp(addGcpRequest).subscribe({
                 next: (savedGcp: GcpDto) => {
                   if (savedGcp) {
+                    this.gcpService.createGCP(
+                      savedGcp.sourceX, savedGcp.sourceY, savedGcp.mapX!, savedGcp.mapY!, savedGcp.imageId, savedGcp.id
+                    );
                     this.gcpService.addGcpToList(FromDto(savedGcp));
                     if (coords.x !== result.mapX || coords.y !== result.mapY) {
                       this.layerService.updateMapGcpPosition(savedGcp.index, result.mapX, result.mapY);

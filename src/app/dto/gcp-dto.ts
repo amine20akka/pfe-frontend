@@ -2,7 +2,7 @@ import { GCP } from "../models/gcp.model";
 
 export interface GcpDto {
     id?: string;
-    imageId?: string;
+    imageId: string;
     sourceX: number;
     sourceY: number;
     mapX?: number;
@@ -27,7 +27,7 @@ export function ToDto(gcp: GCP, imageId: string): GcpDto {
 // Converts a GCPDto object to a GCP object
 export function FromDto(gcpDto: GcpDto): GCP {
     return {
-        id: gcpDto.id,
+        id: gcpDto.id!,
         imageId: gcpDto.imageId,
         sourceX: gcpDto.sourceX,
         sourceY: gcpDto.sourceY,

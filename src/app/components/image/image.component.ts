@@ -139,7 +139,7 @@ export class ImageComponent implements OnInit, AfterViewInit {
     dialogRef.afterClosed().subscribe(result => {
       if (result) {
         // Créer un GCP avec les coordonnées destinations
-        const newGcp = this.gcpService.createGCP(this.sourceX, this.sourceY, result.mapX, result.mapY);
+        const newGcp = this.gcpService.createGCP(this.sourceX, this.sourceY, result.mapX, result.mapY, this.imageService.getGeorefImage().id);
         this.gcpService.addGcpToList(FromDto(newGcp));
         const newGcpLayer = this.layerService.createGcpMapLayer(result.mapX, result.mapY);
         this.layerService.addGcpMapLayerToList(newGcpLayer);

@@ -142,18 +142,19 @@ export class ToolbarComponent {
     }
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   loadGCPs(event: Event): void {
     if (this.clearAndLoad) {
       this.clearGCPs();
     }
-    this.gcpService.loadGCPs(event).then((gcps) => {
-      this.gcpService.addGCPs(gcps);
-      this.layerService.loadImageLayers(gcps);
-      this.layerService.loadMapLayers(gcps);
-      this.gcpService.updateLoadingGCPs(false);
-    }).catch(() => {
-      this.gcpService.updateLoadingGCPs(false);
-    });
+    // this.gcpService.loadGCPs(event).then((gcps) => {
+    //   this.gcpService.addGCPs(gcps);
+    //   this.layerService.loadImageLayers(gcps);
+    //   this.layerService.loadMapLayers(gcps);
+    //   this.gcpService.updateLoadingGCPs(false);
+    // }).catch(() => {
+    //   this.gcpService.updateLoadingGCPs(false);
+    // });
   }
 
   openGeorefSettings(): void {

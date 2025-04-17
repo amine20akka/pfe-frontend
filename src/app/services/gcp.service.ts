@@ -8,7 +8,7 @@ import { colors } from '../shared/colors';
 import { GeorefSettingsService } from './georef-settings.service';
 import { ResidualService } from './residual.service';
 import { NotificationService } from './notification.service';
-import { GcpDto } from '../dto/gcp-dto';
+import { FromDtos, GcpDto } from '../dto/gcp-dto';
 import { GcpApiService } from './gcp-api.service';
 import { SRID } from '../enums/srid';
 import { TransformationType } from '../enums/transformation-type';
@@ -95,9 +95,21 @@ export class GcpService {
     this.updateResiduals();
   }
 
-  deleteGcpData(index: number): void {
-    this.gcps = this.gcps.filter(gcp => gcp.index !== index); // Supprimer le GCP
-    this.gcps.forEach((gcp, i) => gcp.index = i + 1); // Réindexer les GCPs
+  deleteGcpData(gcpId: string): void {
+    
+    this.gcpApiService.deleteGcpById(gcpId).subscribe({
+      next: (updatedGcps: GcpDto[]) => {
+        if (updatedGcps) {
+          console.log("returned gcps : ", updatedGcps);
+          this.gcps = FromDtos(updatedGcps);
+        }
+      },
+      error: (err) => {
+        if (err.status === 404) {
+          this.notifService.showError("Point introuvable !");
+        }
+      }
+    })
 
     // Recalculer les résidus
     this.updateResiduals();

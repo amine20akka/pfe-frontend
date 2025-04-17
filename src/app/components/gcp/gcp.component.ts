@@ -543,12 +543,12 @@ export class GcpComponent implements OnInit, OnDestroy {
     });
   }
 
-  deleteGcp(index: number): void {
+  deleteGcp(gcpId: string): void {
     this.isDeleting = true;
-    this.selection.deselect(this.dataSource.data.find(gcp => gcp.index === index)!);
-    this.gcpService.deleteGcpData(index);
-    this.layerService.deleteGcpImageLayer(index);
-    this.layerService.deleteGcpMapLayer(index);
+    this.selection.deselect(this.dataSource.data.find(gcp => gcp.id === gcpId)!);
+    this.gcpService.deleteGcpData(gcpId);
+    // this.layerService.deleteGcpImageLayer(gcpId);
+    // this.layerService.deleteGcpMapLayer(gcpId);
     this.updateGcpLayerVisibility();
 
     // Ajoute cette ligne pour réinitialiser après suppression
@@ -640,7 +640,7 @@ export class GcpComponent implements OnInit, OnDestroy {
     return colors[(index - 1) % colors.length].text;
   }
 
-  openDeleteConfirmDialog(index: number): void {
+  openDeleteConfirmDialog(gcpId: string): void {
     const dialogData: ConfirmDialogData = {
       title: 'Êtes-vous sûr de supprimer ce point de contrôle ?',
       confirmText: 'Supprimer',
@@ -655,7 +655,7 @@ export class GcpComponent implements OnInit, OnDestroy {
 
     dialogRef.afterClosed().subscribe(result => {
       if (result) {
-        this.deleteGcp(index);
+        this.deleteGcp(gcpId);
       }
     });
   }

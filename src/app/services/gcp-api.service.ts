@@ -20,4 +20,8 @@ export class GcpApiService {
   getGcpsByImageId(imageId: string): Observable<GcpDto[]> {
     return this.http.get<GcpDto[]>(`${this.apiUrl}/get/${imageId}`);
   }
+
+  deleteGcpById(gcpId: string): Observable<GcpDto[]> {
+    return this.http.delete<GcpDto[]>(`${this.apiUrl}/delete/${gcpId}`);
+  }
 }

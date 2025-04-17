@@ -37,3 +37,16 @@ export function FromDto(gcpDto: GcpDto): GCP {
         residual: gcpDto.residual
     };
 }
+
+export function FromDtos(gcpDtos: GcpDto[]): GCP[] {
+    return gcpDtos.map(gcpDto => ({
+        id: gcpDto.id!,
+        imageId: gcpDto.imageId,
+        sourceX: gcpDto.sourceX,
+        sourceY: gcpDto.sourceY,
+        mapX: gcpDto.mapX,
+        mapY: gcpDto.mapY,
+        index: gcpDto.index,
+        residual: gcpDto.residual
+    }));
+}

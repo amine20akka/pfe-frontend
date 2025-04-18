@@ -20,49 +20,50 @@ export class GeoserverService {
         serverType: 'geoserver',
       })
     });
-    
+
     this.fetchLayerExtent(layerName).then((extent) => {
       if (extent) {
         layer.setExtent(extent);
       }
     })
-    
+
     layer.setZIndex(1000);
-    const wmsLayer: WMSLayer = {layer: layer, layerName: layerName, opacity: 1};
+    const wmsLayer: WMSLayer = { layer: layer, layerName: layerName, opacity: 1 };
     return wmsLayer;
   }
+  
   async fetchLayerExtent(layerName: string): Promise<Extent | null> {
     const url = `${this.GEOSERVER_URL}/${this.WORKSPACE}/wms?service=WMS&request=GetCapabilities`;
 
     try {
-        const response = await fetch(url);
-        const text = await response.text();
-        const parser = new DOMParser();
-        const xml = parser.parseFromString(text, 'text/xml');
-        const layers = xml.getElementsByTagName('Layer');
+      const response = await fetch(url);
+      const text = await response.text();
+      const parser = new DOMParser();
+      const xml = parser.parseFromString(text, 'text/xml');
+      const layers = xml.getElementsByTagName('Layer');
 
-        for (const layerElement of layers) {
-            const nameElement = layerElement.getElementsByTagName('Name')[0];
-            if (nameElement && nameElement.textContent === layerName) {
-                const bboxElements = layerElement.getElementsByTagName('BoundingBox');
-                
-                for (const bbox of bboxElements) {
-                    const srs = bbox.getAttribute('CRS') || bbox.getAttribute('SRS');
-                    if (srs === 'EPSG:3857') { // Vérifie que c'est bien le bon EPSG
-                        return [
-                            parseFloat(bbox.getAttribute('minx')!),
-                            parseFloat(bbox.getAttribute('miny')!),
-                            parseFloat(bbox.getAttribute('maxx')!),
-                            parseFloat(bbox.getAttribute('maxy')!)
-                        ];
-                    }
-                }
+      for (const layerElement of layers) {
+        const nameElement = layerElement.getElementsByTagName('Name')[0];
+        if (nameElement && nameElement.textContent === layerName) {
+          const bboxElements = layerElement.getElementsByTagName('BoundingBox');
+
+          for (const bbox of bboxElements) {
+            const srs = bbox.getAttribute('CRS') || bbox.getAttribute('SRS');
+            if (srs === 'EPSG:3857') { // Vérifie que c'est bien le bon EPSG
+              return [
+                parseFloat(bbox.getAttribute('minx')!),
+                parseFloat(bbox.getAttribute('miny')!),
+                parseFloat(bbox.getAttribute('maxx')!),
+                parseFloat(bbox.getAttribute('maxy')!)
+              ];
             }
+          }
         }
+      }
     } catch (error) {
-        console.error('Erreur lors de la récupération de l’extent:', error);
+      console.error('Erreur lors de la récupération de l’extent:', error);
     }
     return null;
-}
+  }
 
 }

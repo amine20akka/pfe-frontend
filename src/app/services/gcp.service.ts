@@ -96,12 +96,12 @@ export class GcpService {
   }
 
   deleteGcpData(gcpId: string): void {
-    
+
     this.gcpApiService.deleteGcpById(gcpId).subscribe({
       next: (updatedGcps: GcpDto[]) => {
         if (updatedGcps) {
-          console.log("returned gcps : ", updatedGcps);
           this.gcps = FromDtos(updatedGcps);
+          this.updateResiduals();
         }
       },
       error: (err) => {
@@ -110,9 +110,6 @@ export class GcpService {
         }
       }
     })
-
-    // Recalculer les résidus
-    this.updateResiduals();
 
     setTimeout(() => {
       this.gcpsSubject.next(this.gcps)
@@ -240,52 +237,52 @@ export class GcpService {
   }
 
   // async loadGCPs(event: Event): Promise<GCP[]> {
-    // const input = event.target as HTMLInputElement;
-    // if (input.files && input.files.length > 0) {
-    //   const file = input.files[0];
-    //   const reader = new FileReader();
+  // const input = event.target as HTMLInputElement;
+  // if (input.files && input.files.length > 0) {
+  //   const file = input.files[0];
+  //   const reader = new FileReader();
 
-    //   return new Promise<GCP[]>((resolve, reject) => {
-    //     reader.onload = () => {
-    //       try {
-    //         this.updateLoadingGCPs(true);
+  //   return new Promise<GCP[]>((resolve, reject) => {
+  //     reader.onload = () => {
+  //       try {
+  //         this.updateLoadingGCPs(true);
 
-    //         // Charger les données simplifiées
-    //         const simplifiedGcps = JSON.parse(reader.result as string);
+  //         // Charger les données simplifiées
+  //         const simplifiedGcps = JSON.parse(reader.result as string);
 
-    //         // Transformer en objets GCP complets en utilisant la méthode createGCP
-    //         const gcps: GCP[] = [];
+  //         // Transformer en objets GCP complets en utilisant la méthode createGCP
+  //         const gcps: GCP[] = [];
 
-    //         // Sauvegarde temporaire de la longueur actuelle pour pouvoir réinitialiser les index
-    //         const currentLength = this.gcps.length;
+  //         // Sauvegarde temporaire de la longueur actuelle pour pouvoir réinitialiser les index
+  //         const currentLength = this.gcps.length;
 
-    //         // Transformer chaque point simplifié en utilisant createGCP
-    //         simplifiedGcps.forEach((simplifiedGcp: { sourceX: number, sourceY: number, mapX: number, mapY: number }) => {
-    //           // Nous devons modifier temporairement this.gcps.length pour que les index soient corrects
-    //           this.gcps.length = gcps.length + currentLength;
-    //           const newGCP = this.createGCP(simplifiedGcp.sourceX, simplifiedGcp.sourceY, simplifiedGcp.mapX, simplifiedGcp.mapY);
-    //           gcps.push(FromDto(newGCP));
-    //         });
+  //         // Transformer chaque point simplifié en utilisant createGCP
+  //         simplifiedGcps.forEach((simplifiedGcp: { sourceX: number, sourceY: number, mapX: number, mapY: number }) => {
+  //           // Nous devons modifier temporairement this.gcps.length pour que les index soient corrects
+  //           this.gcps.length = gcps.length + currentLength;
+  //           const newGCP = this.createGCP(simplifiedGcp.sourceX, simplifiedGcp.sourceY, simplifiedGcp.mapX, simplifiedGcp.mapY);
+  //           gcps.push(FromDto(newGCP));
+  //         });
 
-    //         // Restaurer la longueur d'origine
-    //         this.gcps.length = currentLength;
+  //         // Restaurer la longueur d'origine
+  //         this.gcps.length = currentLength;
 
-    //         console.log('Les GCPs chargés : ', gcps);
-    //         resolve(gcps);
-    //       } catch (error) {
-    //         console.error('Erreur de parsing JSON', error);
-    //         reject([]);
-    //       }
-    //     };
+  //         console.log('Les GCPs chargés : ', gcps);
+  //         resolve(gcps);
+  //       } catch (error) {
+  //         console.error('Erreur de parsing JSON', error);
+  //         reject([]);
+  //       }
+  //     };
 
-    //     reader.onerror = () => {
-    //       console.error('Erreur de lecture du fichier');
-    //       reject([]);
-    //     };
+  //     reader.onerror = () => {
+  //       console.error('Erreur de lecture du fichier');
+  //       reject([]);
+  //     };
 
-    //     reader.readAsText(file);
-    //   });
-    // }
+  //     reader.readAsText(file);
+  //   });
+  // }
   //   return [];
   // }
 

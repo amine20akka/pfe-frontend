@@ -209,7 +209,7 @@ export class ImageService {
     if (!cached) return;
 
     const { imageUrl, width, height, timestamp } = JSON.parse(cached);
-    const expiration = 5 * 60 * 1000;
+    const expiration = 30 * 60 * 1000;
 
     if (Date.now() - timestamp > expiration) {
       localStorage.removeItem('cachedImage');
@@ -226,10 +226,13 @@ export class ImageService {
       localStorage.setItem("isImageLoaded", JSON.stringify(this.isImageLoaded));
       const georefImage = localStorage.getItem("GeorefImage");
       if (georefImage) {
-        const parsedGeorefImage = JSON.parse(georefImage);
+        const parsedGeorefImage: GeorefImage = JSON.parse(georefImage);
         this.georefImageSubject.next(parsedGeorefImage);
       }
       this.isLoading = false;
+      // if () {
+        
+      // }
       this.addGcpsByImageId(this.georefImageSubject.getValue().id);
     };
     img.src = imageUrl;

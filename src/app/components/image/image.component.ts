@@ -70,7 +70,7 @@ export class ImageComponent implements OnInit, AfterViewInit {
       const cached = localStorage.getItem('cachedImage');
       if (cached) {
         const { timestamp } = JSON.parse(cached);
-        if (Date.now() - timestamp > 5 * 60 * 1000) {
+        if (Date.now() - timestamp > 30 * 60 * 1000) {
           localStorage.removeItem('cachedImage');
         }
       }

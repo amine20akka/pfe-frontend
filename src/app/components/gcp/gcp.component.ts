@@ -1,4 +1,4 @@
-import { Component, ElementRef, HostListener, NgZone, OnDestroy, OnInit, Renderer2, ViewChild } from '@angular/core';
+import { Component, ElementRef, HostListener, NgZone, OnChanges, OnDestroy, OnInit, Renderer2, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -9,10 +9,8 @@ import { SelectionModel } from '@angular/cdk/collections';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { GeorefService } from '../../services/georef.service';
 import { GcpService } from '../../services/gcp.service';
-import { ImageService } from '../../services/image.service';
 import VectorLayer from 'ol/layer/Vector';
 import VectorSource from 'ol/source/Vector';
-import { MapService } from '../../services/map.service';
 import { FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatInputModule } from '@angular/material/input';
 import { MatDialog } from '@angular/material/dialog';
@@ -37,15 +35,13 @@ import { LayerService } from '../../services/layer.service';
   styleUrl: './gcp.component.scss',
 })
 
-export class GcpComponent implements OnInit, OnDestroy {
+export class GcpComponent implements OnInit, OnDestroy, OnChanges {
   @ViewChild('tableContainer', { static: false }) tableContainer!: ElementRef;
   @ViewChild('anchorZone', { static: true }) anchorZone!: ElementRef;
 
   constructor(
     private georefService: GeorefService,
     private gcpService: GcpService,
-    private imageService: ImageService,
-    private mapService: MapService,
     private layerService: LayerService,
     private fb: FormBuilder,
     private dialog: MatDialog,
@@ -58,6 +54,7 @@ export class GcpComponent implements OnInit, OnDestroy {
   dataSource = new MatTableDataSource<GCP>();
   selection = new SelectionModel<GCP>(true, []);
   isDeleting = false;
+  private selectedGcpIdsBeforeDelete: string[] = [];
   sourceXControl = new FormControl('', [Validators.required, Validators.nullValidator]);
   sourceYControl = new FormControl('', [Validators.required, Validators.nullValidator]);
   mapXControl = new FormControl('', [Validators.required, Validators.nullValidator]);
@@ -65,7 +62,6 @@ export class GcpComponent implements OnInit, OnDestroy {
   private imageLayers: Map<number, VectorLayer<VectorSource>> = new Map<number, VectorLayer<VectorSource>>();
   private mapLayers: Map<number, VectorLayer<VectorSource>> = new Map<number, VectorLayer<VectorSource>>();
 
-  // Variables pour l'édition
   editingGcpId: number | null = null;
   editForm!: FormGroup;
 
@@ -86,7 +82,6 @@ export class GcpComponent implements OnInit, OnDestroy {
   private resetThreshold = 150;
 
   ngOnInit() {
-    // Initialiser le formulaire d'édition
     this.editForm = this.fb.group({
       sourceX: this.sourceXControl,
       sourceY: this.sourceYControl,
@@ -95,20 +90,28 @@ export class GcpComponent implements OnInit, OnDestroy {
     });
 
     this.gcpService.gcps$.subscribe((gcps) => {
+      this.dataSource.data = gcps;
+
       if (gcps.length === 0) {
         this.selection.clear();
-        this.dataSource.data = [];
+      } else if (this.isDeleting) {
+
+        const gcpsToSelect = gcps.filter(gcp =>
+          this.selectedGcpIdsBeforeDelete.includes(gcp.id)
+        );
+
+        this.selection.clear();
+        this.selection.select(...gcpsToSelect);
+
+        this.isDeleting = false;
+        this.selectedGcpIdsBeforeDelete = [];
       } else {
-        this.dataSource.data = gcps;
+        this.selection.select(gcps[gcps.length - 1]);
       }
 
       if (this.loadingGCPs) {
         this.selection.select(...gcps);
         this.gcpService.updateLoadingGCPs(false);
-      }
-
-      if (gcps.length > 0 && !this.isDeleting) {
-        this.selection.select(gcps[gcps.length - 1]);
       }
 
       setTimeout(() => {
@@ -145,7 +148,7 @@ export class GcpComponent implements OnInit, OnDestroy {
       setTimeout(() => this.updateTableDimensions(), 0);
     });
 
-    // Sauvegarder la position originale pour permettre de revenir
+    // Save initial position
     setTimeout(() => {
       const element = this.el.nativeElement.querySelector('.table-container');
       if (element) {
@@ -160,9 +163,16 @@ export class GcpComponent implements OnInit, OnDestroy {
     }, 100);
   }
 
+  ngOnChanges(): void {
+    // Save Selection state
+    const selectedIndexes = this.selection.selected.map(gcp => gcp.index);
+    localStorage.setItem('selectedGCPs', JSON.stringify(selectedIndexes));
+  }
+
   ngOnDestroy(): void {
     this.gcpService.isAddingGCP = false;
-    // Sauvegarde de l'état de la sélection
+
+    // Save Selection state
     const selectedIndexes = this.selection.selected.map(gcp => gcp.index);
     localStorage.setItem('selectedGCPs', JSON.stringify(selectedIndexes));
   }
@@ -209,7 +219,6 @@ export class GcpComponent implements OnInit, OnDestroy {
     document.addEventListener('touchend', this.stopResize);
   }
 
-  // Méthode pour gérer le déplacement pendant le redimensionnement
   resizeMove = (event: MouseEvent | TouchEvent): void => {
     if (!this.isResizing) return;
 
@@ -240,7 +249,6 @@ export class GcpComponent implements OnInit, OnDestroy {
     }
   }
 
-  // Méthode pour arrêter le redimensionnement
   stopResize = (): void => {
     if (!this.isResizing) return;
 
@@ -526,7 +534,7 @@ export class GcpComponent implements OnInit, OnDestroy {
     this.updateGcpLayerVisibility();
   }
 
-  /** Met à jour la visibilité des couches de GCP */
+  /** Update GCP layers visibility */
   updateGcpLayerVisibility(): void {
     if (!this.imageLayers) return; // No GCP image layers
 
@@ -543,16 +551,15 @@ export class GcpComponent implements OnInit, OnDestroy {
     });
   }
 
-  deleteGcp(gcpId: string): void {
+  deleteGcp(gcp: GCP): void {
     this.isDeleting = true;
-    this.selection.deselect(this.dataSource.data.find(gcp => gcp.id === gcpId)!);
-    this.gcpService.deleteGcpData(gcpId);
-    // this.layerService.deleteGcpImageLayer(gcpId);
-    // this.layerService.deleteGcpMapLayer(gcpId);
-    this.updateGcpLayerVisibility();
-
-    // Ajoute cette ligne pour réinitialiser après suppression
-    setTimeout(() => { this.isDeleting = false; }, 100);
+    // Save Selection state
+    this.selectedGcpIdsBeforeDelete = this.selection.selected
+      .filter(g => g.id !== gcp.id)
+      .map(g => g.id);
+    this.gcpService.deleteGcpData(gcp.id);
+    this.layerService.deleteGcpImageLayer(gcp.index);
+    this.layerService.deleteGcpMapLayer(gcp.index);
   }
 
   /** Commencer l'édition d'un GCP */
@@ -640,7 +647,7 @@ export class GcpComponent implements OnInit, OnDestroy {
     return colors[(index - 1) % colors.length].text;
   }
 
-  openDeleteConfirmDialog(gcpId: string): void {
+  openDeleteConfirmDialog(gcp: GCP): void {
     const dialogData: ConfirmDialogData = {
       title: 'Êtes-vous sûr de supprimer ce point de contrôle ?',
       confirmText: 'Supprimer',
@@ -655,7 +662,7 @@ export class GcpComponent implements OnInit, OnDestroy {
 
     dialogRef.afterClosed().subscribe(result => {
       if (result) {
-        this.deleteGcp(gcpId);
+        this.deleteGcp(gcp);
       }
     });
   }

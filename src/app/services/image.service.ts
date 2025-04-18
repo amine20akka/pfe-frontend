@@ -230,9 +230,6 @@ export class ImageService {
         this.georefImageSubject.next(parsedGeorefImage);
       }
       this.isLoading = false;
-      // if () {
-        
-      // }
       this.addGcpsByImageId(this.georefImageSubject.getValue().id);
     };
     img.src = imageUrl;
@@ -299,9 +296,12 @@ export class ImageService {
         response.map((gcpDto: GcpDto) => {
           const gcp = this.gcpService.createGCP(gcpDto.sourceX, gcpDto.sourceY, gcpDto.mapX!, gcpDto.mapY!, imageId, gcpDto.id);
           this.gcpService.addGcpToList(FromDto(gcp));
-          const newGcpLayer = this.layerService.createGcpImageLayer(gcp.sourceX, gcp.sourceY + this.layerService.imageHeight);
-          this.layerService.addGcpImageLayerToList(newGcpLayer);
-          this.layerService.addGcpMapLayerToList(newGcpLayer);
+          const newGcpImageLayer = this.layerService.createGcpImageLayer(gcp.sourceX, gcp.sourceY + this.layerService.imageHeight);
+          this.layerService.addGcpImageLayerToList(newGcpImageLayer);
+          if (gcp.mapX && gcp.mapY) {
+            const newGcpMapLayer = this.layerService.createGcpMapLayer(gcp.mapX, gcp.mapY);
+            this.layerService.addGcpMapLayerToList(newGcpMapLayer);
+          }
         });
 
       },

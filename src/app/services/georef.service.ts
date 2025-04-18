@@ -20,6 +20,16 @@ export class GeorefService {
     private drawService: DrawService,
     private http: HttpClient
   ) {
+    const saved = localStorage.getItem('isGeorefActive');
+    this.isGeorefActive = saved ? JSON.parse(saved) : false;
+
+    if (this.isGeorefActive) {
+      this.mapService.syncMapLayers();
+      setTimeout(() => {
+        this.layerService.syncImageLayers();
+      }, 500);
+    }
+
     this.imageService.georefImage$.subscribe((georefImage) => {
       if (georefImage.status === GeorefStatus.PROCESSING) this.isProcessing = true;
       if (georefImage.status === GeorefStatus.COMPLETED) this.isProcessing = false;
@@ -27,11 +37,11 @@ export class GeorefService {
     })
   }
 
-  private apiUrl = 'http://localhost:5000'; // URL du backend GDAL
+  private gdalApiUrl = 'http://localhost:5000';
 
-  isGeorefActive = false; // Gère l'affichage de la partie droite
-  isTableActive = false; // Gère la TDM
-  isDrawToolsActive = false; // Gère les outils de dessin
+  isGeorefActive = false;
+  isTableActive = false;
+  isDrawToolsActive = false;
   isProcessing = false;
   panelWidth = 47; // Largeur par défaut
 
@@ -39,12 +49,15 @@ export class GeorefService {
     if (this.isDrawToolsActive) {
       this.toggleDrawTools();
     }
+
     this.isGeorefActive = !this.isGeorefActive;
+    localStorage.setItem('isGeorefActive', JSON.stringify(this.isGeorefActive));
+
     if (this.isGeorefActive) {
       this.mapService.syncMapLayers();
       setTimeout(() => {
         this.layerService.syncImageLayers();
-      }, 300)
+      }, 300);
     } else {
       this.mapService.removeAllGcpLayersFromMap();
     }
@@ -87,6 +100,6 @@ export class GeorefService {
 
     this.imageService.updateGeorefStatus(GeorefStatus.PROCESSING);
 
-    return this.http.post(`${this.apiUrl}/georef`, formData, { responseType: 'text' });
+    return this.http.post(`${this.gdalApiUrl}/georef`, formData, { responseType: 'text' });
   }
 }

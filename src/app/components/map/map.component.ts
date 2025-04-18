@@ -3,6 +3,7 @@ import { MapService } from '../../services/map.service';
 import { CommonModule } from '@angular/common';
 import { DrawService } from '../../services/draw.service';
 import { LayerService } from '../../services/layer.service';
+import { GeorefService } from '../../services/georef.service';
 
 @Component({
   selector: 'app-map',
@@ -21,12 +22,15 @@ export class MapComponent implements OnInit {
     private mapService: MapService,
     private layerService: LayerService,
     private drawService: DrawService,
+    private georefService: GeorefService,
   ) { }
 
   ngOnInit(): void {
     this.mapService.initMap('map');
     this.layerService.mapLayers$.subscribe(() => {
-      this.mapService.syncMapLayers();
+      if (this.georefService.isGeorefActive) {
+        this.mapService.syncMapLayers();
+      }
     });
 
     this.layerService.georefLayers$.subscribe((georefLayers) => {
@@ -39,7 +43,6 @@ export class MapComponent implements OnInit {
       this.isMapSelection = value;
     });
 
-    // S'abonner aux coordonnées du curseur
     this.mapService.mapCoordinates$.subscribe(coords => {
       this.cursorX = coords.x;
       this.cursorY = coords.y;

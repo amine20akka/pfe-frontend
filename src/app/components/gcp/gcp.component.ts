@@ -1,4 +1,4 @@
-import { Component, ElementRef, HostListener, NgZone, OnChanges, OnDestroy, OnInit, Renderer2, ViewChild } from '@angular/core';
+import { Component, ElementRef, HostListener, NgZone, OnDestroy, OnInit, Renderer2, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -35,7 +35,7 @@ import { LayerService } from '../../services/layer.service';
   styleUrl: './gcp.component.scss',
 })
 
-export class GcpComponent implements OnInit, OnDestroy, OnChanges {
+export class GcpComponent implements OnInit, OnDestroy {
   @ViewChild('tableContainer', { static: false }) tableContainer!: ElementRef;
   @ViewChild('anchorZone', { static: true }) anchorZone!: ElementRef;
 
@@ -115,17 +115,6 @@ export class GcpComponent implements OnInit, OnDestroy, OnChanges {
       }
 
       setTimeout(() => {
-        // Restaurer la sélection depuis le stockage local
-        const savedSelection = localStorage.getItem('selectedGCPs');
-        if (savedSelection) {
-          const selectedIndexes: number[] = JSON.parse(savedSelection);
-          selectedIndexes.forEach(index => {
-            const gcp = gcps.find(g => g.index === index);
-            if (gcp) this.selection.select(gcp);
-            const gcpLayer = this.imageLayers.get(index);
-            if (gcpLayer) gcpLayer.setVisible(true);
-          });
-        }
         this.updateGcpLayerVisibility();
       }, 300);
       console.log('GCPs Data : ', gcps);
@@ -163,18 +152,8 @@ export class GcpComponent implements OnInit, OnDestroy, OnChanges {
     }, 100);
   }
 
-  ngOnChanges(): void {
-    // Save Selection state
-    const selectedIndexes = this.selection.selected.map(gcp => gcp.index);
-    localStorage.setItem('selectedGCPs', JSON.stringify(selectedIndexes));
-  }
-
   ngOnDestroy(): void {
     this.gcpService.isAddingGCP = false;
-
-    // Save Selection state
-    const selectedIndexes = this.selection.selected.map(gcp => gcp.index);
-    localStorage.setItem('selectedGCPs', JSON.stringify(selectedIndexes));
   }
 
   get isGeorefActive(): boolean {

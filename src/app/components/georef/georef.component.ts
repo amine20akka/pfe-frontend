@@ -62,13 +62,13 @@ export class GeorefComponent implements OnInit, OnDestroy {
   ) { }
 
   ngOnInit(): void {
-    // S'abonner aux coordonnées du curseur
+    
+
     this.coordSub = this.gcpService.cursorCoordinates.subscribe(coords => {
       this.cursorX = parseFloat(coords.x.toFixed(4));
       this.cursorY = parseFloat(coords.y.toFixed(4));
     });
 
-    // Observer les paramètres de géoréférencement
     this.georefSettingsService.settings$.subscribe(settings => this.georefSettings = settings);
 
     this.gcpService.totalRMSE$.subscribe(value => this.totalRMSE = value);

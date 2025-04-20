@@ -17,7 +17,7 @@ export class GeorefSettingsService {
     srid: SRID.WEB_MERCATOR,
     resamplingMethod: ResamplingMethod.NEAREST,
     compressionType: CompressionType.NONE,
-    outputFilename: ''
+    outputFilename: '.tif'
   });
 
   // Observable accessible depuis toute l'application

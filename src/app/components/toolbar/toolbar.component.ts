@@ -268,7 +268,7 @@ export class ToolbarComponent {
         outputFilename: this.georefSettings.outputFilename
       },
       gcps: gcpData,
-      imageFile: this.georefImage.imageFile  // Ajoutez le fichier à la requête
+      imageFile: this.georefImage.imageFile
     };
 
     this.georefService.georeferenceImage(requestData).subscribe({

@@ -10,7 +10,7 @@ export const TransformationMapping = {
 };
 
 export const SridMapping = {
-  [SRID.WGS84]: '_4326',
+  // [SRID.WGS84]: '_4326',
   [SRID.WEB_MERCATOR]: '_3857'
 };
 

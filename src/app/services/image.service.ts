@@ -48,8 +48,6 @@ export class ImageService {
         this.layerService.setImageHeight(0);
         this.layerService.resetImage();
         this.gcpService.cursorCoordinates.next({ x: 0, y: 0 });
-        this.gcpService.clearGCPs()
-        this.layerService.clearAllGcpImageLayers();
         this.georefImageSubject.next({} as GeorefImage);
         this.georefSettingsService.resetSettings();
         localStorage.removeItem("GeorefImage");
@@ -91,7 +89,7 @@ export class ImageService {
   onFileSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
     if (input.files?.length) {
-      this.isLoading = true; // Afficher immédiatement le spinner
+      this.isLoading = true;
       this.handleFile(input.files[0]);
     }
   }

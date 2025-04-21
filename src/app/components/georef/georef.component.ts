@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit, ElementRef, ViewChild, ChangeDetectorRef } from '@angular/core';
+import { Component, OnDestroy, OnInit, ElementRef, ViewChild, AfterViewInit } from '@angular/core';
 import { trigger, state, style, animate, transition } from '@angular/animations';
 import { GeorefService } from '../../services/georef.service';
 import { MatIconModule } from '@angular/material/icon';
@@ -13,8 +13,8 @@ import { GcpService } from '../../services/gcp.service';
 import { CommonModule } from '@angular/common';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { GeorefSettings } from '../../interfaces/georef-settings';
-import { GeorefSettingsService } from '../../services/georef-settings.service';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { ImageFileService } from '../../services/image-file.service';
 
 @Component({
   selector: 'app-georef',
@@ -39,7 +39,7 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
     ])
   ]
 })
-export class GeorefComponent implements OnInit, OnDestroy {
+export class GeorefComponent implements OnInit, OnDestroy, AfterViewInit {
   @ViewChild('georefContainer') georefContainer!: ElementRef;
 
   cursorX = 0;
@@ -48,7 +48,6 @@ export class GeorefComponent implements OnInit, OnDestroy {
   georefSettings!: GeorefSettings;
   totalRMSE!: number;
 
-  // Propriétés pour le redimensionnement
   isResizing = false;
   minWidth = 42;   // Largeur minimum
   maxWidth = 80;   // Largeur maximum
@@ -56,34 +55,38 @@ export class GeorefComponent implements OnInit, OnDestroy {
   constructor(
     private georefService: GeorefService,
     private imageService: ImageService,
+    private imageFileService: ImageFileService,
     private gcpService: GcpService,
-    private georefSettingsService: GeorefSettingsService,
-    private cdr: ChangeDetectorRef
   ) { }
 
-  ngOnInit(): void {
-    
-
-    this.coordSub = this.gcpService.cursorCoordinates.subscribe(coords => {
+  ngOnInit(): void {    
+    this.coordSub = this.imageFileService.cursorCoordinates.subscribe(coords => {
       this.cursorX = parseFloat(coords.x.toFixed(4));
       this.cursorY = parseFloat(coords.y.toFixed(4));
     });
 
-    this.georefSettingsService.settings$.subscribe(settings => this.georefSettings = settings);
+    this.imageService.georefImage$.subscribe(image => this.georefSettings = image.settings);
 
     this.gcpService.totalRMSE$.subscribe(value => this.totalRMSE = value);
 
-    // Ajouter les écouteurs d'événements pour le redimensionnement
     this.setupResizeListeners();
   }
 
+  ngAfterViewInit(): void {
+    const imageId = localStorage.getItem('imageId');
+    if (imageId) {
+      this.imageService.restoreImage(imageId);
+      setTimeout(() => {
+        this.gcpService.addGcpsByImageId(imageId);
+      }, 1000);
+    }
+  }
+
   ngOnDestroy() {
-    // Nettoyer la souscription pour éviter les fuites de mémoire
     if (this.coordSub) {
       this.coordSub.unsubscribe();
     }
 
-    // Supprimer les écouteurs d'événements
     this.removeResizeListeners();
   }
 
@@ -187,8 +190,7 @@ export class GeorefComponent implements OnInit, OnDestroy {
   }
 
   get isImageLoaded(): boolean {
-    const value = localStorage.getItem("isImageLoaded");
-    return value ? JSON.parse(value) : false;
+    return this.imageService.isImageLoaded;
   }
 
   get isLoading(): boolean {

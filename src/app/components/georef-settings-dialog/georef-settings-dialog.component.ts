@@ -54,7 +54,7 @@ export class GeorefSettingsDialogComponent {
     if (this.georefForm.valid) {
       this.dialogRef.close(this.georefForm.value);
     } else {
-      this.georefForm.markAllAsTouched(); // Afficher les erreurs si le form est invalide
+      this.georefForm.markAllAsTouched();
     }
   }
 }

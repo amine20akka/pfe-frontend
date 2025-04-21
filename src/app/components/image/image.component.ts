@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, ElementRef, OnInit, Renderer2, ViewChild } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, OnDestroy, OnInit, Renderer2, ViewChild } from '@angular/core';
 import { ImageService } from '../../services/image.service';
 import { trigger, state, style, transition, animate } from '@angular/animations';
 import { GeorefService } from '../../services/georef.service';
@@ -11,6 +11,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { FromDto } from '../../dto/gcp-dto';
 import { LayerService } from '../../services/layer.service';
+import { ImageFileService } from '../../services/image-file.service';
 
 @Component({
   selector: 'app-image',
@@ -30,7 +31,7 @@ import { LayerService } from '../../services/layer.service';
     ])
   ]
 })
-export class ImageComponent implements OnInit, AfterViewInit {
+export class ImageComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('imageContainer', { static: false }) imageContainer!: ElementRef;
   length = 0;
   sourceX = 0;
@@ -41,6 +42,7 @@ export class ImageComponent implements OnInit, AfterViewInit {
   constructor(
     private layerService: LayerService,
     private imageService: ImageService,
+    private imageFileService: ImageFileService,
     private georefService: GeorefService,
     private gcpService: GcpService,
     private dialog: MatDialog,
@@ -55,41 +57,19 @@ export class ImageComponent implements OnInit, AfterViewInit {
     return this.gcpService.isAddingGCP;
   }
 
-  get imageHeight() {
-    return this.layerService.imageHeight;
-  }
-
   get loadingGCPs(): boolean {
     return this.gcpService.loadingGCPs;
   }
 
   ngOnInit(): void {
-    this.imageService.restoreCachedImage();
-
-    setInterval(() => {
-      const cached = localStorage.getItem('cachedImage');
-      if (cached) {
-        const { timestamp } = JSON.parse(cached);
-        if (Date.now() - timestamp > 30 * 60 * 1000) {
-          localStorage.removeItem('cachedImage');
-        }
-      }
-    }, 60 * 1000);
 
     this.layerService.initImageLayer('image-map');
 
     this.layerService.imageLayers$.subscribe(() => {
       this.layerService.syncImageLayers();
     });
-    this.gcpService.cursorCoordinates.subscribe((coords) => {
-      if (this.isAddingGCP) {
-        this.sourceX = coords.x;
-        this.sourceY = coords.y;
-      }
-    });
-    this.gcpService.gcps$.subscribe((gcps) => {
-      this.length = gcps.length;
-    })
+
+    this.initGcpTracking();
   }
 
   ngAfterViewInit(): void {
@@ -104,6 +84,10 @@ export class ImageComponent implements OnInit, AfterViewInit {
     });
   }
 
+  ngOnDestroy(): void {
+    this.imageFileService.clear();
+  }
+
   zoomIn(): void {
     this.layerService.zoomIn();
   }
@@ -116,6 +100,19 @@ export class ImageComponent implements OnInit, AfterViewInit {
     this.layerService.recenterView();
   }
 
+  private initGcpTracking(): void {
+    this.imageFileService.cursorCoordinates.subscribe((coords) => {
+      if (this.isAddingGCP) {
+        this.sourceX = coords.x;
+        this.sourceY = coords.y;
+      }
+    });
+
+    this.gcpService.gcps$.subscribe((gcps) => {
+      this.length = gcps.length;
+    });
+  }
+
   onImageKeydown(event: KeyboardEvent): void {
     if (event.key === 'a') {
       console.log('🟢 Ajout de GCP activé');
@@ -125,7 +122,7 @@ export class ImageComponent implements OnInit, AfterViewInit {
   onImageClick(): void {
     if (!this.isAddingGCP) return;
 
-    const newGcpLayer = this.layerService.createGcpImageLayer(this.sourceX, this.sourceY + this.imageHeight);
+    const newGcpLayer = this.layerService.createGcpImageLayer(this.sourceX, this.sourceY);
     this.layerService.addGcpImageLayerToList(newGcpLayer);
 
     // Ouvrir le dialogue pour la sélection de la méthode

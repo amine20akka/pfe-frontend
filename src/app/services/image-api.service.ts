@@ -4,7 +4,6 @@ import { filter, map, Observable } from 'rxjs';
 import { UploadResponse } from '../dto/upload-response';
 import { GeorefSettings } from '../interfaces/georef-settings';
 import { GeorefImageDto } from '../dto/georef-image-dto';
-import { TransformationMapping, SridMapping, ResamplingMapping, CompressionMapping } from '../dto/settings-mapping';
 
 @Injectable({
   providedIn: 'root'
@@ -31,15 +30,25 @@ export class ImageApiService {
   updateGeorefParams(imageId: string, settings: GeorefSettings): Observable<GeorefImageDto> {
     const requestPayload = {
       id: imageId,
-      transformationType: TransformationMapping[settings.transformationType],
-      srid: SridMapping[settings.srid],
-      resamplingMethod: ResamplingMapping[settings.resamplingMethod],
-      compression: CompressionMapping[settings.compressionType]
+      transformationType: settings.transformationType,
+      srid: settings.srid,
+      resamplingMethod: settings.resamplingMethod,
+      compression: settings.compressionType
     };
     return this.http.put<GeorefImageDto>(`${this.apiUrl}/georef-params`, requestPayload);
   }
 
   deleteGeorefImageById(imageId: string): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/${imageId}`);
+  }
+
+  getGeorefImageById(imageId: string): Observable<GeorefImageDto> {
+    return this.http.get<GeorefImageDto>(`${this.apiUrl}/${imageId}`);
+  }
+
+  loadUploadedImage(imageId: string): Observable<Blob> {
+    return this.http.get(`${this.apiUrl}/${imageId}/file`, {
+      responseType: 'blob'
+    });
   }
 }

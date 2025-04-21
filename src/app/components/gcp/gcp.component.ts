@@ -118,7 +118,6 @@ export class GcpComponent implements OnInit, OnDestroy {
         this.updateGcpLayerVisibility();
       }, 300);
       console.log('GCPs Data : ', gcps);
-      console.log('GCPs Selection : ', this.selection);
     });
     this.layerService.imageLayers$.subscribe((imageLayers) => {
       this.imageLayers = imageLayers;

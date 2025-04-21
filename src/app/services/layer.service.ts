@@ -3,6 +3,10 @@ import OLMap from 'ol/Map';
 import ImageLayer from 'ol/layer/Image';
 import VectorLayer from 'ol/layer/Vector';
 import ImageSource from 'ol/source/Image';
+import Style from 'ol/style/Style';
+import CircleStyle from 'ol/style/Circle';
+import Fill from 'ol/style/Fill';
+import { colors } from '../shared/colors';
 import { getCenter } from 'ol/extent';
 import { defaults as defaultControls } from 'ol/control';
 import { defaults as defaultInteractions } from 'ol/interaction';
@@ -13,26 +17,22 @@ import Feature from 'ol/Feature';
 import View from 'ol/View';
 import { Point } from 'ol/geom';
 import { Projection } from 'ol/proj';
-import { Style, Fill } from 'ol/style';
 import Text from 'ol/style/Text';
-import { colors } from '../shared/colors';
 import { WMSLayer } from '../models/wms-layer.model';
-import { GcpService } from './gcp.service';
 import TileLayer from 'ol/layer/Tile';
 import BaseLayer from 'ol/layer/Base';
 import { GCP } from '../models/gcp.model';
 import MapBrowserEvent from 'ol/MapBrowserEvent';
+import { ImageFileService } from './image-file.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class LayerService {
 
-  // Image
-  private imageUrl = "";
-  imageWidth = 0;
-  imageHeight = 0;
-  private extent: number[] = [];
+  private gcpStyles: Style[] = [];
+
+  // Image Layers
   private imageLayers: Map<number, VectorLayer<VectorSource>> = new Map<number, VectorLayer<VectorSource>>();
   private imageLayersSubject = new BehaviorSubject<Map<number, VectorLayer<VectorSource>>>(this.imageLayers);
   private imageMap: OLMap = new OLMap();
@@ -51,49 +51,29 @@ export class LayerService {
   georefLayers$ = this.georefLayersSubject.asObservable();
 
   constructor(
-    private gcpService: GcpService,
-  ) { }
+    private imageFileService: ImageFileService,
+  ) {
+    this.initGcpStyles();
+  }
 
-  
-  getCurrentExtent(): number[] {
-    return this.extent;
+  private initGcpStyles(): void {
+    for (let i = 0; i < 20; i++) {
+      this.gcpStyles.push(new Style({
+        image: new CircleStyle({
+          radius: 10,
+          fill: new Fill({ color: colors[i % colors.length].fill }),
+        })
+      }));
+    }
   }
-  
-  setNewExtent(newExtent: number[]): void {
-    this.extent = newExtent;
-  }
-  
-  getCurrentImageUrl(): string {
-    return this.imageUrl;
-  }
-  
-  setNewImageUrl(url: string): void {
-    this.imageUrl = url;
-  }
-  
-  getImageWidth(): number {
-    return this.imageWidth;
-  }
-  
-  getImageHeight(): number {
-    return this.imageHeight;
-  }
-  
-  setImageWidth(width: number): void {
-    this.imageWidth = width;
-  }
-  
-  setImageHeight(height: number): void {
-    this.imageHeight = height;
-  }
-  
+
   zoomIn(): void {
     const view = this.imageMap.getView();
     view.animate({
       zoom: view.getZoom()! + 0.5,
     });
   }
-  
+
   zoomOut(): void {
     const view = this.imageMap.getView();
     view.animate({
@@ -101,22 +81,23 @@ export class LayerService {
       duration: 300
     });
   }
-  
+
   recenterView(): void {
     if (this.imageMap) {
       const view = this.imageMap.getView();
       view.animate({
-        center: getCenter(this.extent),
+        center: getCenter(this.imageFileService.getCurrentExtent()),
         zoom: 1,
         duration: 300
       });
     }
   }
-  
+
   resetImage(): void {
+    this.imageFileService.setImageHeight(0);
+    this.imageFileService.setImageWidth(0);
     this.imageMap.setTarget('');
   }
-  
 
   // GCP Image Layers Operations
 
@@ -129,9 +110,9 @@ export class LayerService {
   createImageLayer(): ImageLayer<ImageSource> {
     this.imageLayer = new ImageLayer({
       source: new Static({
-        url: this.imageUrl,
-        imageExtent: this.extent,
-        projection: new Projection({ code: 'PIXEL', units: 'pixels', extent: this.extent })
+        url: this.imageFileService.getImageUrl()!,
+        imageExtent: this.imageFileService.getCurrentExtent(),
+        projection: new Projection({ code: 'PIXEL', units: 'pixels', extent: this.imageFileService.getCurrentExtent() })
       })
     })
     return this.imageLayer;
@@ -143,9 +124,9 @@ export class LayerService {
         target: target,
         interactions: defaultInteractions(),
         view: new View({
-          projection: new Projection({ code: 'PIXEL', units: 'pixels', extent: this.extent }),
+          projection: new Projection({ code: 'PIXEL', units: 'pixels', extent: this.imageFileService.getCurrentExtent() }),
           showFullExtent: true,
-          center: [this.imageWidth / 2, this.imageHeight / 2],
+          center: [this.imageFileService.getImageWidth() / 2, this.imageFileService.getImageHeight() / 2],
           zoom: 1
         }),
         layers: [this.createImageLayer()],
@@ -155,9 +136,9 @@ export class LayerService {
 
       this.imageMap.on('pointermove', (event) => {
         const coords = event.coordinate;
-        this.gcpService.cursorCoordinates.next({
+        this.imageFileService.cursorCoordinates.next({
           x: parseFloat(coords[0].toFixed(4)),
-          y: parseFloat(coords[1].toFixed(4)) - this.imageHeight,
+          y: parseFloat(coords[1].toFixed(4)) - this.imageFileService.getImageHeight(),
         });
       });
     }, 200);
@@ -189,7 +170,7 @@ export class LayerService {
   }
 
   applyLayerStyle(index: number): Style {
-    const baseStyle = this.gcpService.gcpStyles[(index - 1) % 20];
+    const baseStyle = this.gcpStyles[(index - 1) % 20];
 
     const newStyle = new Style({
       image: baseStyle.getImage()!,
@@ -215,7 +196,7 @@ export class LayerService {
 
   createGcpImageLayer(x: number, y: number): VectorLayer {
     const feature = new Feature({
-      geometry: new Point([x, y])
+      geometry: new Point([x, y + this.imageFileService.getImageHeight()])
     });
 
     const pointStyle = this.applyLayerStyle(this.imageLayers.size + 1);
@@ -224,7 +205,7 @@ export class LayerService {
       source: new VectorSource(
         { features: [feature] }
       ),
-      extent: this.extent,
+      extent: this.imageFileService.getCurrentExtent(),
       style: pointStyle,
     });
     newGcpLayer.setVisible(true);
@@ -284,7 +265,7 @@ export class LayerService {
     if (gcpLayer) {
       const feature = gcpLayer.getSource()?.getFeatures()[0];
       if (feature) {
-        feature.setGeometry(new Point([sourceX, sourceY + this.imageHeight]));
+        feature.setGeometry(new Point([sourceX, sourceY + this.imageFileService.getImageHeight()]));
       }
     }
   }
@@ -296,7 +277,7 @@ export class LayerService {
 
   loadGcpImageLayers(gcps: GCP[]): void {
     gcps.forEach((gcp) => {
-      const newGcpLayer = this.createGcpImageLayer(gcp.sourceX, gcp.sourceY + this.imageHeight);
+      const newGcpLayer = this.createGcpImageLayer(gcp.sourceX, gcp.sourceY);
       this.addGcpImageLayerToList(newGcpLayer);
     });
   }

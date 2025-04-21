@@ -4,11 +4,11 @@ import { SRID } from "../enums/srid";
 import { TransformationType } from "../enums/transformation-type";
 
 export interface GeorefSettings {
-    transformationType: TransformationType;
-    srid: SRID;
-    resamplingMethod: ResamplingMethod;
-    compressionType: CompressionType;
-    outputFilename: string;
+    transformationType?: TransformationType;
+    srid?: SRID;
+    resamplingMethod?: ResamplingMethod;
+    compressionType?: CompressionType;
+    outputFilename?: string;
 }
 
 // Tableaux à partir des enums pour les utiliser dans les listes déroulantes

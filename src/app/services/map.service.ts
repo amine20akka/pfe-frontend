@@ -17,6 +17,7 @@ import { ImageService } from './image.service';
 import BaseLayer from 'ol/layer/Base';
 import { WMSLayer } from '../models/wms-layer.model';
 import { NotificationService } from './notification.service';
+import { ImageFileService } from './image-file.service';
 
 @Injectable({
   providedIn: 'root'
@@ -37,6 +38,7 @@ export class MapService {
     private gcpService: GcpService,
     private layerService: LayerService,
     private imageService: ImageService,
+    private imageFileService: ImageFileService,
     private gcpApiService: GcpApiService,
     private notifService: NotificationService,
   ) {
@@ -56,8 +58,8 @@ export class MapService {
             if (result) {
               const addGcpRequest = this.gcpService.createAddGcpRequest(
                 this.imageService.getGeorefImage().id,
-                this.gcpService.cursorCoordinates.getValue().x,
-                this.gcpService.cursorCoordinates.getValue().y,
+                this.imageFileService.cursorCoordinates.getValue().x,
+                this.imageFileService.cursorCoordinates.getValue().y,
                 result.mapX,
                 result.mapY,
               );

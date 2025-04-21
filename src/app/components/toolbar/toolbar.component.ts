@@ -18,14 +18,10 @@ import { GeoserverService } from '../../services/geoserver.service';
 import { NotificationService } from '../../services/notification.service';
 import { LayerService } from '../../services/layer.service';
 import { GeorefRequest } from '../../dto/georef-request';
-import { CompressionType } from '../../enums/compression-type';
 import { GeorefStatus } from '../../enums/georef-status';
-import { ResamplingMethod } from '../../enums/resampling-method';
-import { SRID } from '../../enums/srid';
 import { TransformationType } from '../../enums/transformation-type';
 import { GeorefSettings } from '../../interfaces/georef-settings';
 import { ImageApiService } from '../../services/image-api.service';
-import { GeorefImageDto } from '../../dto/georef-image-dto';
 
 @Component({
   selector: 'app-toolbar',
@@ -46,13 +42,6 @@ export class ToolbarComponent {
   georefSuccess = false;
   clearAndLoad = false;
 
-  private georefSettings: GeorefSettings = {
-    transformationType: TransformationType.POLYNOMIAL_1,
-    srid: SRID.WEB_MERCATOR,
-    resamplingMethod: ResamplingMethod.NEAREST,
-    compressionType: CompressionType.NONE,
-    outputFilename: '.tif'
-  };
   private georefImage!: GeorefImage;
 
   constructor(
@@ -67,21 +56,8 @@ export class ToolbarComponent {
     private dialog: MatDialog,
     private notifService: NotificationService,
   ) {
-    this.georefSettingsService.settings$.subscribe((settings) => {
-      if (settings.outputFilename) {
-        this.georefSettings = settings
-        this.georefImage.settings = settings
-        localStorage.setItem('GeorefImage', JSON.stringify(this.imageService.getGeorefImage()));
-      }
-    })
     this.imageService.georefImage$.subscribe((image) => {
       this.georefImage = image;
-      if (!this.georefImage.settings.outputFilename) {
-        const filenameParts = this.georefImage.filenameOriginal.split('.');
-        const extension = filenameParts.pop();
-        this.georefSettings.outputFilename = `${filenameParts.join('.')}_georef.${extension}`;
-        this.georefSettingsService.updateSettings(this.georefSettings);
-      }
     })
 
     this.mapService.isMapSelection$.subscribe(value => this.isMapSelection = value)
@@ -158,13 +134,17 @@ export class ToolbarComponent {
   }
 
   openGeorefSettings(): void {
+    const originalBaseName = this.georefImage.filenameOriginal.split('.').slice(0, -1).join('.') || this.georefImage.filenameOriginal;
+    const cleanedOriginalBaseName = originalBaseName.replace(/\./g, '');
+    const outputFilename = this.georefSettingsService.normalizeOutputFilename(this.georefImage.settings.outputFilename, cleanedOriginalBaseName);
+
     const dialogRef = this.dialog.open(GeorefSettingsDialogComponent, {
       data: {
-        transformationType: this.georefSettings.transformationType,
-        srid: this.georefSettings.srid,
-        resamplingMethod: this.georefSettings.resamplingMethod,
-        compressionType: this.georefSettings.compressionType,
-        outputFilename: this.georefSettings.outputFilename
+        transformationType: this.georefImage.settings.transformationType,
+        srid: this.georefImage.settings.srid,
+        resamplingMethod: this.georefImage.settings.resamplingMethod,
+        compressionType: this.georefImage.settings.compressionType,
+        outputFilename: outputFilename
       },
       disableClose: true,
       panelClass: 'custom-dialog'
@@ -172,19 +152,23 @@ export class ToolbarComponent {
 
     dialogRef.afterClosed().subscribe((newSettings: GeorefSettings) => {
       if (newSettings) {
-        this.georefSettingsService.updateSettings(newSettings);
+        const normalized = this.georefSettingsService.normalizeOutputFilename(newSettings.outputFilename, cleanedOriginalBaseName);
+        newSettings.outputFilename = normalized;
+
         this.gcpService.updateResiduals();
+
         this.imageApiService.updateGeorefParams(this.georefImage.id, newSettings).subscribe({
-          next: (updatedGeorefImage: GeorefImageDto) => {
+          next: () => {
+            this.georefImage.settings = newSettings;
+            this.imageService.updateGeorefImage(this.georefImage);
             this.notifService.showSuccess("Paramètres de géoréférencement mis à jour avec succès !");
-            console.log("Géoréférencement mis à jour avec succès", updatedGeorefImage);
           },
           error: (error) => {
             if (error.status === 400) {
               this.notifService.showError("Erreur lors de la mise à jour des paramètres de géoréférencement !");
             }
           }
-        })
+        });
       }
     });
   }
@@ -237,15 +221,15 @@ export class ToolbarComponent {
   georeferenceImage(): void {
     if (!this.gcpService.hasEnoughGCPs()) {
       let message = "";
-      switch (this.georefSettings.transformationType) {
+      switch (this.georefImage.settings.transformationType) {
         case TransformationType.POLYNOMIAL_1:
-          message = this.georefSettings.transformationType + " : Au moins 3 points de contrôle requis";
+          message = this.georefImage.settings.transformationType + " : Au moins 3 points de contrôle requis";
           break;
         case TransformationType.POLYNOMIAL_2:
-          message = this.georefSettings.transformationType + " : Au moins 6 points de contrôle requis";
+          message = this.georefImage.settings.transformationType + " : Au moins 6 points de contrôle requis";
           break;
         case TransformationType.POLYNOMIAL_3:
-          message = this.georefSettings.transformationType + " : Au moins 10 points de contrôle requis";
+          message = this.georefImage.settings.transformationType + " : Au moins 10 points de contrôle requis";
           break;
         default:
           break;
@@ -254,18 +238,17 @@ export class ToolbarComponent {
       return;
     }
 
-    // Mettez à jour le statut
     this.imageService.updateGeorefStatus(GeorefStatus.PROCESSING);
 
     const gcpData = this.gcpService.getGCPs();
 
     const requestData: GeorefRequest = {
       settings: {
-        transformationType: this.georefSettings.transformationType,
-        srid: this.georefSettings.srid,
-        resamplingMethod: this.georefSettings.resamplingMethod,
-        compressionType: this.georefSettings.compressionType,
-        outputFilename: this.georefSettings.outputFilename
+        transformationType: this.georefImage.settings.transformationType,
+        srid: this.georefImage.settings.srid,
+        resamplingMethod: this.georefImage.settings.resamplingMethod,
+        compressionType: this.georefImage.settings.compressionType,
+        outputFilename: this.georefImage.settings.outputFilename
       },
       gcps: gcpData,
       imageFile: this.georefImage.imageFile

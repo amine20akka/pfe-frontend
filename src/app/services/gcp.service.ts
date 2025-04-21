@@ -1,18 +1,15 @@
 import { Injectable } from '@angular/core';
 import { GCP } from '../models/gcp.model';
 import { BehaviorSubject } from 'rxjs';
-import Style from 'ol/style/Style';
-import CircleStyle from 'ol/style/Circle';
-import Fill from 'ol/style/Fill';
-import { colors } from '../shared/colors';
-import { GeorefSettingsService } from './georef-settings.service';
 import { ResidualService } from './residual.service';
 import { NotificationService } from './notification.service';
-import { FromDtos, GcpDto } from '../dto/gcp-dto';
+import { FromDto, FromDtos, GcpDto } from '../dto/gcp-dto';
 import { GcpApiService } from './gcp-api.service';
 import { SRID } from '../enums/srid';
 import { TransformationType } from '../enums/transformation-type';
 import { AddGcpRequest } from '../dto/add-gcp-request';
+import { LayerService } from './layer.service';
+import { ImageService } from './image.service';
 
 @Injectable({
   providedIn: 'root'
@@ -27,25 +24,25 @@ export class GcpService {
   private transformationType!: TransformationType;
   private srid!: SRID;
 
-  cursorCoordinates = new BehaviorSubject<{ x: number; y: number }>({ x: 0, y: 0 });
   gcps$ = this.gcpsSubject.asObservable();
   totalRMSE$ = this.totalRMSESubject.asObservable();
-  gcpStyles: Style[] = [];
-  isAddingGCP = false; // Gère l'ajout de points de contrôle
+  isAddingGCP = false;
   isFloating$ = this.isFloatingSubject.asObservable();
   isNearOriginalPosition$ = this.isNearOriginalPositionSubject.asObservable();
   loadingGCPs = false;
 
   constructor(
-    private georefSettingsService: GeorefSettingsService,
     private residualService: ResidualService,
     private notifService: NotificationService,
+    private layerService: LayerService,
+    private imageService: ImageService,
     private gcpApiService: GcpApiService
   ) {
-    this.initGcpStyles();
-    this.georefSettingsService.settings$.subscribe((settings) => {
-      this.transformationType = settings.transformationType;
-      this.srid = settings.srid;
+    this.imageService.georefImage$.subscribe((image) => {
+      if (image.settings) {
+        this.srid = image.settings.srid ? image.settings.srid : SRID.WEB_MERCATOR;
+        this.transformationType = image.settings.transformationType ? image.settings.transformationType : TransformationType.POLYNOMIAL_1;
+      }
     })
   }
 
@@ -181,17 +178,6 @@ export class GcpService {
     return parseFloat(this.totalRMSESubject.getValue().toFixed(3));
   }
 
-  private initGcpStyles(): void {
-    for (let i = 0; i < 20; i++) {
-      this.gcpStyles.push(new Style({
-        image: new CircleStyle({
-          radius: 10,
-          fill: new Fill({ color: colors[i % colors.length].fill }),
-        })
-      }));
-    }
-  }
-
   updateFloatingStatus(status: boolean): void {
     this.isFloatingSubject.next(status);
   }
@@ -295,5 +281,28 @@ export class GcpService {
     this.gcps = updatedGcps;
     this.gcpsSubject.next(this.gcps);
     this.updateResiduals();
+  }
+
+  addGcpsByImageId(imageId: string): void {
+    this.gcpApiService.getGcpsByImageId(imageId).subscribe({
+      next: (response: GcpDto[]) => {
+        response.map((gcpDto: GcpDto) => {
+          const gcp = this.createGCP(gcpDto.sourceX, gcpDto.sourceY, gcpDto.mapX!, gcpDto.mapY!, imageId, gcpDto.id);
+          this.addGcpToList(FromDto(gcp));
+          const newGcpImageLayer = this.layerService.createGcpImageLayer(gcp.sourceX, gcp.sourceY);
+          this.layerService.addGcpImageLayerToList(newGcpImageLayer);
+          if (gcp.mapX && gcp.mapY) {
+            const newGcpMapLayer = this.layerService.createGcpMapLayer(gcp.mapX, gcp.mapY);
+            this.layerService.addGcpMapLayerToList(newGcpMapLayer);
+          }
+        });
+
+      },
+      error: (err) => {
+        if (err.status === 404) {
+          this.notifService.showError("Image non trouvée !");
+        }
+      }
+    });
   }
 }

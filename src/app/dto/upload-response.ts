@@ -12,6 +12,6 @@ export interface UploadResponse {
     transformationType?: TransformationType;
     srid?: SRID;
     resamplingMethod?: ResamplingMethod;
-    compressionType?: CompressionType;
+    compression?: CompressionType;
     outputFilename?: string;
 }

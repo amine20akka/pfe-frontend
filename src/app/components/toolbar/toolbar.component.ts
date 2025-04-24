@@ -21,7 +21,6 @@ import { GeorefRequest } from '../../dto/georef-request';
 import { GeorefStatus } from '../../enums/georef-status';
 import { TransformationType } from '../../enums/transformation-type';
 import { GeorefSettings } from '../../interfaces/georef-settings';
-import { ImageApiService } from '../../services/image-api.service';
 
 @Component({
   selector: 'app-toolbar',
@@ -47,7 +46,6 @@ export class ToolbarComponent {
   constructor(
     private georefService: GeorefService,
     private imageService: ImageService,
-    private imageApiService: ImageApiService,
     private gcpService: GcpService,
     private mapService: MapService,
     private layerService: LayerService,
@@ -134,17 +132,13 @@ export class ToolbarComponent {
   }
 
   openGeorefSettings(): void {
-    const originalBaseName = this.georefImage.filenameOriginal.split('.').slice(0, -1).join('.') || this.georefImage.filenameOriginal;
-    const cleanedOriginalBaseName = originalBaseName.replace(/\./g, '');
-    const outputFilename = this.georefSettingsService.normalizeOutputFilename(this.georefImage.settings.outputFilename, cleanedOriginalBaseName);
-
     const dialogRef = this.dialog.open(GeorefSettingsDialogComponent, {
       data: {
         transformationType: this.georefImage.settings.transformationType,
         srid: this.georefImage.settings.srid,
         resamplingMethod: this.georefImage.settings.resamplingMethod,
         compressionType: this.georefImage.settings.compressionType,
-        outputFilename: outputFilename
+        outputFilename: this.georefImage.settings.outputFilename
       },
       disableClose: true,
       panelClass: 'custom-dialog'
@@ -152,23 +146,8 @@ export class ToolbarComponent {
 
     dialogRef.afterClosed().subscribe((newSettings: GeorefSettings) => {
       if (newSettings) {
-        const normalized = this.georefSettingsService.normalizeOutputFilename(newSettings.outputFilename, cleanedOriginalBaseName);
-        newSettings.outputFilename = normalized;
-
         this.gcpService.updateResiduals();
-
-        this.imageApiService.updateGeorefParams(this.georefImage.id, newSettings).subscribe({
-          next: () => {
-            this.georefImage.settings = newSettings;
-            this.imageService.updateGeorefImage(this.georefImage);
-            this.notifService.showSuccess("Paramètres de géoréférencement mis à jour avec succès !");
-          },
-          error: (error) => {
-            if (error.status === 400) {
-              this.notifService.showError("Erreur lors de la mise à jour des paramètres de géoréférencement !");
-            }
-          }
-        });
+        this.georefSettingsService.updateGeorefParams(this.georefImage.id, newSettings);
       }
     });
   }

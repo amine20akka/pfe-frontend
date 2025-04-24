@@ -11,7 +11,7 @@ export interface GcpDto {
     residual?: number;
 }
 
-// Converts a GCP object to a GCPDto object
+
 export function ToDto(gcp: GCP, imageId: string): GcpDto {
     return {
         id: gcp.id,
@@ -24,7 +24,7 @@ export function ToDto(gcp: GCP, imageId: string): GcpDto {
         residual: gcp.residual
     };
 }
-// Converts a GCPDto object to a GCP object
+
 export function FromDto(gcpDto: GcpDto): GCP {
     return {
         id: gcpDto.id!,

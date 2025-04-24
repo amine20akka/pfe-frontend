@@ -33,7 +33,8 @@ export class ImageApiService {
       transformationType: settings.transformationType,
       srid: settings.srid,
       resamplingMethod: settings.resamplingMethod,
-      compression: settings.compressionType
+      compression: settings.compressionType,
+      outputFilename: settings.outputFilename
     };
     return this.http.put<GeorefImageDto>(`${this.apiUrl}/georef-params`, requestPayload);
   }

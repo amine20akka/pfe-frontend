@@ -67,11 +67,11 @@ export class ImageService {
       resamplingMethod: ResamplingMethod.NEAREST,
       compressionType: CompressionType.NONE,
     }
-    
+
     const georefSettingsFromUploadResponse: GeorefSettings = {
       srid: uploadResponse.srid,
       resamplingMethod: uploadResponse.resamplingMethod,
-      compressionType: uploadResponse.compressionType,
+      compressionType: uploadResponse.compression,
       transformationType: uploadResponse.transformationType,
       outputFilename: uploadResponse.outputFilename
     }
@@ -79,7 +79,7 @@ export class ImageService {
     return {
       id: uploadResponse.id,
       imageFile: file,
-      filenameOriginal: uploadResponse.filepathOriginal,
+      originalFilename: uploadResponse.filepathOriginal,
       status: uploadResponse.status,
       uploadingDate: new Date(uploadResponse.uploadingDate),
       settings: georefSettingsFromUploadResponse.srid ? georefSettingsFromUploadResponse : defaultSettings,
@@ -142,14 +142,21 @@ export class ImageService {
 
       this.imageFileService.setImageDimensions(imageWidth, imageHeight);
       this.imageFileService.setNewExtent([0, 0, imageWidth, imageHeight]);
+
+      const previousUrl = this.imageFileService.getPreviousImageUrl();
+      if (previousUrl) {
+        URL.revokeObjectURL(previousUrl);
+      }
+
       setTimeout(() => {
         this.isLoading = false;
         this.isImageLoaded = true;
       }, 200);
     };
 
-    if (this.imageFileService.getImageUrl()) {
-      img.src = this.imageFileService.getImageUrl()!;
+    const currentUrl = this.imageFileService.getImageUrl();
+    if (currentUrl) {
+      img.src = currentUrl;
     }
   }
 
@@ -158,16 +165,9 @@ export class ImageService {
       next: (uploadResponse: UploadResponse) => {
         if (uploadResponse) {
           const newGeorefImage = this.createGeorefImage(file, uploadResponse);
-          this.updateGeorefStatus(GeorefStatus.UPLOADED);
-          this.georefImageSubject.next(newGeorefImage);
+          this.updateGeorefImage(newGeorefImage);
           localStorage.setItem('imageId', uploadResponse.id);
-          this.imageApiService.updateGeorefParams(uploadResponse.id, newGeorefImage.settings).subscribe({
-            error: (err) => {
-              if (err.status === 404) {
-                this.notifService.showError("Image introuvable !");
-              }
-            }
-          })
+          console.log('Image uploaded successfully:', newGeorefImage);
         }
       },
       error: (err) => {
@@ -206,6 +206,12 @@ export class ImageService {
     this.georefImageSubject.next(currentImage);
   }
 
+  updateGeorefSettings(newSettings: GeorefSettings): void {
+    const currentImage = this.georefImageSubject.getValue();
+    currentImage.settings = newSettings;
+    this.georefImageSubject.next(currentImage);
+  }
+
   updateGeorefImage(image: GeorefImage): void {
     this.georefImageSubject.next(image);
   }
@@ -231,8 +237,9 @@ export class ImageService {
                 srid: georefImageDto.srid,
                 resamplingMethod: georefImageDto.resamplingMethod,
                 compressionType: georefImageDto.compression,
+                outputFilename: georefImageDto.outputFilename
               };
-              this.georefImageSubject.next(restoredImage);
+              this.updateGeorefImage(restoredImage);
             },
             error: (err) => {
               if (err.status === 404) {

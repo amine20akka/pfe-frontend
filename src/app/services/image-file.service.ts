@@ -8,6 +8,7 @@ import { BehaviorSubject } from 'rxjs';
 export class ImageFileService {
 
   private objectUrl: string | null = null;
+  private previousObjectUrl: string | null = null;
   private file: File | null = null;
   private extent: number[] = [];
   private imageWidth = 0;
@@ -19,11 +20,20 @@ export class ImageFileService {
   ) { }
 
   setImageFile(file: File): string {
-    this.clear();
+    if (this.objectUrl) {
+      this.previousObjectUrl = this.objectUrl;
+    }
+
     this.file = file;
     this.objectUrl = URL.createObjectURL(file);
     return this.objectUrl;
   }
+
+  getPreviousImageUrl(): string | null {
+    const url = this.previousObjectUrl;
+    this.previousObjectUrl = null;
+    return url;
+  }  
 
   getImageUrl(): string | null {
     return this.objectUrl;
@@ -86,14 +96,4 @@ export class ImageFileService {
 
     return true;
   }
-
-  base64ToFile(base64: string, filename: string): File {
-    const byteString = atob(base64);
-    const byteArray = new Uint8Array(byteString.length);
-    for (let i = 0; i < byteString.length; i++) {
-      byteArray[i] = byteString.charCodeAt(i);
-    }
-    return new File([byteArray], filename);
-  }
-
 }

@@ -32,7 +32,7 @@ export class GcpDialogComponent implements OnInit {
 
   constructor(
     private dialogRef: MatDialogRef<GcpDialogComponent>,
-    private fb: FormBuilder, // FormBuilder pour initialiser le FormGroup
+    private fb: FormBuilder,
     private gcpService: GcpService,
     private layerService: LayerService,
     private mapService: MapService,
@@ -40,7 +40,6 @@ export class GcpDialogComponent implements OnInit {
   ) { }
 
   ngOnInit() {
-    // Initialisation du formulaire avec valeurs et validations
     this.gcpForm = this.fb.group({
       mapX: [this.data ? parseFloat(this.data.x.toFixed(4)) : '', [Validators.required, 
         Validators.pattern(/^-?\d+(\.\d+)?$/)]],
@@ -56,7 +55,7 @@ export class GcpDialogComponent implements OnInit {
   }
 
   startMapSelection() {
-    this.mapService.updateMapSelection(true); // Activer la sélection sur la carte
+    this.mapService.updateMapSelection(true);
     this.dialogRef.close();
   }  
 

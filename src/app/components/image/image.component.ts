@@ -9,9 +9,11 @@ import { MatDialog } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { FromDto } from '../../dto/gcp-dto';
+import { FromDto, GcpDto } from '../../dto/gcp-dto';
 import { LayerService } from '../../services/layer.service';
 import { ImageFileService } from '../../services/image-file.service';
+import { GcpApiService } from '../../services/gcp-api.service';
+import { NotificationService } from '../../services/notification.service';
 
 @Component({
   selector: 'app-image',
@@ -45,6 +47,8 @@ export class ImageComponent implements OnInit, AfterViewInit, OnDestroy {
     private imageFileService: ImageFileService,
     private georefService: GeorefService,
     private gcpService: GcpService,
+    private gcpApiService: GcpApiService,
+    private notifService: NotificationService,
     private dialog: MatDialog,
     private renderer: Renderer2,
   ) { }
@@ -135,11 +139,35 @@ export class ImageComponent implements OnInit, AfterViewInit, OnDestroy {
 
     dialogRef.afterClosed().subscribe(result => {
       if (result) {
-        // Créer un GCP avec les coordonnées destinations
-        const newGcp = this.gcpService.createGCP(this.sourceX, this.sourceY, result.mapX, result.mapY, this.imageService.getGeorefImage().id);
-        this.gcpService.addGcpToList(FromDto(newGcp));
-        const newGcpLayer = this.layerService.createGcpMapLayer(result.mapX, result.mapY);
-        this.layerService.addGcpMapLayerToList(newGcpLayer);
+        const addGcpRequest = this.gcpService.createAddGcpRequest(
+          this.imageService.getGeorefImage().id,
+          this.sourceX,
+          this.sourceY,
+          result.mapX,
+          result.mapY,
+        );
+
+        this.gcpApiService.addGcp(addGcpRequest).subscribe({
+          next: (savedGcp: GcpDto) => {
+            if (savedGcp.mapX && savedGcp.mapY) {
+              this.gcpService.createGCP(
+                savedGcp.index, savedGcp.sourceX, savedGcp.sourceY, savedGcp.mapX!, savedGcp.mapY!, savedGcp.imageId, savedGcp.id
+              );
+              this.gcpService.addGcpToList(FromDto(savedGcp));
+              const newGcpLayer = this.layerService.createGcpMapLayer(savedGcp.mapX, savedGcp.mapY);
+              this.layerService.addGcpMapLayerToList(newGcpLayer);
+            }
+          },
+          error: (err) => {
+            if (err.status === 409) {
+              this.notifService.showError("Un point existe déjà avec cet index !");
+            } else if (err.status === 404) {
+              this.notifService.showError("Image non trouvée ! Veuillez importer une image d'abord.");
+            } else if (err.status === 400) {
+              this.notifService.showError("Erreur de validation des données !");
+            }
+          }
+        });
       }
       this.gcpService.isAddingGCP = false;
     });

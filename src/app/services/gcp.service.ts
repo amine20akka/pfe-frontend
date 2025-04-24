@@ -21,6 +21,7 @@ export class GcpService {
   private totalRMSESubject = new BehaviorSubject<number>(0);
   private isFloatingSubject = new BehaviorSubject<boolean>(false);
   private isNearOriginalPositionSubject = new BehaviorSubject<boolean>(false);
+  private currentImageId!: string;
   private transformationType!: TransformationType;
   private srid!: SRID;
 
@@ -43,13 +44,16 @@ export class GcpService {
         this.srid = image.settings.srid ? image.settings.srid : SRID.WEB_MERCATOR;
         this.transformationType = image.settings.transformationType ? image.settings.transformationType : TransformationType.POLYNOMIAL_1;
       }
+      if (image.id) {
+        this.currentImageId = image.id;
+      }
     })
   }
 
-  createGCP(sourceX: number, sourceY: number, mapX: number, mapY: number, imageId: string, id?: string): GcpDto {
+  createGCP(index: number, sourceX: number, sourceY: number, mapX: number, mapY: number, imageId: string, id?: string): GcpDto {
     const newGCP: GcpDto = {
       id: id,
-      index: this.gcps.length + 1,
+      index: index,
       imageId: imageId,
       sourceX: sourceX,
       sourceY: sourceY,
@@ -125,17 +129,11 @@ export class GcpService {
     }
   }
 
-  /**
-   * Vérifie s'il y a suffisamment de GCPs pour le type de transformation choisi
-   */
   hasEnoughGCPs(): boolean {
     const minPoints = this.getMinimumPointsRequired();
     return this.gcps.length >= minPoints;
   }
 
-  /**
-   * Détermine le nombre minimum de points nécessaires en fonction du type de transformation
-   */
   private getMinimumPointsRequired(): number {
     switch (this.transformationType) {
       case TransformationType.POLYNOMIAL_1:
@@ -171,9 +169,6 @@ export class GcpService {
     }
   }
 
-  /**
-   * Retourne le RMSE global pour tous les points
-   */
   getTotalRMSE(): number {
     return parseFloat(this.totalRMSESubject.getValue().toFixed(3));
   }
@@ -192,7 +187,6 @@ export class GcpService {
       return;
     }
 
-    // Transformer les données au format simplifié avant de les enregistrer
     const simplifiedGcps = this.gcps.map(gcp => ({
       sourceX: gcp.sourceX,
       sourceY: gcp.sourceY,
@@ -217,7 +211,9 @@ export class GcpService {
       const writableStream = await fileHandle.createWritable();
       await writableStream.write(gcpData);
       await writableStream.close();
+      this.notifService.showSuccess("Les points ont été enregistrés avec succès !");
     } catch (error) {
+      this.notifService.showError("Erreur lors de l'enregistrement des points !");
       console.error('Erreur lors de l\'enregistrement des points: ', error);
     }
   }
@@ -233,20 +229,17 @@ export class GcpService {
   //       try {
   //         this.updateLoadingGCPs(true);
 
-  //         // Charger les données simplifiées
   //         const simplifiedGcps = JSON.parse(reader.result as string);
 
-  //         // Transformer en objets GCP complets en utilisant la méthode createGCP
   //         const gcps: GCP[] = [];
 
-  //         // Sauvegarde temporaire de la longueur actuelle pour pouvoir réinitialiser les index
   //         const currentLength = this.gcps.length;
 
   //         // Transformer chaque point simplifié en utilisant createGCP
-  //         simplifiedGcps.forEach((simplifiedGcp: { sourceX: number, sourceY: number, mapX: number, mapY: number }) => {
+  //         simplifiedGcps.forEach((simplifiedGcp: { id: string, imageId:string, sourceX: number, sourceY: number, mapX: number, mapY: number }) => {
   //           // Nous devons modifier temporairement this.gcps.length pour que les index soient corrects
   //           this.gcps.length = gcps.length + currentLength;
-  //           const newGCP = this.createGCP(simplifiedGcp.sourceX, simplifiedGcp.sourceY, simplifiedGcp.mapX, simplifiedGcp.mapY);
+  //           const newGCP = this.createGCP(simplifiedGcp.sourceX, simplifiedGcp.sourceY, simplifiedGcp.mapX, simplifiedGcp.mapY, this.currentImageId, simplifiedGcp.id);
   //           gcps.push(FromDto(newGCP));
   //         });
 
@@ -287,7 +280,7 @@ export class GcpService {
     this.gcpApiService.getGcpsByImageId(imageId).subscribe({
       next: (response: GcpDto[]) => {
         response.map((gcpDto: GcpDto) => {
-          const gcp = this.createGCP(gcpDto.sourceX, gcpDto.sourceY, gcpDto.mapX!, gcpDto.mapY!, imageId, gcpDto.id);
+          const gcp = this.createGCP(gcpDto.index, gcpDto.sourceX, gcpDto.sourceY, gcpDto.mapX!, gcpDto.mapY!, imageId, gcpDto.id);
           this.addGcpToList(FromDto(gcp));
           const newGcpImageLayer = this.layerService.createGcpImageLayer(gcp.sourceX, gcp.sourceY);
           this.layerService.addGcpImageLayerToList(newGcpImageLayer);

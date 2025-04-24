@@ -42,7 +42,6 @@ export class MapService {
     private gcpApiService: GcpApiService,
     private notifService: NotificationService,
   ) {
-    // Subscribe to isMapSelection changes
     this.isMapSelection$
       .pipe(
         filter(isSelecting => isSelecting), // Proceed only if selection is active
@@ -52,7 +51,7 @@ export class MapService {
         if (coords) {
           // Reopen the dialog with selected coordinates
           const dialogRef = this.openGcpDialog(coords.x, coords.y);
-          this.isMapSelectionSubject.next(false); // Reset selection state
+          this.updateMapSelection(false);
 
           dialogRef.afterClosed().subscribe(result => {
             if (result) {
@@ -68,9 +67,10 @@ export class MapService {
                 next: (savedGcp: GcpDto) => {
                   if (savedGcp) {
                     this.gcpService.createGCP(
-                      savedGcp.sourceX, savedGcp.sourceY, savedGcp.mapX!, savedGcp.mapY!, savedGcp.imageId, savedGcp.id
+                      savedGcp.index, savedGcp.sourceX, savedGcp.sourceY, savedGcp.mapX!, savedGcp.mapY!, savedGcp.imageId, savedGcp.id
                     );
                     this.gcpService.addGcpToList(FromDto(savedGcp));
+                    
                     if (coords.x !== result.mapX || coords.y !== result.mapY) {
                       this.layerService.updateMapGcpPosition(savedGcp.index, result.mapX, result.mapY);
                     }

@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { GCP } from '../models/gcp.model';
-import { BehaviorSubject } from 'rxjs';
+import { BehaviorSubject, catchError, tap } from 'rxjs';
 import { ResidualService } from './residual.service';
 import { NotificationService } from './notification.service';
 import { FromDto, FromDtos, GcpDto } from '../dto/gcp-dto';
@@ -10,6 +10,7 @@ import { TransformationType } from '../enums/transformation-type';
 import { AddGcpRequest } from '../dto/add-gcp-request';
 import { LayerService } from './layer.service';
 import { ImageService } from './image.service';
+import { Observable } from 'rxjs';
 
 @Injectable({
   providedIn: 'root'
@@ -21,7 +22,6 @@ export class GcpService {
   private totalRMSESubject = new BehaviorSubject<number>(0);
   private isFloatingSubject = new BehaviorSubject<boolean>(false);
   private isNearOriginalPositionSubject = new BehaviorSubject<boolean>(false);
-  private currentImageId!: string;
   private transformationType!: TransformationType;
   private srid!: SRID;
 
@@ -43,9 +43,6 @@ export class GcpService {
       if (image.settings) {
         this.srid = image.settings.srid ? image.settings.srid : SRID.WEB_MERCATOR;
         this.transformationType = image.settings.transformationType ? image.settings.transformationType : TransformationType.POLYNOMIAL_1;
-      }
-      if (image.id) {
-        this.currentImageId = image.id;
       }
     })
   }
@@ -116,16 +113,32 @@ export class GcpService {
     }, 300);
   }
 
-  updateGcp(updatedGcp: GCP): void {
-    const index = this.gcps.findIndex(gcp => gcp.index === updatedGcp.index);
-    if (index !== -1) {
-      this.gcps[index] = updatedGcp;
+  updateGcp(gcpToUpdate: GCP): void {
+    this.gcpApiService.updateGcp(gcpToUpdate).subscribe({
+      next: (updatedGcpDto: GcpDto) => {
+        if (updatedGcpDto) {
+          const indexToUpdate = this.gcps.findIndex(gcp => gcp.id === updatedGcpDto.id);
 
-      // Recalculer les résidus
-      this.updateResiduals();
+          if (indexToUpdate !== -1) {
+            const updatedGcp = FromDto(updatedGcpDto);
+            this.gcps[indexToUpdate] = updatedGcp;
+            this.gcpsSubject.next([...this.gcps]);
 
-      this.gcpsSubject.next(this.gcps);
-    }
+            this.layerService.updateImageGcpPosition(updatedGcp.index, updatedGcp.sourceX, updatedGcp.sourceY);
+            this.layerService.updateMapGcpPosition(updatedGcp.index, updatedGcp.mapX!, updatedGcp.mapY!);
+
+            this.updateResiduals();
+          }
+        }
+      },
+      error: (err) => {
+        if (err.status === 404) {
+          this.notifService.showError("Point introuvable !");
+        } else if (err.status === 400) {
+          this.notifService.showError("Erreur de validation des données du point !");
+        }
+      }
+    });
   }
 
   hasEnoughGCPs(): boolean {
@@ -275,26 +288,35 @@ export class GcpService {
     this.updateResiduals();
   }
 
-  addGcpsByImageId(imageId: string): void {
-    this.gcpApiService.getGcpsByImageId(imageId).subscribe({
-      next: (response: GcpDto[]) => {
-        response.map((gcpDto: GcpDto) => {
-          const gcp = this.createGCP(gcpDto.index, gcpDto.sourceX, gcpDto.sourceY, gcpDto.mapX!, gcpDto.mapY!, imageId, gcpDto.id);
-          this.addGcpToList(FromDto(gcp));
-          const newGcpImageLayer = this.layerService.createGcpImageLayer(gcp.sourceX, gcp.sourceY);
-          this.layerService.addGcpImageLayerToList(newGcpImageLayer);
-          if (gcp.mapX && gcp.mapY) {
-            const newGcpMapLayer = this.layerService.createGcpMapLayer(gcp.mapX, gcp.mapY);
-            this.layerService.addGcpMapLayerToList(newGcpMapLayer);
-          }
-        });
-
-      },
-      error: (err) => {
+  getGcpsByImageId(imageId: string): Observable<GcpDto[]> {
+    return this.gcpApiService.getGcpsByImageId(imageId).pipe(
+      tap((response: GcpDto[]) => {
+        if (response) {
+          response.map((gcpDto: GcpDto) => {
+            const gcp = this.createGCP(gcpDto.index, gcpDto.sourceX, gcpDto.sourceY, gcpDto.mapX!, gcpDto.mapY!, imageId, gcpDto.id);
+            this.addGcpToList(FromDto(gcp));
+          });
+        }
+      }),
+      catchError((err) => {
         if (err.status === 404) {
           this.notifService.showError("Image non trouvée !");
         }
-      }
-    });
+        throw err;
+      })
+    );
+  }
+
+  restoreGcpLayers(gcpDtos: GcpDto[]): void {
+    if (gcpDtos) {
+      gcpDtos.forEach((gcpDto: GcpDto) => {
+        const newGcpImageLayer = this.layerService.createGcpImageLayer(gcpDto.sourceX, gcpDto.sourceY);
+        this.layerService.addGcpImageLayerToList(newGcpImageLayer);
+        if (gcpDto.mapX && gcpDto.mapY) {
+          const newGcpMapLayer = this.layerService.createGcpMapLayer(gcpDto.mapX, gcpDto.mapY);
+          this.layerService.addGcpMapLayerToList(newGcpMapLayer);
+        }
+      });
+    }
   }
 }

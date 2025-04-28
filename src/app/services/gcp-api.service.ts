@@ -3,6 +3,7 @@ import { Injectable } from '@angular/core';
 import { GcpDto } from '../dto/gcp-dto';
 import { Observable } from 'rxjs';
 import { AddGcpRequest } from '../dto/add-gcp-request';
+import { GCP } from '../models/gcp.model';
 
 @Injectable({
   providedIn: 'root'
@@ -23,5 +24,9 @@ export class GcpApiService {
 
   deleteGcpById(gcpId: string): Observable<GcpDto[]> {
     return this.http.delete<GcpDto[]>(`${this.apiUrl}/delete/${gcpId}`);
+  }
+
+  updateGcp(gcp: GCP): Observable<GcpDto> {
+    return this.http.put<GcpDto>(`${this.apiUrl}/update`, gcp);
   }
 }

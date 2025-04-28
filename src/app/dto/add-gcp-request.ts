@@ -4,5 +4,4 @@ export interface AddGcpRequest {
     sourceY: number;
     mapX: number;
     mapY: number;
-    index: number;
 }

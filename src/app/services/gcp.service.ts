@@ -71,7 +71,6 @@ export class GcpService {
       sourceY: sourceY,
       mapX: mapX,
       mapY: mapY,
-      index: this.gcps.length + 1,
     };
 
     return addGcpRequest;

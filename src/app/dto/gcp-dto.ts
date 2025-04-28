@@ -12,10 +12,10 @@ export interface GcpDto {
 }
 
 
-export function ToDto(gcp: GCP, imageId: string): GcpDto {
+export function ToDto(gcp: GCP): GcpDto {
     return {
         id: gcp.id,
-        imageId: imageId,
+        imageId: gcp.imageId,
         sourceX: gcp.sourceX,
         sourceY: gcp.sourceY,
         mapX: gcp.mapX,

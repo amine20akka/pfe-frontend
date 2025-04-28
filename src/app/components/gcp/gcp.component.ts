@@ -62,7 +62,7 @@ export class GcpComponent implements OnInit, OnDestroy {
   private imageLayers: Map<number, VectorLayer<VectorSource>> = new Map<number, VectorLayer<VectorSource>>();
   private mapLayers: Map<number, VectorLayer<VectorSource>> = new Map<number, VectorLayer<VectorSource>>();
 
-  editingGcpId: number | null = null;
+  editingGcpIndex: number | null = null;
   editForm!: FormGroup;
 
   isDragging = false;
@@ -465,7 +465,7 @@ export class GcpComponent implements OnInit, OnDestroy {
   // On détecte si on est en train d'éditer avant de déplacer
   canStartDrag(event: MouseEvent | TouchEvent): boolean {
     const target = event.target as HTMLElement;
-    return !this.editingGcpId && !target.closest('input') && !target.closest('button');
+    return !this.editingGcpIndex && !target.closest('input') && !target.closest('button');
   }
 
   updateTableDimensions(): void {
@@ -543,14 +543,12 @@ export class GcpComponent implements OnInit, OnDestroy {
   /** Commencer l'édition d'un GCP */
   editGcp(gcp: GCP): void {
     // Annuler toute édition en cours
-    if (this.editingGcpId !== null) {
+    if (this.editingGcpIndex !== null) {
       this.cancelEdit();
     }
 
-    // Définir le GCP en cours d'édition
-    this.editingGcpId = gcp.index;
+    this.editingGcpIndex = gcp.index;
 
-    // Remplir le formulaire avec les valeurs actuelles
     this.editForm.patchValue({
       sourceX: parseFloat(gcp.sourceX.toFixed(4)),
       sourceY: parseFloat(gcp.sourceY.toFixed(4)),
@@ -575,24 +573,18 @@ export class GcpComponent implements OnInit, OnDestroy {
 
   /** Enregistrer les modifications */
   saveEdit(): void {
-    if (this.editForm.valid && this.editingGcpId !== null) {
-      const updatedGcp = {
-        ...this.dataSource.data.find(gcp => gcp.index === this.editingGcpId)!,
+    if (this.editForm.valid && this.editingGcpIndex !== null) {
+      const updatedGcp: GCP = {
+        ...this.dataSource.data.find(gcp => gcp.index === this.editingGcpIndex)!,
         sourceX: this.editForm.value.sourceX,
         sourceY: this.editForm.value.sourceY,
         mapX: this.editForm.value.mapX,
         mapY: this.editForm.value.mapY
       };
 
-      // Mettre à jour le GCP dans le service
       this.gcpService.updateGcp(updatedGcp);
 
-      // Mettre à jour les couches visuelles si nécessaire
-      this.layerService.updateImageGcpPosition(this.editingGcpId, updatedGcp.sourceX, updatedGcp.sourceY);
-      this.layerService.updateMapGcpPosition(this.editingGcpId, updatedGcp.mapX, updatedGcp.mapY);
-
-      // Réinitialiser l'état d'édition
-      this.editingGcpId = null;
+      this.editingGcpIndex = null;
 
       this.selection.select(updatedGcp);
     }
@@ -600,7 +592,7 @@ export class GcpComponent implements OnInit, OnDestroy {
 
   /** Annuler l'édition */
   cancelEdit(): void {
-    this.editingGcpId = null;
+    this.editingGcpIndex = null;
     this.editForm.reset();
   }
 

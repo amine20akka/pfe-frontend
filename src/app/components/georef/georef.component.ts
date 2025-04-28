@@ -6,7 +6,7 @@ import { MatCardModule } from '@angular/material/card';
 import { UploadComponent } from '../upload/upload.component';
 import { ImageComponent } from '../image/image.component';
 import { ImageService } from '../../services/image.service';
-import { Subscription } from 'rxjs';
+import { catchError, EMPTY, Subscription, switchMap, tap } from 'rxjs';
 import { GcpComponent } from "../gcp/gcp.component";
 import { ToolbarComponent } from '../toolbar/toolbar.component';
 import { GcpService } from '../../services/gcp.service';
@@ -15,6 +15,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { GeorefSettings } from '../../interfaces/georef-settings';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { ImageFileService } from '../../services/image-file.service';
+import { GcpDto } from '../../dto/gcp-dto';
 
 @Component({
   selector: 'app-georef',
@@ -35,7 +36,7 @@ import { ImageFileService } from '../../services/image-file.service';
     trigger('toggleContent', [
       state('closed', style({ width: '0' })),
       state('open', style({ width: '{{panelWidth}}vw' }), { params: { panelWidth: 47 } }),
-      transition('* => *', animate('500ms ease-in-out')),
+      transition('* => *', animate('300ms ease-in-out')),
     ])
   ]
 })
@@ -59,7 +60,7 @@ export class GeorefComponent implements OnInit, OnDestroy, AfterViewInit {
     private gcpService: GcpService,
   ) { }
 
-  ngOnInit(): void {    
+  ngOnInit(): void {
     this.coordSub = this.imageFileService.cursorCoordinates.subscribe(coords => {
       this.cursorX = parseFloat(coords.x.toFixed(4));
       this.cursorY = parseFloat(coords.y.toFixed(4));
@@ -74,12 +75,22 @@ export class GeorefComponent implements OnInit, OnDestroy, AfterViewInit {
 
   ngAfterViewInit(): void {
     const imageId = localStorage.getItem('imageId');
-    if (imageId) {
-      this.imageService.restoreImage(imageId);
-      setTimeout(() => {
-        this.gcpService.addGcpsByImageId(imageId);
-      }, 1000);
+    if (!imageId) {
+      return;
     }
+
+    this.imageService.restoreImage(imageId).pipe(
+      switchMap(() => this.gcpService.getGcpsByImageId(imageId)),
+      tap((gcpDtos: GcpDto[]) => {
+          setTimeout(() => {
+            this.gcpService.restoreGcpLayers(gcpDtos);
+          }, 500);
+        }),
+        catchError((err) => {
+          console.error('Erreur lors de la restauration ou de l\'ajout des GCPs', err);
+          return EMPTY;
+        })
+      ).subscribe();
   }
 
   ngOnDestroy() {
@@ -90,7 +101,7 @@ export class GeorefComponent implements OnInit, OnDestroy, AfterViewInit {
     this.removeResizeListeners();
   }
 
-  get panelWidth() : number {
+  get panelWidth(): number {
     return this.georefService.panelWidth;
   }
 
@@ -205,7 +216,6 @@ export class GeorefComponent implements OnInit, OnDestroy, AfterViewInit {
     this.georefService.toggleGeoref();
   }
 
-  // Récupère les paramètres d'animation pour le trigger
   getAnimationParams() {
     return { panelWidth: this.panelWidth };
   }

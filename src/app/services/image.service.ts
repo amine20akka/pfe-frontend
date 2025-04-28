@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject } from 'rxjs';
+import { BehaviorSubject, catchError, EMPTY, filter, Observable, switchMap, take, throwError } from 'rxjs';
 import { UploadResponse } from '../dto/upload-response';
 import { NotificationService } from './notification.service';
 import { ImageApiService } from './image-api.service';
@@ -125,39 +125,54 @@ export class ImageService {
     }
 
     this.initialiseImage(file);
-    this.georefImage$.subscribe((image) => {
-      if (image.status === GeorefStatus.UPLOADED) {
-        this.renderImage(file);
+
+    this.georefImage$.pipe(
+      filter((image) => image.status === GeorefStatus.UPLOADED),
+      take(1),
+      switchMap(() => this.renderImage(file))
+    ).subscribe({
+      next: () => {
+        this.isLoading = false;
+        this.isImageLoaded = true;
+      },
+      error: (err) => {
+        this.notifService.showError("Erreur lors du rendu de l'image : " + err);
+        this.resetLoadingState();
       }
     });
   }
 
-  private renderImage(file: File): void {
-    this.imageFileService.setImageFile(file);
-    const img = new Image();
+  renderImage(file: File): Observable<void> {
+    return new Observable<void>((observer) => {
+      this.imageFileService.setImageFile(file);
+      const img = new Image();
 
-    img.onload = () => {
-      const imageWidth = img.width;
-      const imageHeight = img.height;
+      img.onload = () => {
+        const imageWidth = img.width;
+        const imageHeight = img.height;
 
-      this.imageFileService.setImageDimensions(imageWidth, imageHeight);
-      this.imageFileService.setNewExtent([0, 0, imageWidth, imageHeight]);
+        this.imageFileService.setImageDimensions(imageWidth, imageHeight);
+        this.imageFileService.setNewExtent([0, 0, imageWidth, imageHeight]);
 
-      const previousUrl = this.imageFileService.getPreviousImageUrl();
-      if (previousUrl) {
-        URL.revokeObjectURL(previousUrl);
-      }
+        const previousUrl = this.imageFileService.getPreviousImageUrl();
+        if (previousUrl) {
+          URL.revokeObjectURL(previousUrl);
+        }
 
-      setTimeout(() => {
         this.isLoading = false;
         this.isImageLoaded = true;
-      }, 200);
-    };
 
-    const currentUrl = this.imageFileService.getImageUrl();
-    if (currentUrl) {
-      img.src = currentUrl;
-    }
+        observer.next();
+        observer.complete();
+      };
+
+      const currentUrl = this.imageFileService.getImageUrl();
+      if (currentUrl) {
+        img.src = currentUrl;
+      } else {
+        observer.error(new Error('No current image URL'));
+      }
+    });
   }
 
   private initialiseImage(file: File): void {
@@ -216,46 +231,47 @@ export class ImageService {
     this.georefImageSubject.next(image);
   }
 
-  restoreImage(imageId: string): void {
-    this.imageApiService.loadUploadedImage(imageId).subscribe({
-      next: (blob: Blob) => {
-        if (blob) {
-          this.isLoading = true;
-          this.imageApiService.getGeorefImageById(imageId).subscribe({
-            next: (georefImageDto: GeorefImageDto) => {
-              const restoredImageFile = new File([blob], georefImageDto.filepathOriginal, { type: blob.type });
-              this.renderImage(restoredImageFile);
-
-              const restoredImage = this.createGeorefImage(restoredImageFile, {
-                id: georefImageDto.id,
-                filepathOriginal: georefImageDto.filepathOriginal,
-                status: georefImageDto.status,
-                uploadingDate: georefImageDto.uploadingDate,
-              });
-              restoredImage.settings = {
-                transformationType: georefImageDto.transformationType,
-                srid: georefImageDto.srid,
-                resamplingMethod: georefImageDto.resamplingMethod,
-                compressionType: georefImageDto.compression,
-                outputFilename: georefImageDto.outputFilename
-              };
-              this.updateGeorefImage(restoredImage);
-            },
-            error: (err) => {
-              if (err.status === 404) {
-                this.notifService.showError("Aucune image trouvée pour afficher !");
-              }
-            }
-          });
-        }
-      },
-      error: (err) => {
-        if (err.status === 404) {
+  restoreImage(imageId: string): Observable<void> {
+    return this.imageApiService.loadUploadedImage(imageId).pipe(
+      switchMap((blob: Blob) => {
+        if (!blob) {
           this.notifService.showError("Aucune image trouvée pour afficher !");
+          return throwError(() => new Error('Blob vide'));
         }
+
+        this.isLoading = true;
+
+        return this.imageApiService.getGeorefImageById(imageId).pipe(
+          switchMap((georefImageDto: GeorefImageDto) => {
+            const restoredImageFile = new File([blob], georefImageDto.filepathOriginal, { type: blob.type });
+
+            const restoredImage = this.createGeorefImage(restoredImageFile, {
+              id: georefImageDto.id,
+              filepathOriginal: georefImageDto.filepathOriginal,
+              status: georefImageDto.status,
+              uploadingDate: georefImageDto.uploadingDate,
+            });
+
+            restoredImage.settings = {
+              transformationType: georefImageDto.transformationType,
+              srid: georefImageDto.srid,
+              resamplingMethod: georefImageDto.resamplingMethod,
+              compressionType: georefImageDto.compression,
+              outputFilename: georefImageDto.outputFilename
+            };
+            
+            this.updateGeorefImage(restoredImage);
+
+            return this.renderImage(restoredImageFile);
+          })
+        );
+      }),
+      catchError((err) => {
+        this.notifService.showError("Erreur lors du chargement de l'image : " + err);
         this.isLoading = false;
         this.isImageLoaded = false;
-      }
-    });
+        return EMPTY;
+      })
+    );
   }
 }

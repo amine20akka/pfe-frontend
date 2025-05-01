@@ -47,7 +47,7 @@ export class GeorefComponent implements OnInit, OnDestroy, AfterViewInit {
   cursorY = 0;
   private coordSub!: Subscription;
   georefSettings!: GeorefSettings;
-  totalRMSE!: number;
+  totalRMSE: number | undefined;
 
   isResizing = false;
   minWidth = 42;   // Largeur minimum
@@ -66,9 +66,10 @@ export class GeorefComponent implements OnInit, OnDestroy, AfterViewInit {
       this.cursorY = parseFloat(coords.y.toFixed(4));
     });
 
-    this.imageService.georefImage$.subscribe(image => this.georefSettings = image.settings);
-
-    this.gcpService.totalRMSE$.subscribe(value => this.totalRMSE = value);
+    this.imageService.georefImage$.subscribe(image => {
+      this.georefSettings = image.settings;
+      this.totalRMSE = image.totalRMSE;
+    });
 
     this.setupResizeListeners();
   }

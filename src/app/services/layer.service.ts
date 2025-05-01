@@ -404,7 +404,7 @@ export class LayerService {
     }
   }
 
-  loadMapLayers(gcps: GCP[]): void {
+  loadGcpMapLayers(gcps: GCP[]): void {
     gcps.forEach((gcp) => {
       const newGcpLayer = this.createGcpMapLayer(gcp.mapX!, gcp.mapY!);
       this.addGcpMapLayerToList(newGcpLayer);

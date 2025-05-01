@@ -10,13 +10,11 @@ import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { GcpDialogComponent } from '../components/gcp-dialog/gcp-dialog.component';
 import { GcpService } from './gcp.service';
 import { XYZ } from 'ol/source';
-import { FromDto, GcpDto } from '../dto/gcp-dto';
-import { GcpApiService } from './gcp-api.service';
+import { GcpDto } from '../dto/gcp-dto';
 import { LayerService } from './layer.service';
 import { ImageService } from './image.service';
 import BaseLayer from 'ol/layer/Base';
 import { WMSLayer } from '../models/wms-layer.model';
-import { NotificationService } from './notification.service';
 import { ImageFileService } from './image-file.service';
 
 @Injectable({
@@ -39,8 +37,6 @@ export class MapService {
     private layerService: LayerService,
     private imageService: ImageService,
     private imageFileService: ImageFileService,
-    private gcpApiService: GcpApiService,
-    private notifService: NotificationService,
   ) {
     this.isMapSelection$
       .pipe(
@@ -55,37 +51,17 @@ export class MapService {
 
           dialogRef.afterClosed().subscribe(result => {
             if (result) {
-              const addGcpRequest = this.gcpService.createAddGcpRequest(
+              this.gcpService.addGcp(
                 this.imageService.getGeorefImage().id,
                 this.imageFileService.cursorCoordinates.getValue().x,
                 this.imageFileService.cursorCoordinates.getValue().y,
                 result.mapX,
-                result.mapY,
-              );
-
-              this.gcpApiService.addGcp(addGcpRequest).subscribe({
-                next: (savedGcp: GcpDto) => {
-                  if (savedGcp) {
-                    this.gcpService.createGCP(
-                      savedGcp.index, savedGcp.sourceX, savedGcp.sourceY, savedGcp.mapX!, savedGcp.mapY!, savedGcp.imageId, savedGcp.id
-                    );
-                    this.gcpService.addGcpToList(FromDto(savedGcp));
-                    
-                    if (coords.x !== result.mapX || coords.y !== result.mapY) {
-                      this.layerService.updateMapGcpPosition(savedGcp.index, result.mapX, result.mapY);
-                    }
+                result.mapY
+              ).subscribe((savedGcp: GcpDto | null) => {
+                  if (savedGcp && (coords.x !== result.mapX || coords.y !== result.mapY)) {
+                    this.layerService.updateMapGcpPosition(savedGcp.index, result.mapX, result.mapY);
                   }
-                },
-                error: (err) => {
-                  if (err.status === 409) {
-                    this.notifService.showError("Un point existe déjà avec cet index !");
-                  } else if (err.status === 404) {
-                    this.notifService.showError("Image non trouvée ! Veuillez importer une image d'abord.");
-                  } else if (err.status === 400) {
-                    this.notifService.showError("Erreur de validation des données !");
-                  }
-                }
-              });
+                });
             }
           });
         }

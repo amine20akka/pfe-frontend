@@ -4,6 +4,7 @@ import { NotificationService } from './notification.service';
 import { ImageService } from './image.service';
 import { ImageApiService } from './image-api.service';
 import { GeorefImageDto } from '../dto/georef-image-dto';
+import { GcpService } from './gcp.service';
 
 @Injectable({
   providedIn: 'root'
@@ -14,6 +15,7 @@ export class GeorefSettingsService {
     private imageApiService: ImageApiService,
     private imageService: ImageService,
     private notifService: NotificationService,
+    private gcpService: GcpService,
   ) { }
 
   updateGeorefParams(imageId: string, newSettings: GeorefSettings): void {
@@ -27,6 +29,7 @@ export class GeorefSettingsService {
           outputFilename: updatedGeorefImageDto.outputFilename
         }
         this.imageService.updateGeorefSettings(newSettings);
+        this.gcpService.updateResiduals(imageId);
         this.notifService.showSuccess("Paramètres de géoréférencement mis à jour avec succès !");
       },
       error: (error) => {

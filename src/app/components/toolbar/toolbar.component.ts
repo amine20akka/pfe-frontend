@@ -19,7 +19,6 @@ import { NotificationService } from '../../services/notification.service';
 import { LayerService } from '../../services/layer.service';
 import { GeorefRequest } from '../../dto/georef-request';
 import { GeorefStatus } from '../../enums/georef-status';
-import { TransformationType } from '../../enums/transformation-type';
 import { GeorefSettings } from '../../interfaces/georef-settings';
 
 @Component({
@@ -121,14 +120,16 @@ export class ToolbarComponent {
     if (this.clearAndLoad) {
       this.clearGCPs();
     }
-    // this.gcpService.loadGCPs(event).then((gcps) => {
-    //   this.gcpService.addGCPs(gcps);
-    //   this.layerService.loadImageLayers(gcps);
-    //   this.layerService.loadMapLayers(gcps);
-    //   this.gcpService.updateLoadingGCPs(false);
-    // }).catch(() => {
-    //   this.gcpService.updateLoadingGCPs(false);
-    // });
+    // this.gcpService.loadGCPs(event)
+    //   .then((gcps) => {
+    //     this.layerService.loadGcpImageLayers(gcps);
+    //     this.layerService.loadGcpMapLayers(gcps);
+    //     this.gcpService.updateLoadingGCPs(false);
+    //   })
+    //   // .finally(() => this.gcpService.updateResiduals(this.georefImage.id))
+    //   .catch(() => {
+    //     this.gcpService.updateLoadingGCPs(false);
+    //   });
   }
 
   openGeorefSettings(): void {
@@ -146,7 +147,6 @@ export class ToolbarComponent {
 
     dialogRef.afterClosed().subscribe((newSettings: GeorefSettings) => {
       if (newSettings) {
-        this.gcpService.updateResiduals();
         this.georefSettingsService.updateGeorefParams(this.georefImage.id, newSettings);
       }
     });
@@ -198,24 +198,24 @@ export class ToolbarComponent {
   }
 
   georeferenceImage(): void {
-    if (!this.gcpService.hasEnoughGCPs()) {
-      let message = "";
-      switch (this.georefImage.settings.transformationType) {
-        case TransformationType.POLYNOMIAL_1:
-          message = this.georefImage.settings.transformationType + " : Au moins 3 points de contrôle requis";
-          break;
-        case TransformationType.POLYNOMIAL_2:
-          message = this.georefImage.settings.transformationType + " : Au moins 6 points de contrôle requis";
-          break;
-        case TransformationType.POLYNOMIAL_3:
-          message = this.georefImage.settings.transformationType + " : Au moins 10 points de contrôle requis";
-          break;
-        default:
-          break;
-      }
-      this.notifService.showError(message);
-      return;
-    }
+    // if (!this.gcpService.hasEnoughGCPs()) {
+    //   let message = "";
+    //   switch (this.georefImage.settings.transformationType) {
+    //     case TransformationType.POLYNOMIAL_1:
+    //       message = this.georefImage.settings.transformationType + " : Au moins 3 points de contrôle requis";
+    //       break;
+    //     case TransformationType.POLYNOMIAL_2:
+    //       message = this.georefImage.settings.transformationType + " : Au moins 6 points de contrôle requis";
+    //       break;
+    //     case TransformationType.POLYNOMIAL_3:
+    //       message = this.georefImage.settings.transformationType + " : Au moins 10 points de contrôle requis";
+    //       break;
+    //     default:
+    //       break;
+    //   }
+    //   this.notifService.showError(message);
+    //   return;
+    // }
 
     this.imageService.updateGeorefStatus(GeorefStatus.PROCESSING);
 

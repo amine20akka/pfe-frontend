@@ -1,13 +1,15 @@
 import { TransformationType } from "../enums/transformation-type";
-import { GCP } from "../models/gcp.model";
+import { GcpDto } from "./gcp-dto";
 
 export interface ResidualsResponse {
-    residuals: number[];
+    success: boolean;
+    gcpDtos: GcpDto[];
     rmse: number;
+    minPointsRequired: number;
 }
 
 export interface ResidualsRequest {
-    gcps: GCP[];
-    transformationType: TransformationType;
+    imageId: string;
+    type: TransformationType;
     srid: number;
 }

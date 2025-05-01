@@ -22,7 +22,7 @@
             </th>
             <td mat-cell *matCellDef="let row">
                 <mat-checkbox (click)="$event.stopPropagation()" (change)="toggleRow(row)"
-                    [checked]="selection.isSelected(row)">
+                    [checked]="selection.selected.includes(row.id)">
                 </mat-checkbox>
             </td>
         </ng-container>
@@ -127,8 +127,7 @@
         <ng-container matColumnDef="delete">
             <th mat-header-cell *matHeaderCellDef>Supprimer</th>
             <td mat-cell *matCellDef="let gcp">
-                <button mat-icon-button color="warn" (click)="openDeleteConfirmDialog(gcp)"
-                    matTooltip="Supprimer">
+                <button mat-icon-button color="warn" (click)="openDeleteConfirmDialog(gcp)" matTooltip="Supprimer">
                     <mat-icon>delete</mat-icon>
                 </button>
             </td>

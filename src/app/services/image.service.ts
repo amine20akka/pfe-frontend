@@ -30,11 +30,7 @@ export class ImageService {
     private imageFileService: ImageFileService,
     private imageApiService: ImageApiService,
     private layerService: LayerService,
-  ) {
-    // this.gcpService.totalRMSE$.subscribe((value) => {
-    //   this.updateTotalRMSE(value);
-    // })
-  }
+  ) {}
 
   resetImage(): void {
     this.imageApiService.deleteGeorefImageById(this.georefImageSubject.getValue().id).subscribe({
@@ -209,7 +205,7 @@ export class ImageService {
     this.georefImageSubject.next(currentImage);
   }
 
-  updateTotalRMSE(newValue: number): void {
+  updateTotalRMSE(newValue: number | undefined): void {
     const currentImage = this.georefImageSubject.getValue();
     currentImage.totalRMSE = newValue;
     this.georefImageSubject.next(currentImage);

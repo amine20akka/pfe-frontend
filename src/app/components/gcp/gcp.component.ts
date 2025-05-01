@@ -52,9 +52,7 @@ export class GcpComponent implements OnInit, OnDestroy {
 
   displayedColumns: string[] = ['select', 'index', 'sourceX', 'sourceY', 'mapX', 'mapY', 'residual', 'edit', 'delete'];
   dataSource = new MatTableDataSource<GCP>();
-  selection = new SelectionModel<GCP>(true, []);
-  isDeleting = false;
-  private selectedGcpIdsBeforeDelete: string[] = [];
+  selection = new SelectionModel<string>(true, []);
   sourceXControl = new FormControl('', [Validators.required, Validators.nullValidator]);
   sourceYControl = new FormControl('', [Validators.required, Validators.nullValidator]);
   mapXControl = new FormControl('', [Validators.required, Validators.nullValidator]);
@@ -80,6 +78,7 @@ export class GcpComponent implements OnInit, OnDestroy {
   private lastY = 0;
   private originalPosition = { top: 0, left: 0, width: 0, height: 0 };
   private resetThreshold = 150;
+  private isInitialLoad = true;
 
   ngOnInit() {
     this.editForm = this.fb.group({
@@ -94,24 +93,14 @@ export class GcpComponent implements OnInit, OnDestroy {
 
       if (gcps.length === 0) {
         this.selection.clear();
-      } else if (this.isDeleting) {
-
-        const gcpsToSelect = gcps.filter(gcp =>
-          this.selectedGcpIdsBeforeDelete.includes(gcp.id)
-        );
-
-        this.selection.clear();
-        this.selection.select(...gcpsToSelect);
-
-        this.isDeleting = false;
-        this.selectedGcpIdsBeforeDelete = [];
+      } else if (this.isInitialLoad) {
+        this.dataSource.data.forEach(gcp => {
+          this.selection.select(gcp.id);
+        });
+        
+        this.isInitialLoad = false;
       } else {
-        this.selection.select(gcps[gcps.length - 1]);
-      }
-
-      if (this.loadingGCPs) {
-        this.selection.select(...gcps);
-        this.gcpService.updateLoadingGCPs(false);
+        this.selection.select(gcps[gcps.length-1].id);
       }
 
       setTimeout(() => {
@@ -119,10 +108,12 @@ export class GcpComponent implements OnInit, OnDestroy {
       }, 300);
       console.log('GCPs Data : ', gcps);
     });
+
     this.layerService.imageLayers$.subscribe((imageLayers) => {
       this.imageLayers = imageLayers;
       console.log('GCPs Image Layers : ', imageLayers);
     });
+
     this.layerService.mapLayers$.subscribe((mapLayers) => {
       this.mapLayers = mapLayers;
       console.log('GCPs Map Layers : ', mapLayers);
@@ -131,12 +122,10 @@ export class GcpComponent implements OnInit, OnDestroy {
     this.gcpService.isFloating$.subscribe(value => this.isFloating = value);
     this.gcpService.isNearOriginalPosition$.subscribe(value => this.isNearOriginalPosition = value);
 
-    // Subscribe to data changes to update dimensions
     this.dataSource.connect().subscribe(() => {
       setTimeout(() => this.updateTableDimensions(), 0);
     });
 
-    // Save initial position
     setTimeout(() => {
       const element = this.el.nativeElement.querySelector('.table-container');
       if (element) {
@@ -233,11 +222,9 @@ export class GcpComponent implements OnInit, OnDestroy {
     this.isResizing = false;
     this.resizeDirection = 'both';
 
-    // Retirer la classe de redimensionnement
     const element = this.el.nativeElement.querySelector('.table-container');
     this.renderer.removeClass(element, 'is-resizing');
 
-    // Retirer les écouteurs d'événements
     document.removeEventListener('mousemove', this.resizeMove);
     document.removeEventListener('touchmove', this.resizeMove);
     document.removeEventListener('mouseup', this.stopResize);
@@ -415,7 +402,6 @@ export class GcpComponent implements OnInit, OnDestroy {
     }
   }
 
-  // On ajoute un gestionnaire de survol (hover) pour la table entière
   @HostListener('mouseenter')
   onMouseEnter(): void {
     if (this.isFloating) {
@@ -448,21 +434,18 @@ export class GcpComponent implements OnInit, OnDestroy {
     }, 300);
   }
 
-  // Double-clic pour reset la position
   onDoubleClick(): void {
     if (this.isFloating) {
       this.resetPosition();
     }
   }
 
-  // Maintenant on ajoute un simple clic pour réinitialiser si on est près de la position d'origine
   onClick(): void {
     if (this.isFloating) {
       this.resetPosition();
     }
   }
 
-  // On détecte si on est en train d'éditer avant de déplacer
   canStartDrag(event: MouseEvent | TouchEvent): boolean {
     const target = event.target as HTMLElement;
     return !this.editingGcpIndex && !target.closest('input') && !target.closest('button');
@@ -473,15 +456,12 @@ export class GcpComponent implements OnInit, OnDestroy {
       const element = this.el.nativeElement.querySelector('.table-container');
       const table = element.querySelector('table');
 
-      // Get the height of the table with its current content
       const dragHandle = element.querySelector('.drag-handle');
       const dragHandleHeight = dragHandle.offsetHeight;
 
-      // Calculate a new height based on content, but limit it
       const contentHeight = table.scrollHeight;
       const maxHeight = window.innerHeight * 0.8; // 80% of viewport height
 
-      // New height includes drag handle + table, but is limited to max height
       const newHeight = Math.min(dragHandleHeight + contentHeight, maxHeight);
 
       this.renderer.setStyle(element, 'height', `${newHeight}px`);
@@ -495,12 +475,10 @@ export class GcpComponent implements OnInit, OnDestroy {
 
   /** Sélectionne tous les éléments ou les désélectionne */
   toggleAllRows(): void {
-    const allSelected = this.isAllSelected();
-
-    this.selection.clear();  // Clear selection
-
-    if (!allSelected) {
-      this.selection.select(...this.dataSource.data);  // Select all GCPs
+    if (this.isAllSelected()) {
+      this.selection.clear();
+    } else {
+      this.dataSource.data.forEach(gcp => this.selection.select(gcp.id));
     }
 
     this.updateGcpLayerVisibility();
@@ -508,33 +486,36 @@ export class GcpComponent implements OnInit, OnDestroy {
 
   /** Sélectionne ou désélectionne un point GCP et met à jour la visibilité */
   toggleRow(row: GCP): void {
-    this.selection.toggle(row);
+    this.selection.toggle(row.id);
     this.updateGcpLayerVisibility();
   }
 
   /** Update GCP layers visibility */
   updateGcpLayerVisibility(): void {
-    if (!this.imageLayers) return; // No GCP image layers
+    if (!this.imageLayers) return;
 
     this.imageLayers.forEach((layer, index) => {
-      const isVisible = this.selection.selected.some(gcp => gcp.index === index);
-      layer.setVisible(isVisible);
+      const gcp = this.dataSource.data.find(g => g.index === index);
+      const isVisible = gcp && this.selection.selected.includes(gcp.id);
+      layer.setVisible(isVisible!);
     });
 
-    if (!this.mapLayers) return; // No GCP map layers
+    if (!this.mapLayers) return;
 
     this.mapLayers.forEach((layer, index) => {
-      const isVisible = this.selection.selected.some(gcp => gcp.index === index);
-      layer.setVisible(isVisible);
+      const gcp = this.dataSource.data.find(g => g.index === index);
+      const isVisible = gcp && this.selection.selected.includes(gcp.id);
+      layer.setVisible(isVisible!);
     });
   }
 
   deleteGcp(gcp: GCP): void {
-    this.isDeleting = true;
-    // Save Selection state
-    this.selectedGcpIdsBeforeDelete = this.selection.selected
-      .filter(g => g.id !== gcp.id)
-      .map(g => g.id);
+    const wasSelected = this.selection.isSelected(gcp.id);
+
+    if (wasSelected) {
+      this.selection.deselect(gcp.id);
+    }
+
     this.gcpService.deleteGcpData(gcp.id);
     this.layerService.deleteGcpImageLayer(gcp.index);
     this.layerService.deleteGcpMapLayer(gcp.index);
@@ -542,7 +523,6 @@ export class GcpComponent implements OnInit, OnDestroy {
 
   /** Commencer l'édition d'un GCP */
   editGcp(gcp: GCP): void {
-    // Annuler toute édition en cours
     if (this.editingGcpIndex !== null) {
       this.cancelEdit();
     }
@@ -583,10 +563,7 @@ export class GcpComponent implements OnInit, OnDestroy {
       };
 
       this.gcpService.updateGcp(updatedGcp);
-
       this.editingGcpIndex = null;
-
-      this.selection.select(updatedGcp);
     }
   }
 

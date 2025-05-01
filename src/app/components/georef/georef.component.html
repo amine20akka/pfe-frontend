@@ -25,22 +25,22 @@
     <div class="georef-info-container" [class.hidden]="!isGeorefActive">
         <!-- Paramètres de géoréférencement alignés -->
         <div class="georef-parameters">
-            {{ georefSettings.transformationType }}
-        </div>
-        <div class="georef-parameters">
             EPSG:{{ georefSettings.srid }}
         </div>
         @if (panelWidth > 51) {
-        <div class="georef-parameters" [class.hidden-params]="panelWidth < 51">
-            Ré-échantillonnage: {{ georefSettings.resamplingMethod }}
-        </div>
+            <div class="georef-parameters" [class.hidden-params]="panelWidth < 51">
+                Ré-échantillonnage: {{ georefSettings.resamplingMethod }}
+            </div>
         }
         @if (panelWidth > 40) {
-        <div class="georef-parameters" [class.hidden-params]="panelWidth < 40">
-            Compression: {{ georefSettings.compressionType }}
-        </div>
+            <div class="georef-parameters" [class.hidden-params]="panelWidth < 40">
+                Compression: {{ georefSettings.compressionType }}
+            </div>
         }
-
+        <div class="georef-parameters">
+            {{ georefSettings.transformationType }}
+        </div>
+        
         <div class="georef-parameters">
             Erreur moyenne: {{ totalRMSE | number:'1.4-4' }}
         </div>

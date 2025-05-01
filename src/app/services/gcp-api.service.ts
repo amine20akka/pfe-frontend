@@ -4,6 +4,8 @@ import { GcpDto } from '../dto/gcp-dto';
 import { Observable } from 'rxjs';
 import { AddGcpRequest } from '../dto/add-gcp-request';
 import { GCP } from '../models/gcp.model';
+import { TransformationType } from '../enums/transformation-type';
+import { ResidualsRequest, ResidualsResponse } from '../dto/resiudal-dtos';
 
 @Injectable({
   providedIn: 'root'
@@ -28,5 +30,14 @@ export class GcpApiService {
 
   updateGcp(gcp: GCP): Observable<GcpDto> {
     return this.http.put<GcpDto>(`${this.apiUrl}/update`, gcp);
+  }
+
+  computeResiduals(imageId: string, transformationType: TransformationType, srid: number): Observable<ResidualsResponse> {
+    const requestBody: ResidualsRequest = { 
+                  imageId: imageId, 
+                  type: transformationType, 
+                  srid: srid 
+                };
+    return this.http.put<ResidualsResponse>(`${this.apiUrl}/update/residuals`, requestBody);
   }
 }

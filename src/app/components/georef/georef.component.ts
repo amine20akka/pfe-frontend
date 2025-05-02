@@ -50,7 +50,7 @@ export class GeorefComponent implements OnInit, OnDestroy, AfterViewInit {
   totalRMSE: number | undefined;
 
   isResizing = false;
-  minWidth = 42;   // Largeur minimum
+  minWidth = 47;   // Largeur minimum
   maxWidth = 80;   // Largeur maximum
 
   constructor(

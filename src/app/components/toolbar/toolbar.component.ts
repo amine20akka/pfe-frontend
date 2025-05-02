@@ -73,12 +73,12 @@ export class ToolbarComponent {
   }
 
   reset(): void {
-    this.clearGCPs();
+    this.gcpService.clearLayerAndDataMaps();
     this.imageService.resetImage();
   }
 
   clearGCPs(): void {
-    this.gcpService.clearGCPs();
+    this.gcpService.clearGCPs(this.georefImage.id);
     this.layerService.clearAllGcpImageLayers();
     this.layerService.clearAllGcpMapLayers();
   }
@@ -118,8 +118,8 @@ export class ToolbarComponent {
     this.gcpService.updateLoadingGCPs(true);
     const overwrite = this.overwritePending;
 
-    if (overwrite) {
-      this.clearGCPs();
+    if (overwrite && this.gcpService.getGCPs().length > 0) {
+      this.gcpService.clearLayerAndDataMaps();
     }
     
     setTimeout(() => {
@@ -201,6 +201,7 @@ export class ToolbarComponent {
 
     dialogRef.afterClosed().subscribe(result => {
       if (result) {
+        this.gcpService.updateLoadingGCPs(true);
         this.clearGCPs();
       }
     });

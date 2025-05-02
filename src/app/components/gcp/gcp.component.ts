@@ -1,4 +1,4 @@
-import { Component, ElementRef, HostListener, NgZone, OnDestroy, OnInit, Renderer2, ViewChild } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, HostListener, inject, NgZone, OnDestroy, OnInit, Renderer2, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -19,6 +19,8 @@ import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/c
 import { colors } from '../../shared/colors';
 import { LayerService } from '../../services/layer.service';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatSort, MatSortModule, Sort } from '@angular/material/sort';
+import { LiveAnnouncer } from '@angular/cdk/a11y';
 
 @Component({
   selector: 'app-gcp',
@@ -32,15 +34,18 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
     ReactiveFormsModule,
     MatInputModule,
     MatProgressSpinnerModule,
+    MatSortModule
   ],
   templateUrl: './gcp.component.html',
   styleUrl: './gcp.component.scss',
 })
 
-export class GcpComponent implements OnInit, OnDestroy {
+export class GcpComponent implements OnInit, AfterViewInit, OnDestroy {
+  @ViewChild(MatSort) sort!: MatSort;
   @ViewChild('tableContainer', { static: false }) tableContainer!: ElementRef;
   @ViewChild('anchorZone', { static: true }) anchorZone!: ElementRef;
-
+  private _liveAnnouncer = inject(LiveAnnouncer);
+  
   constructor(
     private georefService: GeorefService,
     private gcpService: GcpService,
@@ -51,7 +56,7 @@ export class GcpComponent implements OnInit, OnDestroy {
     private el: ElementRef,
     private ngZone: NgZone
   ) { }
-
+  
   displayedColumns: string[] = ['select', 'index', 'sourceX', 'sourceY', 'mapX', 'mapY', 'residual', 'edit', 'delete'];
   dataSource = new MatTableDataSource<GCP>();
   selection = new SelectionModel<string>(true, []);
@@ -61,10 +66,10 @@ export class GcpComponent implements OnInit, OnDestroy {
   mapYControl = new FormControl('', [Validators.required, Validators.nullValidator]);
   private imageLayers: Map<number, VectorLayer<VectorSource>> = new Map<number, VectorLayer<VectorSource>>();
   private mapLayers: Map<number, VectorLayer<VectorSource>> = new Map<number, VectorLayer<VectorSource>>();
-
+  
   editingGcpIndex: number | null = null;
   editForm!: FormGroup;
-
+  
   isDragging = false;
   isFloating = false;
   isNearOriginalPosition = false;
@@ -81,7 +86,7 @@ export class GcpComponent implements OnInit, OnDestroy {
   private originalPosition = { top: 0, left: 0, width: 0, height: 0 };
   private resetThreshold = 150;
   private isInitialLoad = true;
-
+  
   ngOnInit() {
     this.editForm = this.fb.group({
       sourceX: this.sourceXControl,
@@ -104,7 +109,7 @@ export class GcpComponent implements OnInit, OnDestroy {
       } else {
         this.selection.select(gcps[gcps.length-1].id);
       }
-
+      
       setTimeout(() => {
         this.updateGcpLayerVisibility();
       }, 300);
@@ -115,7 +120,7 @@ export class GcpComponent implements OnInit, OnDestroy {
       this.imageLayers = imageLayers;
       console.log('GCPs Image Layers : ', imageLayers);
     });
-
+    
     this.layerService.mapLayers$.subscribe((mapLayers) => {
       this.mapLayers = mapLayers;
       console.log('GCPs Map Layers : ', mapLayers);
@@ -123,7 +128,7 @@ export class GcpComponent implements OnInit, OnDestroy {
 
     this.gcpService.isFloating$.subscribe(value => this.isFloating = value);
     this.gcpService.isNearOriginalPosition$.subscribe(value => this.isNearOriginalPosition = value);
-
+    
     this.dataSource.connect().subscribe(() => {
       setTimeout(() => this.updateTableDimensions(), 0);
     });
@@ -140,6 +145,10 @@ export class GcpComponent implements OnInit, OnDestroy {
         };
       }
     }, 100);
+  }
+  
+  ngAfterViewInit() {
+    this.dataSource.sort = this.sort;
   }
 
   ngOnDestroy(): void {
@@ -158,6 +167,14 @@ export class GcpComponent implements OnInit, OnDestroy {
     this.gcpService.toggleAddingGcp();
   }
 
+  announceSortChange(sortState: Sort) {
+    if (sortState.direction) {
+      this._liveAnnouncer.announce(`Sorted ${sortState.direction}ending`);
+    } else {
+      this._liveAnnouncer.announce('Sorting cleared');
+    }
+  }
+  
   startResize(event: MouseEvent | TouchEvent, direction: 'right' | 'bottom' | 'both'): void {
     event.preventDefault();
     event.stopPropagation();
@@ -208,7 +225,7 @@ export class GcpComponent implements OnInit, OnDestroy {
 
     // Appliquer le redimensionnement selon la direction
     if (this.resizeDirection === 'right' || this.resizeDirection === 'both') {
-      const newWidth = Math.max(this.startWidth + dx, 200); // Largeur minimale de 200px
+      const newWidth = Math.max(this.startWidth + dx, 600); // Largeur minimale de 250px
       this.renderer.setStyle(element, 'width', `${newWidth}px`);
     }
 

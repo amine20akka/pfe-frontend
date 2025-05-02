@@ -1,9 +1,10 @@
-<div *ngIf="loadingGCPs" class="loading-container">
+@if (loadingGCPs) {
+<div class="loading-container">
     <mat-spinner class="spinner" diameter="35"></mat-spinner>
     <p>Chargement des GCPs ...</p>
 </div>
-
-<div *ngIf="!loadingGCPs" #tableContainer class="table-container">
+} @else {
+<div #tableContainer class="table-container">
 
     <div class="drag-handle" (mousedown)="canStartDrag($event) && startDrag($event)"
         (touchstart)="canStartDrag($event) && startDrag($event)" (dblclick)="onDoubleClick()">
@@ -15,7 +16,9 @@
         </button>
     </div>
 
-    <table mat-table bgColor="primary" [dataSource]="dataSource" [trackBy]="trackByFn" class="mat-elevation-z8">
+    <table mat-table matSort (matSortChange)="announceSortChange($event)" 
+                bgColor="primary" [dataSource]="dataSource" 
+                [trackBy]="trackByFn" class="mat-elevation-z8">
 
         <!-- Checkbox Column -->
         <ng-container matColumnDef="select">
@@ -34,7 +37,8 @@
 
         <!-- Index Column -->
         <ng-container matColumnDef="index">
-            <th mat-header-cell *matHeaderCellDef>ID</th>
+            <th mat-header-cell *matHeaderCellDef
+                mat-sort-header sortActionDescription="Sort by number">ID</th>
             <td mat-cell *matCellDef="let gcp">
                 <span
                     [ngStyle]="{'color': getTextColor(gcp.index), 'background-color': getFillColor(gcp.index), 'padding': '3px 6px', 'border-radius': '50%'}">
@@ -46,7 +50,8 @@
 
         <!-- Source X Column -->
         <ng-container matColumnDef="sourceX">
-            <th mat-header-cell *matHeaderCellDef>Source X</th>
+            <th mat-header-cell *matHeaderCellDef
+                mat-sort-header sortActionDescription="Sort by number">Source X</th>
             <td mat-cell *matCellDef="let gcp" (dblclick)="onCellDoubleClick(gcp, 'sourceX')">
                 <ng-container *ngIf="editingGcpIndex !== gcp.index; else editMode">
                     {{ gcp.sourceX | number:'1.4-4' }}
@@ -60,7 +65,8 @@
 
         <!-- Source Y Column -->
         <ng-container matColumnDef="sourceY">
-            <th mat-header-cell *matHeaderCellDef>Source Y</th>
+            <th mat-header-cell *matHeaderCellDef
+                mat-sort-header sortActionDescription="Sort by number">Source Y</th>
             <td mat-cell *matCellDef="let gcp" (dblclick)="onCellDoubleClick(gcp, 'sourceY')">
                 <ng-container *ngIf="editingGcpIndex !== gcp.index; else editSourceY">
                     {{ gcp.sourceY | number:'1.4-4' }}
@@ -74,7 +80,8 @@
 
         <!-- Map X Column -->
         <ng-container matColumnDef="mapX">
-            <th mat-header-cell *matHeaderCellDef>Destination X</th>
+            <th mat-header-cell *matHeaderCellDef
+                mat-sort-header sortActionDescription="Sort by number">Destination X</th>
             <td mat-cell *matCellDef="let gcp" (dblclick)="onCellDoubleClick(gcp, 'mapX')">
                 <ng-container *ngIf="editingGcpIndex !== gcp.index; else editMapX">
                     {{ gcp.mapX | number:'1.4-4' }}
@@ -88,7 +95,8 @@
 
         <!-- Map Y Column -->
         <ng-container matColumnDef="mapY">
-            <th mat-header-cell *matHeaderCellDef>Destination Y</th>
+            <th mat-header-cell *matHeaderCellDef
+                mat-sort-header sortActionDescription="Sort by number">Destination Y</th>
             <td mat-cell *matCellDef="let gcp" (dblclick)="onCellDoubleClick(gcp, 'mapY')">
                 <ng-container *ngIf="editingGcpIndex !== gcp.index; else editMapY">
                     {{ gcp.mapY | number:'1.4-4' }}
@@ -102,7 +110,8 @@
 
         <!-- Residual Column -->
         <ng-container matColumnDef="residual">
-            <th mat-header-cell *matHeaderCellDef>Résidu</th>
+            <th mat-header-cell *matHeaderCellDef
+                mat-sort-header sortActionDescription="Sort by number">Résidu</th>
             <td mat-cell *matCellDef="let gcp"> {{ gcp.residual | number:'1.4-4' }} </td>
         </ng-container>
 
@@ -163,3 +172,4 @@
 </div>
 
 <div *ngIf="isFloating" class="anchor-zone" #anchorZone></div>
+}

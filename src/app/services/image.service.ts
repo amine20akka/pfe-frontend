@@ -262,8 +262,7 @@ export class ImageService {
           })
         );
       }),
-      catchError((err) => {
-        this.notifService.showError("Erreur lors du chargement de l'image : " + err);
+      catchError(() => {
         this.isLoading = false;
         this.isImageLoaded = false;
         return EMPTY;

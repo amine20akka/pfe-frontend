@@ -46,7 +46,7 @@ export class GeorefService {
   panelWidth = 47; // Largeur par défaut
 
   toggleGeoref() {
-    if (this.isDrawToolsActive) {
+    if (this.isDrawToolsActive && !this.isGeorefActive) {
       this.toggleDrawTools();
     }
 
@@ -64,17 +64,21 @@ export class GeorefService {
   }
 
   toggleTable() {
-    this.isTableActive = !this.isTableActive;
-    if (this.isDrawToolsActive) {
+    if (this.isDrawToolsActive && !this.isTableActive) {
       this.toggleDrawTools();
     }
+    this.isTableActive = !this.isTableActive;
   }
 
   toggleDrawTools() {
     this.isDrawToolsActive = !this.isDrawToolsActive;
-    if (this.isDrawToolsActive) {
-      this.isGeorefActive = false;
-      this.isTableActive = false;
+    
+    if (this.isDrawToolsActive && this.isGeorefActive) {
+      this.toggleGeoref();
+    }
+
+    if (this.isDrawToolsActive && this.isTableActive) {
+      this.toggleTable();
     }
 
     if (!this.isDrawToolsActive) {

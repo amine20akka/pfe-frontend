@@ -10,7 +10,7 @@
     align-self: center;
     transition: box-shadow 0s ease, background-color 0s ease;
     display: flex;
-    flex-direction: column; // This helps with the sticky header
+    flex-direction: column;
 
     &.is-dragging {
         transition: none;
@@ -48,7 +48,7 @@
     user-select: none;
     border-bottom: 1px solid #ddd;
     transition: background-color 0s ease;
-    
+
     .handle-label {
         flex-grow: 1;
         text-align: center;
@@ -57,31 +57,31 @@
         color: #444;
         transition: color 0s ease;
     }
-    
+
     mat-icon {
         margin-top: 6px;
         align-self: center;
         font-size: medium;
     }
-    
+
     .reset-button {
         width: 28px;
         height: 28px;
         padding: 3px;
         margin-right: 7px;
         align-self: center;
-        
+
         mat-icon {
             margin-top: 1.8px;
             align-self: center;
             font-size: medium;
         }
     }
-    
+
     &:hover {
         background-color: #e0e0e0;
     }
-    
+
     .near-original-position & {
         background-color: #f7d7ad;
     }
@@ -94,7 +94,6 @@ table {
     align-items: center;
     border-collapse: collapse;
     min-height: 40px;
-    /* Add a minimum height to prevent collapse */
 }
 
 th {
@@ -102,9 +101,9 @@ th {
     overflow-x: hidden;
     background: #f5f5f5;
     color: #333;
-    font-size: xx-small;
+    font-size: 8.5px;
     padding: 1px;
-    text-align: center;
+    text-align: start;
 }
 
 mat-checkbox {
@@ -116,15 +115,15 @@ tr {
     height: 26px;
     max-height: 26px;
     font-size: x-small;
-    text-align: center;
+    text-align: start;
     background-color: #f3f3f3;
 }
 
 td {
     overflow-x: hidden;
     padding: 1px;
-    text-align: center;
-    font-size: x-small;
+    text-align: start;
+    font-size: xx-small;
 }
 
 button {
@@ -135,14 +134,12 @@ mat-icon {
     font-size: medium;
 }
 
-/* Boutons d'édition */
 .edit-buttons {
     display: flex;
     gap: 4px;
     justify-content: center;
 }
 
-/* Réduction de la taille des boutons */
 .edit-buttons button {
     width: 24px;
     height: 24px;
@@ -153,39 +150,29 @@ mat-icon {
 
 .edit-field {
     width: 79px;
-    /* Même largeur que l’ancien mat-form-field */
     height: 20px;
-    /* Ajustement de la hauteur */
     padding: 1px 0px;
-    /* Réduction du padding */
     font-size: x-small;
     border: 1px solid #ccc;
-    /* Ajoute une bordure pour garder la structure */
     border-radius: 4px;
-    /* Coins arrondis */
     text-align: center;
     background-color: #fff;
-    /* Fond blanc pour rester homogène */
 }
 
-/* Effet hover et focus pour donner un look interactif */
 .edit-field:hover,
 .edit-field:focus {
     border-color: #2e84da;
-    /* Couleur Material Design */
     outline: none;
 }
 
-/* Effet hover pour mieux visualiser l'édition */
 tr:hover td {
     background-color: rgba(0, 0, 0, 0.03);
 }
 
-/* Styles pour gérer l'état flottant */
 :host {
     display: block;
     position: relative;
-    
+
     &.floating-container {
         .table-container {
             position: fixed;
@@ -299,6 +286,14 @@ tr:hover td {
 
 .spinner {
     font-size: 12px;
+}
+
+::ng-deep .mat-sort-header-arrow {
+    transform: scale(0.7);
+}
+
+::ng-deep .mat-sort-header-sorted.mat-sort-header-arrow {
+    transform: scale(0.7);
 }
 
 @media (min-width: 1601px) {

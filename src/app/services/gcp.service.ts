@@ -113,9 +113,32 @@ export class GcpService {
     return this.gcpsSubject.getValue();
   }
 
-  clearGCPs(): void {
+  clearLayerAndDataMaps(): void {
     this.gcps = [];
     this.gcpsSubject.next(this.gcps);
+    this.layerService.clearAllGcpImageLayers();
+    this.layerService.clearAllGcpMapLayers();
+  }
+
+  clearGCPs(imageId: string): void {
+    this.gcpApiService.deleteAllByImageId(imageId).subscribe({
+      next: () => {
+        if (this.gcps.length === 1) {
+          this.notifService.showSuccess("Le point a été supprimé avec succès");
+        } else {
+          this.notifService.showSuccess(this.gcps.length + " points ont été supprimés avec succès");
+        }
+        this.gcps = [];
+        this.gcpsSubject.next(this.gcps);
+        this.loadingGCPs = false;
+      },
+      error: (err) => {
+        this.loadingGCPs = false;
+        if (err.status === 404) {
+          this.notifService.showError("Aucun point défini pour cette image");
+        }
+      }
+    });
   }
 
   toggleAddingGcp(): void {
@@ -135,6 +158,9 @@ export class GcpService {
           this.updateResiduals(this.currentImageId);
         }
         this.gcps = FromDtos(updatedGcps);
+        setTimeout(() => {
+          this.gcpsSubject.next(this.gcps)
+        }, 300);
       },
       error: (err) => {
         if (err.status === 404) {
@@ -142,10 +168,6 @@ export class GcpService {
         }
       }
     })
-
-    setTimeout(() => {
-      this.gcpsSubject.next(this.gcps)
-    }, 300);
   }
 
   updateGcp(gcpToUpdate: GCP): void {
@@ -239,7 +261,11 @@ export class GcpService {
       const writableStream = await fileHandle.createWritable();
       await writableStream.write(gcpData);
       await writableStream.close();
-      this.notifService.showSuccess("Les points ont été enregistrés avec succès !");
+      if (simplifiedGcps.length === 1) {
+        this.notifService.showSuccess("Un point a été enregistré avec succès");
+      } else {
+        this.notifService.showSuccess(simplifiedGcps.length + " points ont été enregistrés avec succès");
+      }
     } catch (error) {
       console.error('Erreur lors de l\'enregistrement des points: ', error);
     }
@@ -269,6 +295,11 @@ export class GcpService {
             this.gcpApiService.addGcps(imageId, simplifiedGcps, overwrite).subscribe({
               next: (gcpDtos: GcpDto[]) => {
                 resolve(FromDtos(gcpDtos));
+                if (gcpDtos.length === 1) {
+                  this.notifService.showSuccess("Un point a été chargé avec succès");
+                } else {
+                  this.notifService.showSuccess(gcpDtos.length + " points ont été chargés avec succès");
+                }
               },
               error: (err) => {
                 if (err.status === 409) {

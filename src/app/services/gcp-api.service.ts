@@ -50,4 +50,8 @@ export class GcpApiService {
     }
     return this.http.post<GcpDto[]>(`${this.apiUrl}/load`, loadGcpsRequest);
   }
+
+  deleteAllByImageId(imageId: string): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/all/${imageId}`);
+  }
 }

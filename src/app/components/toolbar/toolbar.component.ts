@@ -38,7 +38,7 @@ export class ToolbarComponent {
 
   isMapSelection = false;
   georefSuccess = false;
-  clearAndLoad = false;
+  private overwritePending = false;
 
   private georefImage!: GeorefImage;
 
@@ -103,33 +103,42 @@ export class ToolbarComponent {
       });
 
       dialogRef.afterClosed().subscribe(result => {
-        if (result) {
-          this.clearAndLoad = true;
-        } else {
-          this.clearAndLoad = false;
-        }
+        this.overwritePending = !!result;
+        this.fileInput.nativeElement.value = '';
         this.fileInput.nativeElement.click();
       });
     } else {
+      this.overwritePending = true;
+      this.fileInput.nativeElement.value = '';
       this.fileInput.nativeElement.click();
     }
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  loadGCPs(event: Event): void {
-    if (this.clearAndLoad) {
+  onFileSelected(event: Event): void {
+    this.gcpService.updateLoadingGCPs(true);
+    const overwrite = this.overwritePending;
+
+    if (overwrite) {
       this.clearGCPs();
     }
-    // this.gcpService.loadGCPs(event)
-    //   .then((gcps) => {
-    //     this.layerService.loadGcpImageLayers(gcps);
-    //     this.layerService.loadGcpMapLayers(gcps);
-    //     this.gcpService.updateLoadingGCPs(false);
-    //   })
-    //   // .finally(() => this.gcpService.updateResiduals(this.georefImage.id))
-    //   .catch(() => {
-    //     this.gcpService.updateLoadingGCPs(false);
-    //   });
+    
+    setTimeout(() => {
+      this.gcpService.loadGCPs(event, this.georefImage.id, overwrite)
+      .then((gcps) => {
+        if (gcps && gcps.length > 0) {
+          this.gcpService.addGCPs(gcps);
+          this.layerService.loadGcpImageLayers(gcps);
+          this.layerService.loadGcpMapLayers(gcps);
+        }
+      })
+      .catch(() => {
+        this.gcpService.updateLoadingGCPs(false);
+      })
+      .finally(() => {
+        this.gcpService.updateResiduals(this.georefImage.id);
+        this.gcpService.updateLoadingGCPs(false);
+      });
+    }, 300);
   }
 
   openGeorefSettings(): void {

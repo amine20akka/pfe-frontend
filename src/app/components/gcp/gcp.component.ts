@@ -18,6 +18,7 @@ import { ConfirmDialogData } from '../../shared/components/confirm-dialog/confir
 import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/confirm-dialog.component';
 import { colors } from '../../shared/colors';
 import { LayerService } from '../../services/layer.service';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
 @Component({
   selector: 'app-gcp',
@@ -30,6 +31,7 @@ import { LayerService } from '../../services/layer.service';
     MatTooltipModule,
     ReactiveFormsModule,
     MatInputModule,
+    MatProgressSpinnerModule,
   ],
   templateUrl: './gcp.component.html',
   styleUrl: './gcp.component.scss',
@@ -93,7 +95,7 @@ export class GcpComponent implements OnInit, OnDestroy {
 
       if (gcps.length === 0) {
         this.selection.clear();
-      } else if (this.isInitialLoad) {
+      } else if (this.isInitialLoad || this.loadingGCPs) {
         this.dataSource.data.forEach(gcp => {
           this.selection.select(gcp.id);
         });

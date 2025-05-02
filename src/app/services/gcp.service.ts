@@ -241,68 +241,75 @@ export class GcpService {
       await writableStream.close();
       this.notifService.showSuccess("Les points ont été enregistrés avec succès !");
     } catch (error) {
-      this.notifService.showError("Erreur lors de l'enregistrement des points !");
       console.error('Erreur lors de l\'enregistrement des points: ', error);
     }
   }
 
-  // async loadGCPs(event: Event): Promise<GCP[]> {
-  // const input = event.target as HTMLInputElement;
-  // if (input.files && input.files.length > 0) {
-  //   const file = input.files[0];
-  //   const reader = new FileReader();
+  async loadGCPs(event: Event, imageId: string, overwrite: boolean): Promise<GCP[]> {
+    const input = event.target as HTMLInputElement;
 
-  //   return new Promise<GCP[]>((resolve, reject) => {
-  //     reader.onload = () => {
-  //       try {
-  //         this.updateLoadingGCPs(true);
+    if (input.files && input.files.length > 0) {
+      const file = input.files[0];
+      const reader = new FileReader();
 
-  //         const simplifiedGcps = JSON.parse(reader.result as string);
+      return new Promise<GCP[]>((resolve, reject) => {
+        reader.onload = () => {
+          try {
+            const content = reader.result as string;
+            if (!content || content.trim() === "") {
+              this.notifService.showError("Le fichier est vide !");
+              return reject(new Error("Fichier JSON vide"));
+            }
 
-  //         const gcps: GCP[] = [];
+            const simplifiedGcps: GcpDto[] = JSON.parse(content);
+            if (!Array.isArray(simplifiedGcps) || simplifiedGcps.length === 0) {
+              return reject(new Error("Aucun GCP trouvé dans le fichier JSON"));
+            }
 
-  //         const currentLength = this.gcps.length;
+            this.gcpApiService.addGcps(imageId, simplifiedGcps, overwrite).subscribe({
+              next: (gcpDtos: GcpDto[]) => {
+                resolve(FromDtos(gcpDtos));
+              },
+              error: (err) => {
+                if (err.status === 409) {
+                  this.notifService.showError("Un point existe déjà avec cet index !");
+                } else if (err.status === 404) {
+                  this.notifService.showError("Image non trouvée ! Veuillez importer une image d'abord.");
+                } else if (err.status === 400) {
+                  this.notifService.showError("Erreur de validation des données !");
+                }
+                reject(err);
+              }
+            });
 
-  //         // Transformer chaque point simplifié en utilisant createGCP
-  //         simplifiedGcps.forEach((simplifiedGcp: { id: string, imageId:string, sourceX: number, sourceY: number, mapX: number, mapY: number }) => {
-  //           // Nous devons modifier temporairement this.gcps.length pour que les index soient corrects
-  //           this.gcps.length = gcps.length + currentLength;
-  //           const newGCP = this.createGCP(simplifiedGcp.sourceX, simplifiedGcp.sourceY, simplifiedGcp.mapX, simplifiedGcp.mapY, this.currentImageId, simplifiedGcp.id);
-  //           gcps.push(FromDto(newGCP));
-  //         });
+          } catch (error) {
+            this.notifService.showError("Fichier JSON invalide !");
+            reject(error);
+          }
+        };
 
-  //         // Restaurer la longueur d'origine
-  //         this.gcps.length = currentLength;
+        reader.onerror = () => {
+          this.notifService.showError("Erreur de lecture du fichier !");
+          reject(reader.error || new Error("Erreur de lecture du fichier"));
+        };
 
-  //         console.log('Les GCPs chargés : ', gcps);
-  //         resolve(gcps);
-  //       } catch (error) {
-  //         console.error('Erreur de parsing JSON', error);
-  //         reject([]);
-  //       }
-  //     };
+        reader.readAsText(file);
+      });
+    }
 
-  //     reader.onerror = () => {
-  //       console.error('Erreur de lecture du fichier');
-  //       reject([]);
-  //     };
-
-  //     reader.readAsText(file);
-  //   });
-  // }
-  //   return [];
-  // }
+    this.notifService.showError("Aucun fichier sélectionné !");
+    return [];
+  }
 
   updateLoadingGCPs(status: boolean): void {
     this.loadingGCPs = status;
   }
 
-  // addGCPs(gcps: GCP[]): void {
-  //   const updatedGcps = [...this.gcps, ...gcps];
-  //   this.gcps = updatedGcps;
-  //   this.gcpsSubject.next(this.gcps);
-  //   this.updateResiduals(this.currentImageId);
-  // }
+  addGCPs(gcps: GCP[]): void {
+    const updatedGcps = [...this.gcps, ...gcps];
+    this.gcps = updatedGcps;
+    this.gcpsSubject.next(this.gcps);
+  }
 
   getGcpsByImageId(imageId: string): Observable<GcpDto[]> {
     return this.gcpApiService.getGcpsByImageId(imageId).pipe(

@@ -1,4 +1,9 @@
-<div #tableContainer class="table-container">
+<div *ngIf="loadingGCPs" class="loading-container">
+    <mat-spinner class="spinner" diameter="35"></mat-spinner>
+    <p>Chargement des GCPs ...</p>
+</div>
+
+<div *ngIf="!loadingGCPs" #tableContainer class="table-container">
 
     <div class="drag-handle" (mousedown)="canStartDrag($event) && startDrag($event)"
         (touchstart)="canStartDrag($event) && startDrag($event)" (dblclick)="onDoubleClick()">

@@ -283,6 +283,24 @@ tr:hover td {
     transition: background-color 0s ease, border 0s ease;
 }
 
+.loading-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding-top: 10%;
+    height: 100%;
+    width: 100%;
+
+    p {
+        font-size: 12px;
+    }
+}
+
+.spinner {
+    font-size: 12px;
+}
+
 @media (min-width: 1601px) {
     .table-container {
         height: 40vh;

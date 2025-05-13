@@ -14,8 +14,10 @@ import { GcpDto } from '../dto/gcp-dto';
 import { LayerService } from './layer.service';
 import { ImageService } from './image.service';
 import BaseLayer from 'ol/layer/Base';
-import { WMSLayer } from '../models/wms-layer.model';
 import { ImageFileService } from './image-file.service';
+import { GeorefLayer } from '../models/georef-layer.model';
+import { GeorefApiService } from './georef-api.service';
+import { NotificationService } from './notification.service';
 
 @Injectable({
   providedIn: 'root'
@@ -37,6 +39,8 @@ export class MapService {
     private layerService: LayerService,
     private imageService: ImageService,
     private imageFileService: ImageFileService,
+    private georefApiService: GeorefApiService,
+    private notifService: NotificationService,
   ) {
     this.isMapSelection$
       .pipe(
@@ -58,10 +62,10 @@ export class MapService {
                 result.mapX,
                 result.mapY
               ).subscribe((savedGcp: GcpDto | null) => {
-                  if (savedGcp && (coords.x !== result.mapX || coords.y !== result.mapY)) {
-                    this.layerService.updateMapGcpPosition(savedGcp.index, result.mapX, result.mapY);
-                  }
-                });
+                if (savedGcp && (coords.x !== result.mapX || coords.y !== result.mapY)) {
+                  this.layerService.updateMapGcpPosition(savedGcp.index, result.mapX, result.mapY);
+                }
+              });
             }
           });
         }
@@ -101,7 +105,6 @@ export class MapService {
 
       this.mapSubject.next(this.map);
 
-      // Écouter les mouvements du curseur pour récupérer les coordonnées
       this.map.on('pointermove', (event) => {
         const coords = event.coordinate;
         this.mapCoordinates.next({
@@ -139,10 +142,27 @@ export class MapService {
     this.layerService.removeAllGcpLayersFromMap(this.map);
   }
 
-  deleteGeorefLayerFromMap(georefLayer: WMSLayer): void {
-    this.imageService.clearGeorefImage();
-    this.layerService.deleteGeorefLayerFromMap(georefLayer);
-    this.removeLayerFromMap(georefLayer.layer);
+  deleteGeorefLayerFromMap(georefLayer: GeorefLayer): void {
+    this.georefApiService.deleteGeorefLayerById(georefLayer.id).subscribe({
+      next: () => {
+        this.layerService.deleteGeorefLayerFromMap(georefLayer);
+        this.removeLayerFromMap(georefLayer.layer!);
+      }
+    })
+  }
+
+  removeGeorefLayerAndImageFromMap(georefLayer: GeorefLayer): void {
+    this.georefApiService.deleteGeorefLayerAndImageById(georefLayer.id).subscribe({
+      next: () => {
+        this.layerService.deleteGeorefLayerFromMap(georefLayer);
+        this.removeLayerFromMap(georefLayer.layer!);
+      },
+      error: (err) => {
+        if (err.status === 404) {
+          this.notifService.showError("Couche géoréférencée introuvable !");
+        }
+      }
+    })
   }
 
   openGcpDialog(x: number, y: number): MatDialogRef<GcpDialogComponent> {

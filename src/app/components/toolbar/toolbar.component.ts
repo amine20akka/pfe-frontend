@@ -18,8 +18,10 @@ import { GeoserverService } from '../../services/geoserver.service';
 import { NotificationService } from '../../services/notification.service';
 import { LayerService } from '../../services/layer.service';
 import { GeorefRequest } from '../../dto/georef-request';
-import { GeorefStatus } from '../../enums/georef-status';
 import { GeorefSettings } from '../../interfaces/georef-settings';
+import { GeorefApiService } from '../../services/georef-api.service';
+import { GeorefResponse } from '../../dto/georef-response';
+import { LayerStatus } from '../../enums/layer-status';
 
 @Component({
   selector: 'app-toolbar',
@@ -37,13 +39,13 @@ export class ToolbarComponent {
   @ViewChild('fileInput') fileInput!: ElementRef<HTMLInputElement>;
 
   isMapSelection = false;
-  georefSuccess = false;
   private overwritePending = false;
 
   private georefImage!: GeorefImage;
 
   constructor(
     private georefService: GeorefService,
+    private georefApiService: GeorefApiService,
     private imageService: ImageService,
     private gcpService: GcpService,
     private mapService: MapService,
@@ -64,6 +66,10 @@ export class ToolbarComponent {
     return this.gcpService.isAddingGCP;
   }
 
+  get isReGeoref() : boolean {
+    return this.georefService.isReGeoref;
+  }
+
   toggleGeoref(): void {
     this.georefService.toggleGeoref();
   }
@@ -73,6 +79,9 @@ export class ToolbarComponent {
   }
 
   reset(): void {
+    if (this.isReGeoref) {
+      this.georefService.isReGeoref = false;
+    }
     this.gcpService.clearLayerAndDataMaps();
     this.imageService.resetImage();
   }
@@ -121,23 +130,23 @@ export class ToolbarComponent {
     if (overwrite && this.gcpService.getGCPs().length > 0) {
       this.gcpService.clearLayerAndDataMaps();
     }
-    
+
     setTimeout(() => {
       this.gcpService.loadGCPs(event, this.georefImage.id, overwrite)
-      .then((gcps) => {
-        if (gcps && gcps.length > 0) {
-          this.gcpService.addGCPs(gcps);
-          this.layerService.loadGcpImageLayers(gcps);
-          this.layerService.loadGcpMapLayers(gcps);
-        }
-      })
-      .catch(() => {
-        this.gcpService.updateLoadingGCPs(false);
-      })
-      .finally(() => {
-        this.gcpService.updateResiduals(this.georefImage.id);
-        this.gcpService.updateLoadingGCPs(false);
-      });
+        .then((gcps) => {
+          if (gcps && gcps.length > 0) {
+            this.gcpService.addGCPs(gcps);
+            this.layerService.loadGcpImageLayers(gcps);
+            this.layerService.loadGcpMapLayers(gcps);
+          }
+        })
+        .catch(() => {
+          this.gcpService.updateLoadingGCPs(false);
+        })
+        .finally(() => {
+          this.gcpService.updateResiduals(this.georefImage.id);
+          this.gcpService.updateLoadingGCPs(false);
+        });
     }, 300);
   }
 
@@ -208,66 +217,44 @@ export class ToolbarComponent {
   }
 
   georeferenceImage(): void {
-    // if (!this.gcpService.hasEnoughGCPs()) {
-    //   let message = "";
-    //   switch (this.georefImage.settings.transformationType) {
-    //     case TransformationType.POLYNOMIAL_1:
-    //       message = this.georefImage.settings.transformationType + " : Au moins 3 points de contrôle requis";
-    //       break;
-    //     case TransformationType.POLYNOMIAL_2:
-    //       message = this.georefImage.settings.transformationType + " : Au moins 6 points de contrôle requis";
-    //       break;
-    //     case TransformationType.POLYNOMIAL_3:
-    //       message = this.georefImage.settings.transformationType + " : Au moins 10 points de contrôle requis";
-    //       break;
-    //     default:
-    //       break;
-    //   }
-    //   this.notifService.showError(message);
-    //   return;
-    // }
-
-    this.imageService.updateGeorefStatus(GeorefStatus.PROCESSING);
-
     const gcpData = this.gcpService.getGCPs();
 
     const requestData: GeorefRequest = {
-      settings: {
+      georefSettings: {
         transformationType: this.georefImage.settings.transformationType,
         srid: this.georefImage.settings.srid,
         resamplingMethod: this.georefImage.settings.resamplingMethod,
         compressionType: this.georefImage.settings.compressionType,
         outputFilename: this.georefImage.settings.outputFilename
       },
-      gcps: gcpData,
-      imageFile: this.georefImage.imageFile
+      gcps: gcpData
     };
 
-    this.georefService.georeferenceImage(requestData).subscribe({
-      next: (responselayerName) => {
-        setTimeout(() => {
-          this.georefImage.wmsLayer = this.geoserverService.createWMSLayer(responselayerName);
-          this.imageService.updateGeorefStatus(GeorefStatus.COMPLETED);
-          this.georefSuccess = true;
-          this.imageService.updateGeorefDate(new Date(Date.now()));
-          this.layerService.addGeorefLayertoList(this.georefImage.wmsLayer);
-          this.reset();
-          this.georefService.toggleGeoref();
-        }, 2000);
+    this.georefApiService.georeferenceImage(requestData, this.georefImage.id).subscribe({
+      next: (georefResponse: GeorefResponse) => {
+        if (!georefResponse.enoughGCPs) {
+          this.notifService.showError(georefResponse.message);
+          return;
+        } else {
+          this.georefService.isProcessing = true;
+
+          setTimeout(() => {
+            if (georefResponse.georefLayer.status == LayerStatus.PUBLISHED) {
+              if (this.isReGeoref) {
+                this.mapService.deleteGeorefLayerFromMap(georefResponse.georefLayer);
+                this.georefService.isReGeoref = false;
+              }
+              this.georefService.finishGeoref(georefResponse);
+              this.georefService.toggleGeoref();
+              this.notifService.showSuccess("Géoréférencement terminé avec succès !");
+            }
+          }, 400);
+        }
       },
       error: (error) => {
         this.notifService.showError("Géoréférencement échouée !");
         console.error('Erreur lors du géoréférencement', error);
-        this.imageService.updateGeorefStatus(GeorefStatus.FAILED);
-        this.georefSuccess = false;
-        this.georefService.toggleGeoref();
       }
     });
-    setTimeout(() => {
-      if (this.georefSuccess) {
-        this.imageService.updateGeorefStatus(GeorefStatus.PENDING);
-        this.notifService.showSuccess("Géoréférencement terminé avec succès !");
-      }
-    }, 4000);
   }
 }

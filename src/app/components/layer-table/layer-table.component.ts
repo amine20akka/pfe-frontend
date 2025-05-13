@@ -11,14 +11,19 @@ import { MatButtonModule } from '@angular/material/button';
 import { trigger, state, style, transition, animate } from '@angular/animations';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { FormsModule } from '@angular/forms';
-import { LayerDetailsComponent } from '../layer-details/layer-details.component';
-import { ImageService } from '../../services/image.service';
-import { GeorefImage } from '../../models/georef-image.model';
-import { WMSLayer } from '../../models/wms-layer.model';
 import { MatTabsModule } from '@angular/material/tabs';
 import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/confirm-dialog.component';
 import { ConfirmDialogData } from '../../shared/components/confirm-dialog/confirm-dialog-data';
 import { LayerService } from '../../services/layer.service';
+import { GeorefLayer } from '../../models/georef-layer.model';
+import { ImageApiService } from '../../services/image-api.service';
+import { GeorefImageDto } from '../../dto/georef-image-dto';
+import { LayerDetailsComponent } from '../layer-details/layer-details.component';
+import { ImageService } from '../../services/image.service';
+import { GcpService } from '../../services/gcp.service';
+import { GcpDto } from '../../dto/gcp-dto';
+import { switchMap, tap, catchError, EMPTY } from 'rxjs';
+import { GeorefApiService } from '../../services/georef-api.service';
 
 @Component({
   selector: 'app-layer-table',
@@ -46,26 +51,29 @@ import { LayerService } from '../../services/layer.service';
 })
 export class LayerTableComponent implements OnInit {
 
-  georefImage!: GeorefImage;
-  wmsLayers: WMSLayer[] = [];
+  georeflayers: GeorefLayer[] = [];
   isVisible = false;
 
   constructor(
     private mapService: MapService,
     private imageService: ImageService,
+    private gcpService: GcpService,
     private georefService: GeorefService,
+    private georefApiService: GeorefApiService,
     private layerService: LayerService,
+    private imageApiService: ImageApiService,
     private dialog: MatDialog,
   ) { }
 
   ngOnInit(): void {
-    this.imageService.georefImage$.subscribe((georefImage) => {
-      if (georefImage.wmsLayer?.layerName) {
-        this.georefImage = georefImage;
+    this.georefApiService.getAllGeorefLayers().subscribe({
+      next: (georefLayers: GeorefLayer[]) => {
+        this.layerService.createWMSLayersAndAddToList(georefLayers).subscribe();
       }
-    });
+    })
+
     this.layerService.georefLayers$.subscribe((georeflayers) => {
-      this.wmsLayers = georeflayers;
+      this.georeflayers = georeflayers;
     })
   }
 
@@ -73,41 +81,50 @@ export class LayerTableComponent implements OnInit {
     return this.georefService.isTableActive;
   }
 
+  get isReGeoref() : boolean {
+    return this.georefService.isReGeoref;
+  }
+
   toggleContent(): void {
     this.isVisible = !this.isVisible;
   }
 
-  toggleLayerVisibility(wmsLayer: WMSLayer): void {
-    this.mapService.toggleLayerVisibility(wmsLayer.layer);
+  toggleLayerVisibility(georeflayer: GeorefLayer): void {
+    this.mapService.toggleLayerVisibility(georeflayer.layer!);
   }
 
-  zoomToLayer(wmsLayer: WMSLayer): void {
-    const extent = wmsLayer.layer.getExtent();
+  zoomToLayer(georeflayer: GeorefLayer): void {
+    const extent = georeflayer.layer!.getExtent();
     if (extent) {
       this.mapService.getMap()!.getView().fit(extent, { duration: 1000, padding: [50, 50, 50, 50] });
     }
   }
 
-  showLayerDetails(): void {
-    // Ouvrir la boîte de dialogue avec les données
-    this.dialog.open(LayerDetailsComponent, {
-      data: { geoImage: this.georefImage },
-      panelClass: 'custom-dialog',
-      autoFocus: false
+  showLayerDetails(imageId: string): void {
+    this.imageApiService.getGeorefImageById(imageId).subscribe({
+      next: (georefImageDto: GeorefImageDto) => {
+        if (georefImageDto.id) {
+          this.dialog.open(LayerDetailsComponent, {
+            data: { geoImage: georefImageDto },
+            panelClass: 'custom-dialog',
+            autoFocus: false
+          });
+        }
+      }
     });
   }
 
-  updateOpacity(wmslayer: WMSLayer): void {
-    if (wmslayer.layer) {
-      wmslayer.layer.setOpacity(wmslayer.opacity);
+  updateOpacity(georeflayer: GeorefLayer): void {
+    if (georeflayer.layer) {
+      georeflayer.layer.setOpacity(georeflayer.opacity!);
     }
   }
 
-  removeLayer(layer: WMSLayer): void {
-    this.mapService.deleteGeorefLayerFromMap(layer);
+  removeGeorefLayerAndImage(georeflayer: GeorefLayer): void {
+    this.mapService.removeGeorefLayerAndImageFromMap(georeflayer);
   }
 
-  openDeleteConfirmDialog(layer: WMSLayer): void {
+  openDeleteConfirmDialog(georefLayer: GeorefLayer): void {
     const dialogData: ConfirmDialogData = {
       title: 'Êtes-vous sûr de supprimer définitivement cette image géoréférencée ?',
       confirmText: 'Supprimer',
@@ -122,12 +139,48 @@ export class LayerTableComponent implements OnInit {
 
     dialogRef.afterClosed().subscribe(result => {
       if (result) {
-        console.log('Action confirmée');
-        this.removeLayer(layer);
-      } else {
-        console.log('Action annulée');
+        this.removeGeorefLayerAndImage(georefLayer);
       }
     });
   }
 
+  openReGeorefImageDialog(georefLayer: GeorefLayer): void {
+    const dialogData: ConfirmDialogData = {
+      title: 'Êtes-vous sûr de refaire le géoréférencement de cette image ?',
+      confirmText: 'Refaire',
+      cancelText: 'Annuler',
+      icon: 'refresh'
+    };
+
+    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+      width: '350px',
+      data: dialogData
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        this.ReGeorefImage(georefLayer);
+      }
+    });
+  }
+
+  ReGeorefImage(georefLayer: GeorefLayer): void {
+    this.georefService.isReGeoref = true;
+    georefLayer.layer!.setVisible(false);
+    this.georefService.toggleTable();
+    this.georefService.toggleGeoref();
+
+    this.imageService.restoreImage(georefLayer.imageId).pipe(
+      switchMap(() => this.gcpService.getGcpsByImageId(georefLayer.imageId)),
+      tap((gcpDtos: GcpDto[]) => {
+        setTimeout(() => {
+          this.gcpService.restoreGcpLayers(gcpDtos);
+        }, 500);
+      }),
+      catchError((err) => {
+        console.error('Erreur lors de la restauration ou de l\'ajout des GCPs', err);
+        return EMPTY;
+      })
+    ).subscribe();
+  }
 }

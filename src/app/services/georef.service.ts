@@ -1,13 +1,13 @@
 import { Injectable } from '@angular/core';
 import { MapService } from './map.service';
-import { ImageService } from './image.service';
-import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
 import { DrawService } from './draw.service';
 import { LayerService } from './layer.service';
-import { GeorefStatus } from '../enums/georef-status';
-import { GeorefRequest } from '../dto/georef-request';
-
+import { GeorefLayer } from '../models/georef-layer.model';
+import { GeorefResponse } from '../dto/georef-response';
+import { ImageService } from './image.service';
+import { GeoserverService } from './geoserver.service';
+import { GcpService } from './gcp.service';
+import TileLayer from 'ol/layer/Tile';
 @Injectable({
   providedIn: 'root'
 })
@@ -17,11 +17,15 @@ export class GeorefService {
     private mapService: MapService,
     private imageService: ImageService,
     private layerService: LayerService,
-    private drawService: DrawService,
-    private http: HttpClient
+    private geoserverService: GeoserverService,
+    private gcpService: GcpService,
+    private drawService: DrawService
   ) {
     const saved = localStorage.getItem('isGeorefActive');
     this.isGeorefActive = saved ? JSON.parse(saved) : false;
+
+    const isTableActiveSaved = localStorage.getItem('isTableActive');
+    this.isTableActive = isTableActiveSaved ? JSON.parse(isTableActiveSaved) : false;
 
     if (this.isGeorefActive) {
       this.mapService.syncMapLayers();
@@ -29,18 +33,11 @@ export class GeorefService {
         this.layerService.syncImageLayers();
       }, 500);
     }
-
-    this.imageService.georefImage$.subscribe((georefImage) => {
-      if (georefImage.status === GeorefStatus.PROCESSING) this.isProcessing = true;
-      if (georefImage.status === GeorefStatus.COMPLETED) this.isProcessing = false;
-      if (georefImage.status === GeorefStatus.FAILED) this.isProcessing = false;
-    })
   }
-
-  private gdalApiUrl = 'http://localhost:5000';
 
   isGeorefActive = false;
   isTableActive = false;
+  isReGeoref = false;
   isDrawToolsActive = false;
   isProcessing = false;
   panelWidth = 47; // Largeur par défaut
@@ -68,11 +65,12 @@ export class GeorefService {
       this.toggleDrawTools();
     }
     this.isTableActive = !this.isTableActive;
+    localStorage.setItem('isTableActive', JSON.stringify(this.isTableActive));
   }
 
   toggleDrawTools() {
     this.isDrawToolsActive = !this.isDrawToolsActive;
-    
+
     if (this.isDrawToolsActive && this.isGeorefActive) {
       this.toggleGeoref();
     }
@@ -90,20 +88,20 @@ export class GeorefService {
     this.panelWidth = newWidth;
   }
 
-  georeferenceImage(requestData: GeorefRequest): Observable<string> {
-    const formData = new FormData();
+  finishGeoref(georefResponse: GeorefResponse): void {
+    this.gcpService.clearLayerAndDataMaps();
 
-    // Ajoutez le fichier image s'il est disponible
-    if (requestData.imageFile) {
-      formData.append('image', requestData.imageFile);
-    }
+    const newGeorefLayer: GeorefLayer = georefResponse.georefLayer;
 
-    // Convertissez les données JSON en chaîne pour FormData
-    formData.append('settings', JSON.stringify(requestData.settings));
-    formData.append('gcps', JSON.stringify(requestData.gcps));
+    this.geoserverService.createWMSLayer(newGeorefLayer.layerName, newGeorefLayer.wmsUrl, newGeorefLayer.workspace)
+      .subscribe((layer: TileLayer) => {
+        newGeorefLayer.layer = layer;
+        newGeorefLayer.opacity = 1;
 
-    this.imageService.updateGeorefStatus(GeorefStatus.PROCESSING);
+        this.layerService.addGeorefLayertoList(newGeorefLayer);
+        this.imageService.clearImage();
+        this.isProcessing = false;
+      });
 
-    return this.http.post(`${this.gdalApiUrl}/georef`, formData, { responseType: 'text' });
   }
 }

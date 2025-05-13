@@ -1,6 +1,6 @@
 <div class="layer-table-container" [@slideInOut]="isTableActive ? 'visible' : 'hidden'">
     <h3 mat-dialog-title class="table-title">Table des matières</h3>
-    
+
     <mat-tab-group>
         <mat-tab label="Personnel">
             <mat-list class="layer-list">
@@ -11,35 +11,41 @@
                     <span> Images Géoréférencées : </span>
                 </div>
                 @if (isVisible) {
-                <mat-list-item *ngFor="let wmsLayer of wmsLayers">
+                <mat-list-item *ngFor="let georeflayer of georeflayers">
                     <div class="layer-item">
                         <div class="layer-name-actions">
-                            <mat-checkbox [checked]="wmsLayer.layer.getVisible()"
-                                (change)="toggleLayerVisibility(wmsLayer)">
+                            <mat-checkbox [checked]="georeflayer.layer!.getVisible()"
+                                (change)="toggleLayerVisibility(georeflayer)">
                             </mat-checkbox>
-                            <span class="layer-name">{{ wmsLayer.layerName }}</span>
+                            <span class="layer-name">{{ georeflayer.layerName }}</span>
 
                             <div class="layer-actions">
-                                <!-- 🔍 Zoom sur la couche -->
-                                <button mat-icon-button (click)="zoomToLayer(wmsLayer)" matTooltip="Zoom sur la couche">
+
+                                <button mat-icon-button (click)="zoomToLayer(georeflayer)"
+                                    matTooltip="Zoom sur la couche">
                                     <mat-icon>aspect_ratio</mat-icon>
                                 </button>
 
-                                <!-- ℹ️ Détails -->
-                                <button mat-icon-button (click)="showLayerDetails()" matTooltip="Détails de la couche">
+                                <button mat-icon-button (click)="showLayerDetails(georeflayer.imageId)"
+                                    matTooltip="Détails de la couche">
                                     <mat-icon>info</mat-icon>
                                 </button>
 
-                                <!-- ❌ Supprimer la couche -->
-                                <button mat-icon-button (click)="openDeleteConfirmDialog(wmsLayer)" matTooltip="Supprimer">
+                                <button mat-icon-button (click)="openReGeorefImageDialog(georeflayer)" [disabled]="isReGeoref"
+                                    matTooltip="Re-géoréférencer">
+                                    <mat-icon color="primary">refresh</mat-icon>
+                                </button>
+
+                                <button mat-icon-button (click)="openDeleteConfirmDialog(georeflayer)" [disabled]="isReGeoref"
+                                    matTooltip="Supprimer">
                                     <mat-icon color="warn">delete</mat-icon>
                                 </button>
                             </div>
 
                         </div>
-                        <!-- Slider d'opacité -->
                         <mat-slider class="opacity-slider" min="0" max="1" step="0.1" [discrete]="true">
-                            <input matSliderThumb [(ngModel)]="wmsLayer.opacity" (input)="updateOpacity(wmsLayer)">
+                            <input matSliderThumb [(ngModel)]="georeflayer.opacity"
+                                (input)="updateOpacity(georeflayer)">
                         </mat-slider>
                     </div>
                 </mat-list-item>

@@ -11,19 +11,20 @@ import { getCenter } from 'ol/extent';
 import { defaults as defaultControls } from 'ol/control';
 import { defaults as defaultInteractions } from 'ol/interaction';
 import VectorSource from 'ol/source/Vector';
-import { BehaviorSubject, Observable } from 'rxjs';
+import { BehaviorSubject, forkJoin, map, Observable, tap } from 'rxjs';
 import Static from 'ol/source/ImageStatic';
 import Feature from 'ol/Feature';
 import View from 'ol/View';
 import { Point } from 'ol/geom';
 import { Projection } from 'ol/proj';
 import Text from 'ol/style/Text';
-import { WMSLayer } from '../models/wms-layer.model';
 import TileLayer from 'ol/layer/Tile';
 import BaseLayer from 'ol/layer/Base';
 import { GCP } from '../models/gcp.model';
 import MapBrowserEvent from 'ol/MapBrowserEvent';
 import { ImageFileService } from './image-file.service';
+import { GeorefLayer } from '../models/georef-layer.model';
+import { GeoserverService } from './geoserver.service';
 
 @Injectable({
   providedIn: 'root'
@@ -47,11 +48,12 @@ export class LayerService {
   mapLayers$ = this.mapLayersSubject;
 
   // Georef Layers
-  private georefLayersSubject = new BehaviorSubject<WMSLayer[]>([]);
+  private georefLayersSubject = new BehaviorSubject<GeorefLayer[]>([]);
   georefLayers$ = this.georefLayersSubject.asObservable();
 
   constructor(
     private imageFileService: ImageFileService,
+    private geoserverService: GeoserverService,
   ) {
     this.initGcpStyles();
   }
@@ -332,9 +334,7 @@ export class LayerService {
   }
 
   addLayerToMap(map: OLMap, newlayer: BaseLayer): void {
-    if (!map.getLayers().getArray().includes(newlayer)) {
-      map.addLayer(newlayer);
-    }
+    map.addLayer(newlayer);
   }
 
   removeLayerFromMap(map: OLMap, removedLayer: BaseLayer): void {
@@ -437,7 +437,7 @@ export class LayerService {
 
   // Georef Layer Operations
 
-  addGeorefLayertoList(georefLayer: WMSLayer): void {
+  addGeorefLayertoList(georefLayer: GeorefLayer): void {
     const currentGeorefLayers = this.georefLayersSubject.getValue();
     const isLayerPresent = currentGeorefLayers.some(layer => layer === georefLayer);
 
@@ -447,7 +447,44 @@ export class LayerService {
     }
   }
 
-  deleteGeorefLayerFromMap(georefLayer: WMSLayer): void {
+  addGeorefLayersToList(newGeorefLayers: GeorefLayer[]): void {
+    const currentGeorefLayers = this.georefLayersSubject.getValue();
+
+    if (newGeorefLayers.length > 0) {
+      const updatedGeorefLayers = [...currentGeorefLayers, ...newGeorefLayers];
+      this.georefLayersSubject.next(updatedGeorefLayers);
+    }
+  }
+
+  createWMSLayersAndAddToList(georefLayers: GeorefLayer[]): Observable<void> {
+    const layerCreationObservables: Observable<GeorefLayer>[] = [];
+
+    georefLayers.forEach(georefLayer => {
+      const layerCreation = this.geoserverService.createWMSLayer(
+        georefLayer.layerName,
+        georefLayer.wmsUrl,
+        georefLayer.workspace
+      ).pipe(
+        map((layer: TileLayer) => {
+          georefLayer.layer = layer;
+          georefLayer.opacity = 1;
+          return georefLayer;
+        })
+      );
+      
+      layerCreationObservables.push(layerCreation);
+    });
+
+    // Utilise forkJoin pour attendre que toutes les couches soient créées
+    return forkJoin(layerCreationObservables).pipe(
+      tap((processedLayers: GeorefLayer[]) => {
+        this.addGeorefLayersToList(processedLayers);
+      }),
+      map(() => void 0)
+    );
+  }
+
+  deleteGeorefLayerFromMap(georefLayer: GeorefLayer): void {
     const currentGeorefLayers = this.georefLayersSubject.getValue();
     const updatedGeorefLayers = currentGeorefLayers.filter(layer => layer !== georefLayer);
     this.georefLayersSubject.next(updatedGeorefLayers);

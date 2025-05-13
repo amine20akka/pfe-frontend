@@ -35,7 +35,9 @@ export class MapComponent implements OnInit {
 
     this.layerService.georefLayers$.subscribe((georefLayers) => {
       georefLayers.forEach((georefLayer) => {
-        this.mapService.addLayerToMap(georefLayer.layer);
+        if (georefLayer.layer) {
+          this.mapService.addLayerToMap(georefLayer.layer);
+        }
       })
     })
 

@@ -1,8 +1,8 @@
 import { Component, Inject } from '@angular/core';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
-import { GeorefImage } from '../../models/georef-image.model';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatButtonModule } from '@angular/material/button';
+import { GeorefImageDto } from '../../dto/georef-image-dto';
 
 @Component({
   selector: 'app-layer-details',
@@ -14,11 +14,11 @@ import { MatButtonModule } from '@angular/material/button';
   styleUrl: './layer-details.component.scss'
 })
 export class LayerDetailsComponent {
-  geoImage: GeorefImage;
+  geoImage: GeorefImageDto;
   
   constructor(
     public dialogRef: MatDialogRef<LayerDetailsComponent>,
-    @Inject(MAT_DIALOG_DATA) public data: { geoImage: GeorefImage }
+    @Inject(MAT_DIALOG_DATA) public data: { geoImage: GeorefImageDto }
   ) {
     this.geoImage = data.geoImage;
   }

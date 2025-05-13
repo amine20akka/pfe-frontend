@@ -30,7 +30,7 @@ export class ImageService {
     private imageFileService: ImageFileService,
     private imageApiService: ImageApiService,
     private layerService: LayerService,
-  ) {}
+  ) { }
 
   resetImage(): void {
     this.imageApiService.deleteGeorefImageById(this.georefImageSubject.getValue().id).subscribe({
@@ -49,6 +49,15 @@ export class ImageService {
         }
       }
     })
+  }
+
+  clearImage(): void {
+    this.resetLoadingState();
+    this.imageFileService.clear();
+    this.layerService.resetImage();
+    this.imageFileService.cursorCoordinates.next({ x: 0, y: 0 });
+    this.georefImageSubject.next({} as GeorefImage);
+    localStorage.removeItem('imageId');
   }
 
   resetLoadingState(): void {
@@ -255,7 +264,7 @@ export class ImageService {
               compressionType: georefImageDto.compression,
               outputFilename: georefImageDto.outputFilename
             };
-            
+
             this.updateGeorefImage(restoredImage);
 
             return this.renderImage(restoredImageFile);

@@ -32,23 +32,42 @@ export class ImageService {
     private layerService: LayerService,
   ) { }
 
-  resetImage(): void {
-    this.imageApiService.deleteGeorefImageById(this.georefImageSubject.getValue().id).subscribe({
-      next: () => {
-        this.resetLoadingState();
-        this.imageFileService.clear();
-        this.layerService.resetImage();
-        this.imageFileService.cursorCoordinates.next({ x: 0, y: 0 });
-        this.georefImageSubject.next({} as GeorefImage);
-        this.notifService.showSuccess("Image supprimée avec succès !");
-        localStorage.removeItem('imageId');
-      },
-      error: (err) => {
-        if (err.status === 404) {
-          this.notifService.showError("Image introuvable !");
+  resetImage(isReGeoref: boolean): void {
+    if (isReGeoref) {
+      this.imageApiService.deleteGeorefImageByIdWithoutFile(this.georefImageSubject.getValue().id).subscribe({
+        next: () => {
+          this.resetLoadingState();
+          this.imageFileService.clear();
+          this.layerService.resetImage();
+          this.imageFileService.cursorCoordinates.next({ x: 0, y: 0 });
+          this.georefImageSubject.next({} as GeorefImage);
+          this.notifService.showSuccess("Image supprimée avec succès !");
+          localStorage.removeItem('imageId');
+        },
+        error: (err) => {
+          if (err.status === 404) {
+            this.notifService.showError("Image introuvable !");
+          }
         }
-      }
-    })
+      });
+    } else {
+      this.imageApiService.deleteGeorefImageById(this.georefImageSubject.getValue().id).subscribe({
+        next: () => {
+          this.resetLoadingState();
+          this.imageFileService.clear();
+          this.layerService.resetImage();
+          this.imageFileService.cursorCoordinates.next({ x: 0, y: 0 });
+          this.georefImageSubject.next({} as GeorefImage);
+          this.notifService.showSuccess("Image supprimée avec succès !");
+          localStorage.removeItem('imageId');
+        },
+        error: (err) => {
+          if (err.status === 404) {
+            this.notifService.showError("Image introuvable !");
+          }
+        }
+      })
+    }
   }
 
   clearImage(): void {

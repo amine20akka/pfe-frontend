@@ -43,6 +43,10 @@ export class ImageApiService {
     return this.http.delete<void>(`${this.apiUrl}/${imageId}`);
   }
 
+  deleteGeorefImageByIdWithoutFile(imageId: string): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/without-file/${imageId}`);
+  }
+
   getGeorefImageById(imageId: string): Observable<GeorefImageDto> {
     return this.http.get<GeorefImageDto>(`${this.apiUrl}/${imageId}`);
   }

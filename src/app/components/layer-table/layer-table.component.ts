@@ -19,10 +19,6 @@ import { GeorefLayer } from '../../models/georef-layer.model';
 import { ImageApiService } from '../../services/image-api.service';
 import { GeorefImageDto } from '../../dto/georef-image-dto';
 import { LayerDetailsComponent } from '../layer-details/layer-details.component';
-import { ImageService } from '../../services/image.service';
-import { GcpService } from '../../services/gcp.service';
-import { GcpDto } from '../../dto/gcp-dto';
-import { switchMap, tap, catchError, EMPTY } from 'rxjs';
 import { GeorefApiService } from '../../services/georef-api.service';
 
 @Component({
@@ -56,8 +52,6 @@ export class LayerTableComponent implements OnInit {
 
   constructor(
     private mapService: MapService,
-    private imageService: ImageService,
-    private gcpService: GcpService,
     private georefService: GeorefService,
     private georefApiService: GeorefApiService,
     private layerService: LayerService,
@@ -170,17 +164,8 @@ export class LayerTableComponent implements OnInit {
     this.georefService.toggleTable();
     this.georefService.toggleGeoref();
 
-    this.imageService.restoreImage(georefLayer.imageId).pipe(
-      switchMap(() => this.gcpService.getGcpsByImageId(georefLayer.imageId)),
-      tap((gcpDtos: GcpDto[]) => {
-        setTimeout(() => {
-          this.gcpService.restoreGcpLayers(gcpDtos);
-        }, 500);
-      }),
-      catchError((err) => {
-        console.error('Erreur lors de la restauration ou de l\'ajout des GCPs', err);
-        return EMPTY;
-      })
-    ).subscribe();
+    this.georefService.updateRegeorefIds(georefLayer.imageId, georefLayer);
+
+    this.georefService.prepareRegeorefImage(georefLayer.imageId).subscribe();
   }
 }

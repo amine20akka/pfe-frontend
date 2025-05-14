@@ -4,6 +4,7 @@ import { Observable } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
 import { GeorefResponse } from '../dto/georef-response';
 import { GeorefLayer } from '../models/georef-layer.model';
+import { RegeorefResponse } from '../dto/regeoref-response';
 
 @Injectable({
   providedIn: 'root'
@@ -30,5 +31,9 @@ export class GeorefApiService {
 
   getAllGeorefLayers(): Observable<GeorefLayer[]> {
     return this.http.get<GeorefLayer[]>(`${this.apiUrl}`);
+  }
+
+  prepareRegeorefImage(imageId: string): Observable<RegeorefResponse> {
+    return this.http.get<RegeorefResponse>(`${this.apiUrl}/${imageId}`);
   }
 }

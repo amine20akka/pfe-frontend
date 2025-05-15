@@ -6,7 +6,6 @@ import { Style, Stroke } from 'ol/style';
 import { MapService } from './map.service';
 import { BehaviorSubject } from 'rxjs';
 import { AdvancedDrawMode, DrawMode, DrawModes, SimpleDrawMode } from '../interfaces/draw-mode';
-import Feature from 'ol/Feature';
 import { lineArc, bearing, distance, midpoint, point } from '@turf/turf';
 import { LineString } from 'ol/geom';
 import { GeometryFunction } from 'ol/interaction/Draw';
@@ -31,7 +30,6 @@ export class DrawService {
   private drawInteraction: Draw | undefined;
   private snapInteraction: Snap | undefined;
   private source: VectorSource | undefined;
-  private previewFeature: Feature | undefined;
 
   constructor(
     private mapService: MapService,
@@ -145,34 +143,34 @@ export class DrawService {
 
   activateArcDrawing(): void {
     if (!this.mapService.getMap() || !this.source) return;
-  
+
     this.drawInteraction = new Draw({
       source: this.source,
       type: 'LineString',
       maxPoints: 3,
       geometryFunction: this.arcGeometryFunction
     });
-  
+
     this.mapService.addInteraction(this.drawInteraction);
-  
+
     this.drawInteraction.on('drawend', () => {
       this.addDrawedLayer(this.drawedLayer!);
     });
   }
-  
+
   arcGeometryFunction: GeometryFunction = (coordinates, geometry) => {
     if (coordinates.length < 2) {
       return new LineString(coordinates.flat(1) as Coordinate[]); // rien à dessiner
     }
-  
+
     const start = coordinates[0];
     const end = coordinates.length >= 2 ? coordinates[1] : coordinates[0];
     const control = coordinates.length >= 3 ? coordinates[2] : coordinates[1];
-  
+
     if (!start || !end || !control) {
       return new LineString([start as Coordinate, end as Coordinate]);
     }
-  
+
     // Calcul du centre
     const turfStart = point(start as Coordinate);
     const turfEnd = point(end as Coordinate);
@@ -182,14 +180,14 @@ export class DrawService {
     const radius = distance(turfStart, turfControl);
     const startAngle = bearing(center, start as Coordinate);
     const endAngle = bearing(center, end as Coordinate);
-  
+
     const arc = lineArc(center, radius, startAngle, endAngle, { steps: 64 });
     const arcCoords = arc.geometry.coordinates;
-  
+
     if (!geometry) geometry = new LineString([]);
     geometry.setCoordinates(arcCoords);
     return geometry;
-  };  
+  };
 
   stopDrawing(): void {
     this.updateDrawingStatus(false);

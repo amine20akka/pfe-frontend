@@ -14,10 +14,15 @@ import { GcpDto } from '../dto/gcp-dto';
 import { LayerService } from './layer.service';
 import { ImageService } from './image.service';
 import BaseLayer from 'ol/layer/Base';
+import GeoJSON from 'ol/format/GeoJSON';
+import { Fill, Circle as CircleStyle, Style, Stroke } from 'ol/style';
+import { bbox as bboxStrategy } from 'ol/loadingstrategy';
 import { ImageFileService } from './image-file.service';
 import { GeorefLayer } from '../models/georef-layer.model';
 import { GeorefApiService } from './georef-api.service';
 import { NotificationService } from './notification.service';
+import VectorSource from 'ol/source/Vector';
+import VectorLayer from 'ol/layer/Vector';
 
 @Injectable({
   providedIn: 'root'
@@ -118,8 +123,51 @@ export class MapService {
     this.mapSubject.next(this.map);
   }
 
+  addWfsLayers() {
+    const cableSource = new VectorSource({
+      format: new GeoJSON(),
+      url: (extent) =>
+        'http://localhost:8080/geoserver/drawing/ows?' +
+        'service=WFS&version=1.1.0&request=GetFeature&typename=drawing:cable&' +
+        'outputFormat=application/json&srsname=EPSG:3857&bbox=' + extent.join(',') + ',EPSG:3857',
+      strategy: bboxStrategy
+    });
+
+    const supportSource = new VectorSource({
+      format: new GeoJSON(),
+      url: (extent) =>
+        'http://localhost:8080/geoserver/drawing/ows?' +
+        'service=WFS&version=1.1.0&request=GetFeature&typename=drawing:st_support&' +
+        'outputFormat=application/json&srsname=EPSG:3857&bbox=' + extent.join(',') + ',EPSG:3857',
+      strategy: bboxStrategy
+    });
+
+    const cableLayer = new VectorLayer({
+      source: cableSource,
+      style: new Style({
+        stroke: new Stroke({
+          color: '#EA5863',
+          width: 2
+        })
+      })
+    });
+
+    const supportLayer = new VectorLayer({
+      source: supportSource,
+      style: new Style({
+        image: new CircleStyle({
+          radius: 5,
+          fill: new Fill({ color: '#03A9F4' })
+        })
+      })
+    });
+
+    this.addLayerToMap(cableLayer);
+    this.addLayerToMap(supportLayer);
+  }
+
   getMap(): OLMap | null {
-    return this.mapSubject.getValue(); // Récupération de l'état actuel
+    return this.mapSubject.getValue();
   }
 
   addLayerToMap(newlayer: BaseLayer): void {
@@ -131,7 +179,7 @@ export class MapService {
   }
 
   updateMapSelection(status: boolean): void {
-    this.isMapSelectionSubject.next(status); // Activate map selection mode
+    this.isMapSelectionSubject.next(status);
   }
 
   removeLayerFromMap(removedLayer: BaseLayer): void {

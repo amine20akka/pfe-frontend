@@ -27,6 +27,7 @@ export class MapComponent implements OnInit {
 
   ngOnInit(): void {
     this.mapService.initMap('map');
+    this.mapService.addWfsLayers();
     this.layerService.mapLayers$.subscribe(() => {
       if (this.georefService.isGeorefActive) {
         this.mapService.syncMapLayers();

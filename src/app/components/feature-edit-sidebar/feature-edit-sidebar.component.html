@@ -1,0 +1,129 @@
+<div class="feature-edit-sidebar" [class.visible]="isVisible">
+    <mat-card class="sidebar-content">
+        <mat-card-header>
+            <mat-card-title>
+                {{ layerName || "Modifier l'entité" }}
+            </mat-card-title>
+        </mat-card-header>
+
+        <mat-card-content>
+            <div *ngIf="loading" class="loading-container">
+                <mat-spinner diameter="40"></mat-spinner>
+                <p>Chargement en cours...</p>
+            </div>
+
+            <div *ngIf="!loading && feature">
+                <!-- Formulaire des attributs -->
+                <div class="attributes-section">
+                    <form [formGroup]="attributesForm" class="attributes-form">
+                        <ng-container *ngFor="let field of formFields">
+                            <!-- Champ texte -->
+                            <mat-form-field *ngIf="field.type === 'text'" appearance="outline" class="form-field">
+                                <mat-label>{{ field.label }}</mat-label>
+                                <input matInput [formControlName]="field.name" type="text">
+                                <mat-error *ngIf="attributesForm.get(field.name)?.invalid">
+                                    Veuillez entrer une valeur valide
+                                </mat-error>
+                            </mat-form-field>
+
+                            <!-- Champ nombre -->
+                            <mat-form-field *ngIf="field.type === 'number'" appearance="outline" class="form-field">
+                                <mat-label>{{ field.label }}</mat-label>
+                                <input matInput [formControlName]="field.name" type="number" step="any">
+                                <mat-error *ngIf="attributesForm.get(field.name)?.invalid">
+                                    Veuillez entrer un nombre valide
+                                </mat-error>
+                            </mat-form-field>
+
+                            <!-- Champ booléen -->
+                            <div *ngIf="field.type === 'boolean'" class="boolean-field form-field">
+                                <mat-slide-toggle [formControlName]="field.name"></mat-slide-toggle>
+                                <mat-label>{{ field.label }}</mat-label>
+                            </div>
+
+                            <!-- Champ date (seulement la date) -->
+                            <mat-form-field *ngIf="field.type === 'date'" appearance="outline" class="form-field">
+                                <mat-label>{{ field.label }}</mat-label>
+                                <input matInput [matDatepicker]="picker" [formControlName]="field.name">
+                                <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
+                                <mat-datepicker #picker></mat-datepicker>
+                                <mat-error *ngIf="attributesForm.get(field.name)?.invalid">
+                                    Veuillez entrer une date valide
+                                </mat-error>
+                            </mat-form-field>
+
+                            <!-- Champ datetime-local (date + heure) -->
+                            <mat-form-field *ngIf="field.type === 'datetime-local'" appearance="outline"
+                                class="form-field">
+                                <mat-label>{{ field.label }}</mat-label>
+                                <input matInput [formControlName]="field.name" type="datetime-local">
+                                <mat-error *ngIf="attributesForm.get(field.name)?.invalid">
+                                    Veuillez entrer une date et heure valides
+                                </mat-error>
+                            </mat-form-field>
+
+                            <!-- Champ sélection -->
+                            <mat-form-field *ngIf="field.type === 'select'" appearance="outline" class="form-field">
+                                <mat-label>{{ field.label }}</mat-label>
+                                <mat-select [formControlName]="field.name">
+                                    <mat-option *ngFor="let option of field.options" [value]="option.value">
+                                        {{ option.label }}
+                                    </mat-option>
+                                </mat-select>
+                                <mat-error *ngIf="attributesForm.get(field.name)?.invalid">
+                                    Veuillez sélectionner une option
+                                </mat-error>
+                            </mat-form-field>
+
+                            <!-- Champ textarea pour les textes longs -->
+                            <mat-form-field *ngIf="field.type === 'textarea'" appearance="outline" class="form-field">
+                                <mat-label>{{ field.label }}</mat-label>
+                                <textarea matInput [formControlName]="field.name" rows="3"></textarea>
+                                <mat-error *ngIf="attributesForm.get(field.name)?.invalid">
+                                    Veuillez entrer une valeur valide
+                                </mat-error>
+                            </mat-form-field>
+
+                            <!-- Champ email -->
+                            <mat-form-field *ngIf="field.type === 'email'" appearance="outline" class="form-field">
+                                <mat-label>{{ field.label }}</mat-label>
+                                <input matInput [formControlName]="field.name" type="email">
+                                <mat-error *ngIf="attributesForm.get(field.name)?.invalid">
+                                    Veuillez entrer un email valide
+                                </mat-error>
+                            </mat-form-field>
+
+                            <!-- Champ URL -->
+                            <mat-form-field *ngIf="field.type === 'url'" appearance="outline" class="form-field">
+                                <mat-label>{{ field.label }}</mat-label>
+                                <input matInput [formControlName]="field.name" type="url">
+                                <mat-error *ngIf="attributesForm.get(field.name)?.invalid">
+                                    Veuillez entrer une URL valide
+                                </mat-error>
+                            </mat-form-field>
+                        </ng-container>
+                    </form>
+                </div>
+            </div>
+
+            <div *ngIf="!loading && !feature" class="no-feature">
+                <mat-icon>error_outline</mat-icon>
+                <p>Aucune entité sélectionnée</p>
+            </div>
+        </mat-card-content>
+
+        <mat-card-actions *ngIf="feature">
+            <button mat-button (click)="cancelEdit()">Annuler</button>
+            <button mat-raised-button class="restore-button" (click)="restoreGeometry()">
+                Restaurer Géométrie
+            </button>
+            <button mat-raised-button class="restore-button" (click)="restoreProperties()">
+                Restaurer Propriétés
+            </button>
+            <button mat-raised-button color="primary" (click)="saveChanges()"
+                [disabled]="attributesForm.invalid || loading">
+                Enregistrer
+            </button>
+        </mat-card-actions>
+    </mat-card>
+</div>

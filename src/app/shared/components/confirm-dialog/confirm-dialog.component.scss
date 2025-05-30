@@ -5,12 +5,12 @@
 #dialog-title {
   font-size: 16px;
   font-weight: 400;
-  margin: 10px;
+  margin: 12px;
 }
 
 .dialog-icon {
   font-size: 24px;
-  color: #d32f2f; // Rouge pour les actions critiques
+  color: #FF6A00 !important;
   margin: 12px;
 }
 
@@ -25,13 +25,13 @@
 }
 
 #cancel-button:hover {
-  background: #ebebeb !important;
+  background: #f0f0f0 !important;
 }
 
 #confirm-button {
-  color: #d32f2f !important;
+  color: #FF6A00 !important;
 }
 
 #confirm-button:hover {
-  background: #fff1f1 !important;
+  background: #ffebdd !important;
 }

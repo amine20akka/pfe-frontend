@@ -214,6 +214,26 @@ export class ToolbarComponent {
     });
   }
 
+  openGeorefConfirmDialog(): void {
+    const dialogData: ConfirmDialogData = {
+      title: 'Êtes-vous prêt de géoréférencer cette  image?',
+      confirmText: 'Géoréférencer',
+      cancelText: 'Annuler',
+      icon: 'pin_drop'
+    };
+
+    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+      width: '350px',
+      data: dialogData
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        this.georeferenceImage();
+      }
+    });
+  }
+
   georeferenceImage(): void {
     const gcpData = this.gcpService.getGCPs();
     const georefRequest: GeorefRequest = {

@@ -1,0 +1,26 @@
+<div class="dialog-container">
+  <h2 mat-dialog-title>
+    {{ layerName || "Gérer l'entité" }}
+  </h2>
+
+  <mat-dialog-content>
+    <div class="feature-properties-container">
+      <div class="feature-property" *ngFor="let key of propertyKeys; let i = index">
+        <div class="property-key">{{ key }}</div>
+        <div class="property-value" [title]="propertyValues[i]">{{ propertyValues[i] }}</div>
+      </div>
+    </div>
+  </mat-dialog-content>
+
+  <mat-dialog-actions>
+    <button mat-button mat-dialog-close id="close">
+      Annuler
+    </button>
+    <button mat-raised-button class="actions" [mat-dialog-close]="'edit'">
+      <mat-icon>edit</mat-icon> Modifier
+    </button>
+    <button mat-raised-button class="actions" [mat-dialog-close]="'delete'">
+      <mat-icon>delete</mat-icon> Supprimer
+    </button>
+  </mat-dialog-actions>
+</div>

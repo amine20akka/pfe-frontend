@@ -21,6 +21,7 @@ button {
   height: 37px;
 }
 
+
 .sidenav {
   border-radius: 0;
   position: absolute;
@@ -36,7 +37,6 @@ button {
   align-items: center;
   padding-top: 20px;
   z-index: 10;
-  /* S'assurer qu'il est au-dessus de la carte */
 }
 
 .sidebar-content {
@@ -44,6 +44,10 @@ button {
   flex-direction: column;
   align-items: center;
   gap: 20px;
+  
+  button:disabled {
+    color: #c2c2c2 !important;
+  }
 }
 
 .orange-logo {

@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { MatSidenavModule } from '@angular/material/sidenav';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
@@ -8,6 +8,7 @@ import { GeorefService } from '../../services/georef.service';
 import { MatDialog } from '@angular/material/dialog';
 import { LayerTableComponent } from "../layer-table/layer-table.component";
 import { DrawPanelComponent } from "../draw-panel/draw-panel.component";
+import { MapService } from '../../services/map.service';
 
 @Component({
   selector: 'app-sidenav',
@@ -23,12 +24,21 @@ import { DrawPanelComponent } from "../draw-panel/draw-panel.component";
   templateUrl: './sidenav.component.html',
   styleUrl: './sidenav.component.scss'
 })
-export class SidenavComponent {
+export class SidenavComponent implements OnInit {
+
+  isModifying = false;
 
   constructor(
     private georefService: GeorefService,
+    private mapService: MapService,
     public dialog: MatDialog,
   ) { }
+  
+  ngOnInit(): void {
+    this.mapService.sidebarVisible$.subscribe((visible: boolean) => {
+      this.isModifying = visible;
+    });
+  }
 
   get isGeorefActive(): boolean {
     return this.georefService.isGeorefActive;
@@ -38,19 +48,11 @@ export class SidenavComponent {
     return this.georefService.isTableActive;
   }
 
-  get isDrawToolsActive(): boolean {
-    return this.georefService.isDrawToolsActive;
-  }
-
   toggleGeoref(): void {
     this.georefService.toggleGeoref();
   }
 
   toggleTable(): void {
     this.georefService.toggleTable()
-  }
-
-  toggleDrawTools(): void {
-    this.georefService.toggleDrawTools();
   }
 }

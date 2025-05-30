@@ -16,6 +16,7 @@ import { NotificationService } from './notification.service';
 import { GeorefApiService } from './georef-api.service';
 import { GeorefRequest } from '../dto/georef-request';
 import { LayerStatus } from '../enums/layer-status';
+import { MockLayer } from '../interfaces/mock-layer';
 @Injectable({
   providedIn: 'root'
 })
@@ -54,13 +55,13 @@ export class GeorefService {
   isGeorefActive = false;
   isTableActive = false;
   isReGeoref = false;
-  isDrawToolsActive = false;
+  isDrawPanelActive = false;
   isProcessing = false;
   panelWidth = 47; // Largeur par défaut
 
   toggleGeoref() {
-    if (this.isDrawToolsActive && !this.isGeorefActive) {
-      this.toggleDrawTools();
+    if (this.isDrawPanelActive && !this.isGeorefActive) {
+      this.toggleDrawPanel(null);
     }
 
     this.isGeorefActive = !this.isGeorefActive;
@@ -77,26 +78,29 @@ export class GeorefService {
   }
 
   toggleTable() {
-    if (this.isDrawToolsActive && !this.isTableActive) {
-      this.toggleDrawTools();
+    if (this.isDrawPanelActive && !this.isTableActive) {
+      this.toggleDrawPanel(null);
     }
     this.isTableActive = !this.isTableActive;
     localStorage.setItem('isTableActive', JSON.stringify(this.isTableActive));
   }
 
-  toggleDrawTools() {
-    this.isDrawToolsActive = !this.isDrawToolsActive;
+  toggleDrawPanel(mockLayer: MockLayer | null) {
+    this.mapService.setEditLayer(mockLayer);
+    this.isDrawPanelActive = !this.isDrawPanelActive;
 
-    if (this.isDrawToolsActive && this.isGeorefActive) {
+    if (this.isDrawPanelActive && this.isGeorefActive) {
       this.toggleGeoref();
     }
 
-    if (this.isDrawToolsActive && this.isTableActive) {
+    if (this.isDrawPanelActive && this.isTableActive) {
       this.toggleTable();
     }
 
-    if (!this.isDrawToolsActive) {
-      this.drawService.stopDrawing();
+    if (!this.isDrawPanelActive) {
+      this.mapService.dismissSelectSnackbar();
+      this.mapService.disableSelectInteraction();
+      this.drawService.clearDrawInteractions();
     }
   }
 

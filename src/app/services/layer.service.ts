@@ -25,6 +25,7 @@ import MapBrowserEvent from 'ol/MapBrowserEvent';
 import { ImageFileService } from './image-file.service';
 import { GeorefLayer } from '../models/georef-layer.model';
 import { GeoserverService } from './geoserver.service';
+import { MockLayer } from '../interfaces/mock-layer';
 
 @Injectable({
   providedIn: 'root'
@@ -50,6 +51,10 @@ export class LayerService {
   // Georef Layers
   private georefLayersSubject = new BehaviorSubject<GeorefLayer[]>([]);
   georefLayers$ = this.georefLayersSubject.asObservable();
+
+  // Mock Layers
+  private mockLayersSubject = new BehaviorSubject<MockLayer[]>([]);
+  mockLayers$ = this.mockLayersSubject.asObservable();
 
   constructor(
     private imageFileService: ImageFileService,
@@ -290,17 +295,19 @@ export class LayerService {
   syncMapLayers(map: OLMap, OSMLayer: BaseLayer): void {
     if (!map) return;
 
-    const mapLayers = map.getLayers().getArray(); // Liste des couches actuelles
-    const gcpLayersSet = new Set(this.mapLayers.values()); // Set des couches de mapLayers
+    const mapLayers = map.getLayers().getArray();
+    const gcpLayersSet = new Set(this.mapLayers.values());
     const georefLayersSet = new Set(this.georefLayersSubject.getValue().map(layer => layer.layer));
+    const mockLayersSet = new Set(this.mockLayersSubject.getValue().map(mockLayer => mockLayer.wfsLayer));
 
     // Etape 1 : Supprimer les couches qui ne sont plus dans `mapLayers`
     mapLayers.forEach((layer: BaseLayer) => {
       const isNotInGcpLayers = !gcpLayersSet.has(layer as VectorLayer<VectorSource>);
       const isNotOSMLayer = layer !== OSMLayer;
       const isNotInGeorefLayers = !georefLayersSet.has(layer as TileLayer);
+      const isNotInMockLayers = !mockLayersSet.has(layer as VectorLayer);
 
-      if (isNotInGcpLayers && isNotOSMLayer && isNotInGeorefLayers) {
+      if (isNotInGcpLayers && isNotOSMLayer && isNotInGeorefLayers && isNotInMockLayers) {
         this.removeLayerFromMap(map, layer as VectorLayer<VectorSource>);
       }
     });
@@ -467,7 +474,7 @@ export class LayerService {
       ).pipe(
         map((layer: TileLayer) => {
           georefLayer.layer = layer;
-          georefLayer.opacity = 1;
+          georefLayer.opacity = 0.5;
           return georefLayer;
         })
       );
@@ -488,6 +495,35 @@ export class LayerService {
     const currentGeorefLayers = this.georefLayersSubject.getValue();
     const updatedGeorefLayers = currentGeorefLayers.filter(layer => layer !== georefLayer);
     this.georefLayersSubject.next(updatedGeorefLayers);
+  }
+
+
+
+  // Mock Layers Operations
+  
+  addToMockLayers(mockLayer: MockLayer) {
+    const currentMockLayers = this.mockLayersSubject.getValue();
+    const isLayerPresent = currentMockLayers.some(layer => layer.layerId === mockLayer.layerId);
+
+    if (!isLayerPresent) {
+      const updatedMockLayers = [...currentMockLayers, mockLayer];
+      this.mockLayersSubject.next(updatedMockLayers);
+    }
+  }
+
+  getVectorLayers(): VectorLayer[] {
+    const vectorLayers: VectorLayer[] = [];
+    this.mockLayersSubject.getValue().forEach((mockLayer: MockLayer) => {
+      const layer = mockLayer.wfsLayer;
+      if (layer instanceof VectorLayer) {
+        vectorLayers.push(layer);
+      }
+    });
+    return vectorLayers;
+  }
+
+  getMockLayers(): MockLayer[] {
+    return this.mockLayersSubject.getValue();
   }
 }
 

@@ -1,20 +1,32 @@
-import { Component, OnInit } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, OnInit, ViewChild } from '@angular/core';
 import { MapService } from '../../services/map.service';
 import { CommonModule } from '@angular/common';
 import { DrawService } from '../../services/draw.service';
 import { LayerService } from '../../services/layer.service';
 import { GeorefService } from '../../services/georef.service';
+import { MockLayer } from '../../interfaces/mock-layer';
+import { MatIconModule } from '@angular/material/icon';
+import { debounceTime, fromEvent } from 'rxjs';
+import { MatCardModule } from '@angular/material/card';
+import { FeatureEditSidebarComponent } from '../feature-edit-sidebar/feature-edit-sidebar.component';
 
 @Component({
   selector: 'app-map',
   templateUrl: './map.component.html',
   styleUrls: ['./map.component.scss'],
-  imports: [CommonModule],
+  imports: [
+    CommonModule,
+    MatIconModule,
+    MatCardModule,
+    FeatureEditSidebarComponent,
+  ],
 })
-export class MapComponent implements OnInit {
+export class MapComponent implements OnInit, AfterViewInit {
+  @ViewChild('hoverPopup') hoverPopupElement!: ElementRef;
+  @ViewChild('hoverPopupContent') hoverPopupContentElement!: ElementRef;
+
   isMapSelection = false;
   isDrawing = false;
-  activeDrawTool: string | null = null;
   cursorX = 0;
   cursorY = 0;
 
@@ -28,6 +40,11 @@ export class MapComponent implements OnInit {
   ngOnInit(): void {
     this.mapService.initMap('map');
     this.mapService.addWfsLayers();
+    this.layerService.mockLayers$.subscribe((mockLayers: MockLayer[]) => {
+      mockLayers.forEach((mockLayer: MockLayer) => {
+        this.mapService.addLayerToMap(mockLayer.wfsLayer);
+      })
+    });
     this.layerService.mapLayers$.subscribe(() => {
       if (this.georefService.isGeorefActive) {
         this.mapService.syncMapLayers();
@@ -50,19 +67,34 @@ export class MapComponent implements OnInit {
       this.cursorX = coords.x;
       this.cursorY = coords.y;
     });
-
-    this.drawService.drawedLayers$.subscribe(drawedLayers => {
-      drawedLayers.forEach(drawedLayer => {
-        this.mapService.addLayerToMap(drawedLayer);
-      });
-    });
-
     this.drawService.isDrawing$.subscribe(isDrawing => {
       this.isDrawing = isDrawing;
     });
 
-    this.drawService.activeDrawTool$.subscribe(activeDrawTool => {
-      this.activeDrawTool = activeDrawTool;
+    this.mapService.sidebarVisible$.subscribe((visible: boolean) => {
+      if (!visible) {
+        this.mapService.deactivateDrawInteractions();
+        this.mapService.activateHoverInteraction(this.hoverPopupElement, this.hoverPopupContentElement);
+      }
+    });
+  }
+
+  ngAfterViewInit(): void {
+    fromEvent(window, 'resize')
+      .pipe(debounceTime(200))
+      .subscribe(() => {
+        if (this.mapService.getMap()) {
+          this.mapService.getMap()!.updateSize();
+        }
+      });
+
+    this.mapService.initOverlays(this.hoverPopupElement);
+    this.mapService.editLayer$.subscribe((layer) => {
+      if (layer) {
+        this.mapService.initHoverInteraction([layer.wfsLayer], this.hoverPopupElement, this.hoverPopupContentElement);
+      } else {
+        this.mapService.deactivateHoverInteraction();
+      }
     });
   }
 }

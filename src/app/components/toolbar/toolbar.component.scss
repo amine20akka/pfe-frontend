@@ -10,8 +10,10 @@
 
 #close-button {
     display: flex;
-    align-items: center; /* Center vertically */
-    margin-right: auto; /* Push other elements to the right */
+    align-items: center;
+    /* Center vertically */
+    margin-right: auto;
+    /* Push other elements to the right */
 }
 
 .toolbar-section {
@@ -20,13 +22,14 @@
 }
 
 /* Optional: Add some spacing between toolbar sections */
-.toolbar-section + .toolbar-section {
+.toolbar-section+.toolbar-section {
     margin-left: 10px;
 }
 
 #georef-button {
     overflow: hidden;
-    background: linear-gradient(45deg, #FF6A00, #ffad49); /* Dégradé proche du logo Orange */
+    background: linear-gradient(45deg, #FF6A00, #ffad49);
+    /* Dégradé proche du logo Orange */
     color: white;
     margin-left: 10px;
     margin-bottom: 3px;
@@ -39,7 +42,8 @@
 }
 
 #georef-button:hover {
-    background: linear-gradient(45deg, #ffad49, #FF6A00); /* Inversion du dégradé au hover */
+    background: linear-gradient(45deg, #ffad49, #FF6A00);
+    /* Inversion du dégradé au hover */
     box-shadow: 0px 4px 10px rgba(255, 138, 0, 0.6);
 }
 
@@ -65,8 +69,12 @@ mat-icon {
 }
 
 mat-divider {
-    height: 32px; /* Hauteur verticale */
-    width: 1px; /* Épaisseur de la ligne */
-    margin: 0 12px; /* Espacement horizontal */
-    border-radius: 4px; /* Arrondir légèrement les bords */
+    height: 32px;
+    /* Hauteur verticale */
+    width: 1px;
+    /* Épaisseur de la ligne */
+    margin: 0 12px;
+    /* Espacement horizontal */
+    border-radius: 4px;
+    /* Arrondir légèrement les bords */
 }

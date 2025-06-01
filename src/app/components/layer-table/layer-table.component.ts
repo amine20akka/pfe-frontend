@@ -20,6 +20,10 @@ import { ImageApiService } from '../../services/image-api.service';
 import { GeorefImageDto } from '../../dto/georef-image-dto';
 import { LayerDetailsComponent } from '../layer-details/layer-details.component';
 import { GeorefApiService } from '../../services/georef-api.service';
+import { MockLayer } from '../../interfaces/mock-layer';
+import { MatCardModule } from '@angular/material/card';
+import { MatExpansionModule } from '@angular/material/expansion';
+import BaseLayer from 'ol/layer/Base';
 
 @Component({
   selector: 'app-layer-table',
@@ -34,6 +38,8 @@ import { GeorefApiService } from '../../services/georef-api.service';
     MatTooltipModule,
     FormsModule,
     MatTabsModule,
+    MatCardModule,
+    MatExpansionModule,
   ],
   templateUrl: './layer-table.component.html',
   styleUrls: ['./layer-table.component.scss'],
@@ -47,8 +53,8 @@ import { GeorefApiService } from '../../services/georef-api.service';
 })
 export class LayerTableComponent implements OnInit {
 
+  mockLayers: MockLayer[] = [];
   georeflayers: GeorefLayer[] = [];
-  isVisible = false;
 
   constructor(
     private mapService: MapService,
@@ -66,8 +72,12 @@ export class LayerTableComponent implements OnInit {
       }
     })
 
-    this.layerService.georefLayers$.subscribe((georeflayers) => {
+    this.layerService.georefLayers$.subscribe((georeflayers: GeorefLayer[]) => {
       this.georeflayers = georeflayers;
+    })
+
+    this.layerService.mockLayers$.subscribe((mockLayers: MockLayer[]) => {
+      this.mockLayers = mockLayers;
     })
   }
 
@@ -75,16 +85,21 @@ export class LayerTableComponent implements OnInit {
     return this.georefService.isTableActive;
   }
 
-  get isReGeoref() : boolean {
+  get isReGeoref(): boolean {
     return this.georefService.isReGeoref;
   }
 
-  toggleContent(): void {
-    this.isVisible = !this.isVisible;
+  get isDrawPanelActive(): boolean {
+    return this.georefService.isDrawPanelActive;
   }
 
-  toggleLayerVisibility(georeflayer: GeorefLayer): void {
-    this.mapService.toggleLayerVisibility(georeflayer.layer!);
+  toggleDrawPanel(mockLayer: MockLayer): void {
+    this.georefService.toggleDrawPanel(mockLayer);
+    this.mapService.activateDrawSnackbar();
+  }
+
+  toggleLayerVisibility(layer: BaseLayer): void {
+    this.mapService.toggleLayerVisibility(layer!);
   }
 
   zoomToLayer(georeflayer: GeorefLayer): void {
@@ -108,9 +123,15 @@ export class LayerTableComponent implements OnInit {
     });
   }
 
-  updateOpacity(georeflayer: GeorefLayer): void {
+  updateGeorefLayerOpacity(georeflayer: GeorefLayer): void {
     if (georeflayer.layer) {
       georeflayer.layer.setOpacity(georeflayer.opacity!);
+    }
+  }
+
+  updateMockLayerOpacity(mockLayer: MockLayer): void {
+    if (mockLayer.wfsLayer) {
+      mockLayer.wfsLayer.setOpacity(mockLayer.opacity!);
     }
   }
 

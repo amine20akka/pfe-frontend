@@ -9,8 +9,9 @@ import { GeorefService } from '../../services/georef.service';
 import { PanelPosition } from '../../interfaces/panel-position';
 import { DrawService } from '../../services/draw.service';
 import { DrawMode, DrawModes } from '../../interfaces/draw-mode';
+import { EntityMode, EntityModes } from '../../enums/entity-modes';
+import { MapService } from '../../services/map.service';
 
-// Type pour les coins d'ancrage
 type AnchorPosition = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
 
 @Component({
@@ -21,7 +22,7 @@ type AnchorPosition = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
     MatButtonModule,
     MatIconModule,
     MatTooltipModule,
-    CommonModule
+    CommonModule,
   ],
   templateUrl: './draw-panel.component.html',
   styleUrl: './draw-panel.component.scss'
@@ -30,33 +31,42 @@ export class DrawPanelComponent implements OnInit {
 
   constructor(
     private georefService: GeorefService,
-    private drawService: DrawService
+    private drawService: DrawService,
+    private mapService: MapService,
   ) { }
-  
+
   activeDrawTool: DrawMode | null = null;
+  activeEntityMode: EntityMode | null = null;
   DrawModes = DrawModes;
+  EntityModes = EntityModes;
   panelPosition: PanelPosition = { top: 10, left: 70 };
-  currentAnchor: AnchorPosition = 'top-left'; // Par défaut
+  currentAnchor: AnchorPosition = 'top-right';
+  isModifying = false;
 
   ngOnInit() {
-    // Récupérer uniquement l'ancrage sauvegardé
     const savedAnchor = localStorage.getItem('drawingToolsPanelAnchor');
 
     if (savedAnchor) {
       this.currentAnchor = savedAnchor as AnchorPosition;
       this.updatePositionFromAnchor();
     } else {
-      // Si pas d'ancrage sauvegardé, définir l'ancrage par défaut
       this.anchorToCorner('top-left');
     }
 
     this.drawService.activeDrawTool$.subscribe((tool) => {
       this.activeDrawTool = tool;
+      if (tool == null) {
+        this.activeEntityMode = null;
+      }
+    });
+
+    this.mapService.sidebarVisible$.subscribe((visible: boolean) => {
+      this.isModifying = visible;
     });
   }
 
-  get isDrawToolsActive(): boolean {
-    return this.georefService.isDrawToolsActive;
+  get isDrawPanelActive(): boolean {
+    return this.georefService.isDrawPanelActive;
   }
 
   get anchoredClass(): Record<string, boolean> {
@@ -65,41 +75,58 @@ export class DrawPanelComponent implements OnInit {
     };
   }
 
-  toggleDrawTools(): void {
-    this.georefService.toggleDrawTools();
-  }
-
-  toggleDrawTool(tool: DrawMode | null): void {
-    if (tool === this.activeDrawTool || tool === null) {
-      this.drawService.clearDrawInteractions(); // Désactiver l'outil de dessin
+  toggleEntityMode(mode: EntityMode | null): void {
+    if (mode === null) {
+      this.activeEntityMode = null;
+      this.drawService.clearDrawInteractions();
+      this.mapService.dismissSelectSnackbar();
+      this.mapService.deactivateHoverInteraction();
+      this.georefService.toggleDrawPanel(null);
       return;
     }
-    this.drawService.activateDrawingTool(tool);
+
+    if (mode === this.activeEntityMode) {
+      this.activeEntityMode = null;
+      this.mapService.dismissSelectSnackbar();
+      this.mapService.disableSelectInteraction();
+      return;
+    }
+
+    this.drawService.clearDrawInteractions();
+    this.mapService.dismissDrawSnackbar();
+    this.activeDrawTool = null;
+
+    this.activeEntityMode = mode;
+
+    switch (mode) {
+      case EntityModes.ADD:
+        console.log('Mode ajout d\'entité activé');
+        break;
+      case EntityModes.SELECT:
+        this.mapService.enableSelectInteraction();
+        break;
+    }
   }
 
-  // Gérer la fin du drag pour déterminer le coin le plus proche
+  addEntity(): void {
+    console.log('Ajout d\'une nouvelle entité');
+  }
+
   onDragEnded(event: CdkDragEnd) {
-    // Obtenir les dimensions de la fenêtre
     const windowWidth = window.innerWidth;
 
-    // Récupérer les dimensions du panneau
     const panelElement = event.source.element.nativeElement;
     const panelWidth = panelElement.offsetWidth;
 
-    // Position actuelle après le drag
     const x = event.source.getFreeDragPosition().x;
 
-    // Calculer la position absolue sur l'écran en tenant compte de l'ancrage actuel
     let absoluteX = 0;
     if (this.panelPosition.left !== undefined) {
-      // Si le panneau est ancré à gauche
       absoluteX = x + this.panelPosition.left;
     } else if (this.panelPosition.right !== undefined) {
-      // Si le panneau est ancré à droite
       absoluteX = windowWidth - this.panelPosition.right - panelWidth + x;
     }
 
-    // Calculer les distances aux coins supérieurs
     const distanceToLeft = absoluteX;
     const distanceToRight = windowWidth - absoluteX - panelWidth;
 
@@ -118,18 +145,15 @@ export class DrawPanelComponent implements OnInit {
     event.source.reset();
   }
 
-  // Ancrer le panneau à un coin spécifique
   anchorToCorner(corner: AnchorPosition) {
     this.currentAnchor = corner;
     this.updatePositionFromAnchor();
     this.savePosition();
   }
 
-  // Mettre à jour la position en fonction de l'ancrage
   private updatePositionFromAnchor() {
-    const safeMargin = 10; // marge de sécurité
+    const safeMargin = 10;
 
-    // Définir les positions en fonction du coin
     switch (this.currentAnchor) {
       case 'top-left':
         this.panelPosition = {
@@ -150,7 +174,6 @@ export class DrawPanelComponent implements OnInit {
     }
   }
 
-  // Sauvegarder uniquement l'état d'ancrage
   savePosition() {
     localStorage.setItem('drawingToolsPanelAnchor', this.currentAnchor);
   }

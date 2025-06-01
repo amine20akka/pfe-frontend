@@ -28,8 +28,8 @@ export class GeoserverService {
       })
     });
 
-    layer.setZIndex(100);
-    layer.setOpacity(1);
+    layer.setZIndex(8);
+    layer.setOpacity(0.5);
 
     return from(this.fetchLayerExtent(wmsUrl, layerName, workspace)).pipe(
       map(extent => {

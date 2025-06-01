@@ -1,8 +1,14 @@
-<div id="map" class="map-container" 
-  [ngClass]="{'map-selection': isMapSelection}"
-  [ngClass]="{'drawing': isDrawing && activeDrawTool !== null}"
-  ></div>
+<div id="map" class="map-container" [ngClass]="{'map-selection': isMapSelection}" [ngClass]="{'drawing': isDrawing}">
+</div>
+
+<div #hoverPopup id="hover-popup" class="hover-popup mat-elevation-z4">
+  <mat-card>
+    <mat-card-content #hoverPopupContent></mat-card-content>
+  </mat-card>
+</div>
 
 <div class="cursor-coordinates">
   X: {{ cursorX | number:'1.4-4' }} | Y: {{ cursorY | number:'1.4-4' }}
 </div>
+
+<app-feature-edit-sidebar></app-feature-edit-sidebar>

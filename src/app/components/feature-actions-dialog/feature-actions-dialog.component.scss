@@ -1,0 +1,174 @@
+.dialog-container {
+    padding: 0;
+    overflow: hidden;
+    min-height: 320px;
+    min-width: 320px;
+  }
+  
+  .mat-dialog-title {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 16px;
+    font-weight: 500;
+    padding: 14px;
+    background-color: #ff7f23;
+    color: white;
+    margin: 0;
+    border-bottom: none;
+  }
+  
+  mat-dialog-content {
+    display: flex;
+    justify-content: center;
+    padding: 2px 2px;
+    max-height: 212px;
+    overflow-y: auto;
+  
+    &::-webkit-scrollbar {
+      width: 4px;
+    }
+  
+    &::-webkit-scrollbar-track {
+      background: #f8f8f8;
+    }
+  
+    &::-webkit-scrollbar-thumb {
+      background: #ff6900;
+      border-radius: 2px;
+    }
+  }
+  
+  .feature-properties-container {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1px;
+    width: 80%;
+  }
+  
+  .feature-property {
+    display: grid;
+    grid-template-columns: minmax(80px, 20%) 1fr;
+    gap: 4px;
+    padding: 8px 4px;
+    border-radius: 6px;
+    transition: background-color 0.2s ease;
+    border: 1px solid transparent;
+  
+    &:hover {
+      background-color: #fff8f5;
+      border-color: #ffe0cc;
+    }
+  }
+  
+  .property-key {
+    font-size: 12px;
+    font-weight: 600;
+    color: #ff6900;
+    align-self: center;
+  }
+  
+  .property-value {
+    font-size: 12px;
+    color: #333;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    align-self: center;
+    background: #f8f8f8;
+    padding: 4px;
+    border-radius: 4px;
+  }
+  
+  mat-dialog-actions {
+    justify-content: center;
+    padding: 12px 8px;
+    margin: 0;
+    border-top: 1px solid #f0f0f0;
+    background: #fafafa;
+    gap: 2px;
+  
+    button {
+      height: 34px;
+      padding: 0;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 400;
+      text-transform: none;
+      transition: all 0.2s ease;
+  
+      &.mat-mdc-button {
+        color: #666;
+        border: 1px solid #e0e0e0;
+        background: white;
+        min-width: 60px;
+  
+        &#close {
+          &:hover {
+            background: #f5f5f5;
+            border-color: #ccc;
+          }
+        }
+      }
+  
+      &.mat-mdc-raised-button {
+        box-shadow: none;
+        flex: 1;
+        max-width: 100px;
+  
+        &.actions {
+          background: #fff3e6;
+          color: #ff6900;
+          border: 1px solid #ffe0cc;
+  
+          &:hover {
+            background: #ffebdb;
+            border-color: #ffcc99;
+          }
+  
+          mat-icon {
+            font-size: 14px;
+            height: 14px;
+            width: 14px;
+            margin-right: 4px;
+          }
+        }
+      }
+    }
+  }
+  
+  // Responsive pour les petits écrans
+  @media (max-width: 480px) {
+    .dialog-container {
+      min-width: 300px;
+      max-width: 90vw;
+    }
+  
+    mat-dialog-content {
+      padding: 12px 16px;
+      max-height: 250px;
+    }
+  
+    .feature-property {
+      grid-template-columns: 1fr;
+      gap: 4px;
+    }
+  
+    .property-key {
+      font-size: 12px;
+    }
+  
+    .property-value {
+      font-size: 12px;
+    }
+  
+    mat-dialog-actions {
+      flex-direction: column;
+      gap: 8px;
+  
+      button {
+        width: 100%;
+        max-width: none;
+      }
+    }
+  }

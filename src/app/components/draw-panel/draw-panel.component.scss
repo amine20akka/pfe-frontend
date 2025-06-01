@@ -8,15 +8,15 @@
     transition: all 0s ease;
 
     &.anchored-top-left {
-        top: 10px !important;
-        left: 70px !important;
+        top: 20px !important;
+        left: 80px !important;
         right: auto !important;
         bottom: auto !important;
     }
 
     &.anchored-top-right {
-        top: 10px !important;
-        right: 10px !important;
+        top: 20px !important;
+        right: 20px !important;
         left: auto !important;
         bottom: auto !important;
     }
@@ -62,14 +62,33 @@
     opacity: 0.8;
 }
 
-.active-tool {
-    background-color: rgba(0, 123, 255, 0.2);
-    color: #0066cc;
-}
-
 .tools-separator {
     height: 20px;
     width: 1px;
     background-color: #ddd;
     margin: 0 4px;
+}
+
+.tool-section {
+    display: flex;
+    align-items: center;
+}
+
+.entity-tools {
+    button {
+        color: #555;
+        
+        &:hover {
+            color: #0066cc;
+        }
+    }
+
+    button:disabled {
+        color: #c2c2c2;
+    }
+
+    .active-tool {
+        background-color: rgba(0, 123, 255, 0.2);
+        color: #0066cc;
+    }
 }

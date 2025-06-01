@@ -21,6 +21,8 @@ import GeoJSON from 'ol/format/GeoJSON';
 import { FeatureUpdateRequest } from '../../dto/feature-update-request';
 import { NotificationService } from '../../services/notification.service';
 import { FeatureUpdateResult } from '../../dto/feature-update-result';
+import { LayerService } from '../../services/layer.service';
+import { labelize } from '../../mock-layers/utils';
 
 @Component({
   selector: 'app-feature-edit-sidebar',
@@ -60,7 +62,8 @@ export class FeatureEditSidebarComponent implements OnInit {
     private fb: FormBuilder,
     private drawApiService: DrawApiService,
     private mapService: MapService,
-    private notifService: NotificationService
+    private notifService: NotificationService,
+    private layerService: LayerService
   ) {
     this.attributesForm = this.fb.group({});
   }
@@ -106,7 +109,7 @@ export class FeatureEditSidebarComponent implements OnInit {
     this.formFields = [];
 
     this.layerSchema.attributes.forEach(attribute => {
-      const key = this.deLabelize(attribute.label);
+      const key = attribute.label;
       let value = properties[key] || null;
 
       const validators = [];
@@ -119,6 +122,8 @@ export class FeatureEditSidebarComponent implements OnInit {
         if (!isNaN(date.getTime())) {
           value = date.toISOString().split('T')[0]; // Format YYYY-MM-DD
         }
+      } else if (attribute.type === 'boolean') {
+        value = value === 'true' || value === true;
       }
 
       if (attribute.type === 'number') {
@@ -129,7 +134,7 @@ export class FeatureEditSidebarComponent implements OnInit {
 
       this.formFields.push({
         name: key,
-        label: attribute.label,
+        label: labelize(attribute.label),
         type: attribute.type,
         value: value
       });
@@ -138,12 +143,8 @@ export class FeatureEditSidebarComponent implements OnInit {
     this.attributesForm = this.fb.group(formConfig);
   }
 
-  private deLabelize(label: string): string {
-    return label.toLowerCase().replace(/\s+/g, '_');
-  }
-
   /**
- * Convertit une date ISO (avec timezone) vers le format datetime-local
+ * Convertit une date ISO (avec timezone) vers le format datetime-local.
  * Exemple: "2021-04-23T14:01:47Z" -> "2021-04-23T14:01"
  */
   private formatDateTimeLocal(dateValue: string | Date | null): string {
@@ -186,38 +187,6 @@ export class FeatureEditSidebarComponent implements OnInit {
     }
   }
 
-  /**
- * Convertit une valeur datetime-local vers une date ISO pour l'envoi au backend
- * Exemple: "2021-04-23T14:01" -> "2021-04-23T14:01:00Z" 
- */
-  private formatDateTimeForBackend(datetimeLocalValue: string): string {
-    if (!datetimeLocalValue) return '';
-
-    try {
-      // Ajouter les secondes si elles ne sont pas présentes
-      let isoString = datetimeLocalValue;
-      if (isoString.length === 16) { // Format YYYY-MM-DDTHH:mm
-        isoString += ':00'; // Ajouter les secondes
-      }
-
-      // Créer un objet Date à partir de la valeur locale
-      const date = new Date(isoString);
-
-      // Vérifier si la date est valide
-      if (isNaN(date.getTime())) {
-        console.warn('Date invalide pour le backend:', datetimeLocalValue);
-        return '';
-      }
-
-      // Retourner au format ISO UTC
-      return date.toISOString();
-
-    } catch (error) {
-      console.error('Erreur lors de la conversion pour le backend:', error, datetimeLocalValue);
-      return '';
-    }
-  }
-
   saveChanges(): void {
     const featureId = this.feature?.getId();
     const layerId = this.feature?.getProperties()['layerId'];
@@ -241,40 +210,25 @@ export class FeatureEditSidebarComponent implements OnInit {
     const formValues = this.attributesForm.value;
     const cleanedProperties = { ...formValues };
 
-    // CORRECTION: Formater les dates avant l'envoi au backend
-    this.formFields.forEach(field => {
-      if (field.type === 'datetime-local' && cleanedProperties[field.name]) {
-        cleanedProperties[field.name] = this.formatDateTimeForBackend(cleanedProperties[field.name]);
-      } else if (field.type === 'date' && cleanedProperties[field.name]) {
-        // Pour les champs date simples, ajouter T00:00:00Z
-        cleanedProperties[field.name] = cleanedProperties[field.name] + 'T00:00:00Z';
-      }
-    });
-
     const updateRequest: FeatureUpdateRequest = {
       geometry: geometryData,
       properties: cleanedProperties,
     };
 
-    console.log('Envoi de la requête WFS-T:', updateRequest);
-    console.log('ID du feature:', featureId);
-    console.log('ID de la couche:', layerId);
-    console.log('Valeurs du formulaire (avant formatage):', formValues);
-    console.log('Propriétés nettoyées (après formatage):', cleanedProperties);
+    console.log('Envoi de la requête de mise à jour:', updateRequest.properties);
 
     this.drawApiService.updateFeature(updateRequest, featureId, layerId).subscribe({
       next: (featureUpdateResult: FeatureUpdateResult) => {
         if (featureUpdateResult.success) {
-          console.log('Modification réussie:', featureUpdateResult);
+          this.mapService.finishEditMode();
+          this.layerService.refreshLayerSourceById(layerId);
           this.notifService.showInfo('Modifications sauvegardées avec succès');
         } else {
-          console.log('Modification échouée:', featureUpdateResult);
           this.notifService.showError('Erreur lors de la sauvegarde');
         }
       },
-      error: (error: Error) => {
-        console.error('=== ERREUR API ===', error);
-        this.notifService.showError(`Erreur de sauvegarde: ${error.message}`);
+      error: () => {
+        this.notifService.showError('Erreur lors de la sauvegarde des modifications');
       }
     });
   }
@@ -288,16 +242,30 @@ export class FeatureEditSidebarComponent implements OnInit {
   }
 
   restoreProperties(): void {
-    if (this.feature && this.originalProperties) {
-      this.layerSchema?.attributes.forEach(attribute => {
-        const key = this.deLabelize(attribute.label);
-        const originalValue = this.originalProperties[key];
+    if (this.feature && this.originalProperties && this.layerSchema) {
+      this.layerSchema.attributes.forEach(attribute => {
+        const key = attribute.label;
+        let originalValue = this.originalProperties[key];
+
+        // Appliquer le même traitement qu'à l'initialisation
+        if (attribute.type === 'datetime-local' && originalValue) {
+          originalValue = this.formatDateTimeLocal(originalValue);
+        } else if (attribute.type === 'date' && originalValue) {
+          const date = new Date(originalValue);
+          if (!isNaN(date.getTime())) {
+            originalValue = date.toISOString().split('T')[0]; // Format YYYY-MM-DD
+          } else {
+            console.warn('Date invalide lors de la restauration:', originalValue);
+          }
+        }
+
         this.attributesForm.get(key)?.setValue(originalValue);
       });
 
       this.notifService.showInfo('Propriétés restaurées');
     }
   }
+
 
   restoreAll(): void {
     this.restoreGeometry();
@@ -308,6 +276,6 @@ export class FeatureEditSidebarComponent implements OnInit {
 
   cancelEdit(): void {
     this.restoreAll();
-    this.mapService.cancelEditMode();
+    this.mapService.finishEditMode();
   }
 }

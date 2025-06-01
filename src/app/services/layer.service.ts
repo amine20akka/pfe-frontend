@@ -525,5 +525,15 @@ export class LayerService {
   getMockLayers(): MockLayer[] {
     return this.mockLayersSubject.getValue();
   }
+
+  getLayerSourceById(layerId: string): VectorSource | null {
+    const mockLayer = this.mockLayersSubject.getValue().find(mockLayer => mockLayer.layerId === layerId);
+    return mockLayer ? mockLayer.wfsLayer.getSource() as VectorSource : null;
+  }
+
+  refreshLayerSourceById(layerId: string): void {
+    const source = this.getLayerSourceById(layerId);
+    source!.refresh();
+  }
 }
 

@@ -35,7 +35,7 @@
                                 </mat-error>
                             </mat-form-field>
 
-                            <!-- Champ booléen -->
+                            <!-- Champ booléen avec initialisation -->
                             <div *ngIf="field.type === 'boolean'" class="boolean-field form-field">
                                 <mat-slide-toggle [formControlName]="field.name"></mat-slide-toggle>
                                 <mat-label>{{ field.label }}</mat-label>

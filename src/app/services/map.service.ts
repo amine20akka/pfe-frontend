@@ -37,6 +37,7 @@ import Collection from 'ol/Collection';
 import { Geometry } from 'ol/geom';
 import { LAYER_CONFIG } from '../mock-layers/style-config';
 import { GEOSERVER_CONFIG } from '../mock-layers/geoserver-wfs-config';
+import { labelize } from '../mock-layers/utils';
 
 @Injectable({
   providedIn: 'root'
@@ -475,7 +476,8 @@ export class MapService {
     // Filtrer pour ne pas afficher la géométrie
     for (const [key, value] of Object.entries(props)) {
       if (key !== 'geometry' && key !== 'layerId' && key !== 'layerName') {
-        htmlContent += `<p><strong>${key} :</strong> ${value}</p>`;
+        const labelizedKey = labelize(key);
+        htmlContent += `<p><strong>${labelizedKey} :</strong> ${value}</p>`;
       }
     }
     htmlContent += '</div>';
@@ -531,7 +533,8 @@ export class MapService {
 
   private openFeatureActionsDialog(feature: Feature): void {
     const dialogRef = this.dialog.open(FeatureActionsDialogComponent, {
-      width: '400px',
+      width: '320px',
+      height: '320px',
       data: { feature },
       panelClass: 'feature-dialog'
     });
@@ -587,9 +590,9 @@ export class MapService {
   private openSidebarEditor(feature: Feature): void {
     this.editFeatureSubject.next(feature);
     this.sidebarVisibleSubject.next(true);
-  }
+  }    
 
-  cancelEditMode(): void {
+  finishEditMode(): void {
     this.editFeatureSubject.next(null);
     this.sidebarVisibleSubject.next(false);
     this.enableSelectInteraction();

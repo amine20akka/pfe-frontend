@@ -9,6 +9,7 @@ import { MatListModule } from '@angular/material/list';
 import { DrawApiService } from '../../services/draw-api.service';
 import { LayerSchema } from '../../dto/layer-schema';
 import Feature from 'ol/Feature';
+import { labelize } from '../../mock-layers/utils';
 
 @Component({
   selector: 'app-feature-actions-dialog',
@@ -59,10 +60,10 @@ export class FeatureActionsDialogComponent implements OnInit {
     this.drawApiService.getLayerSchema(layerId).subscribe({
       next: (layerSchema: LayerSchema) => {
         if (layerSchema.attributes) {
-          this.propertyKeys = layerSchema.attributes.map(attr => attr.label)
+          const keys = layerSchema.attributes.map(attr => attr.label);
+          this.propertyKeys = keys.map(label => labelize(label));
         }
       }
     });
   }
-
 }

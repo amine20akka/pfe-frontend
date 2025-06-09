@@ -2,7 +2,7 @@
 import { Component, OnInit } from '@angular/core';
 import { FormGroup, FormBuilder, Validators, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import Feature from 'ol/Feature';
-import { LayerSchema } from '../../dto/layer-schema';
+import { LayerSchema } from '../../interfaces/layer-schema';
 import { DrawApiService } from '../../services/draw-api.service';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
@@ -58,6 +58,9 @@ export class FeatureEditSidebarComponent implements OnInit {
   layerSchema: LayerSchema | null = null;
   layerName = '';
 
+  isNewFeature = false;
+  editMode: 'edit' | 'add' = 'edit';
+
   constructor(
     private fb: FormBuilder,
     private drawApiService: DrawApiService,
@@ -76,8 +79,16 @@ export class FeatureEditSidebarComponent implements OnInit {
     this.mapService.editFeature$.subscribe((feature: Feature | null) => {
       if (feature) {
         this.feature = feature;
-        this.originalGeometry = feature.getGeometry()!.clone();
-        this.originalProperties = { ...feature.getProperties() };
+        console.log("active feature : ", feature);
+
+        this.isNewFeature = feature.getProperties()['isNew'] === true;
+        this.editMode = this.isNewFeature ? 'add' : 'edit';
+
+        if (!this.isNewFeature) {
+          this.originalGeometry = feature.getGeometry()!.clone();
+          this.originalProperties = { ...feature.getProperties() };
+        }
+
         this.loadSchemaAndInitializeForm();
       }
     });
@@ -110,19 +121,19 @@ export class FeatureEditSidebarComponent implements OnInit {
 
     this.layerSchema.attributes.forEach(attribute => {
       const key = attribute.label;
-      let value = properties[key] || null;
+      let value = Object.prototype.hasOwnProperty.call(properties, key) ? properties[key] : null;
+
+      if (attribute.label === 'date_modif' || attribute.label === 'date_creation') {
+        return;
+      }
 
       const validators = [];
 
-      if (attribute.type === 'datetime-local' && value) {
-        value = this.formatDateTimeLocal(value);
-      } else if (attribute.type === 'date' && value) {
-        // Pour les champs date simples, convertir aussi
-        const date = new Date(value);
-        if (!isNaN(date.getTime())) {
-          value = date.toISOString().split('T')[0]; // Format YYYY-MM-DD
-        }
-      } else if (attribute.type === 'boolean') {
+      if (this.isNewFeature && (value === null || value === undefined)) {
+        value = this.getDefaultValue(attribute);
+      }
+      
+      if (attribute.type === 'boolean') {
         value = value === 'true' || value === true;
       }
 
@@ -136,7 +147,8 @@ export class FeatureEditSidebarComponent implements OnInit {
         name: key,
         label: labelize(attribute.label),
         type: attribute.type,
-        value: value
+        value: value,
+        options: attribute.options || []
       });
     });
 
@@ -144,50 +156,96 @@ export class FeatureEditSidebarComponent implements OnInit {
   }
 
   /**
- * Convertit une date ISO (avec timezone) vers le format datetime-local.
- * Exemple: "2021-04-23T14:01:47Z" -> "2021-04-23T14:01"
- */
-  private formatDateTimeLocal(dateValue: string | Date | null): string {
-    if (!dateValue) return '';
+   * Obtenir la valeur par défaut selon le type d'attribut
+   */
+  private getDefaultValue(attribute: any): any {
+    if (attribute.defaultValue !== undefined) {
+      return attribute.defaultValue;
+    }
 
-    try {
-      let date: Date;
-
-      if (typeof dateValue === 'string') {
-        date = new Date(dateValue);
-      } else {
-        date = dateValue;
-      }
-
-      // Vérifier si la date est valide
-      if (isNaN(date.getTime())) {
-        console.warn('Date invalide:', dateValue);
+    switch (attribute.type) {
+      case 'boolean':
+        return false;
+      case 'number':
+        return 0;
+      case 'date':
+        return null;
+      case 'datetime-local':
+        return null;
+      default:
         return '';
-      }
-
-      // Convertir en time local et formater pour datetime-local
-      // Format requis: YYYY-MM-DDTHH:mm ou YYYY-MM-DDTHH:mm:ss
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const day = String(date.getDate()).padStart(2, '0');
-      const hours = String(date.getHours()).padStart(2, '0');
-      const minutes = String(date.getMinutes()).padStart(2, '0');
-      const seconds = String(date.getSeconds()).padStart(2, '0');
-
-      // Inclure les secondes si elles ne sont pas à 00
-      if (seconds !== '00') {
-        return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
-      }
-
-      return `${year}-${month}-${day}T${hours}:${minutes}`;
-
-    } catch (error) {
-      console.error('Erreur lors du formatage de la date:', error, dateValue);
-      return '';
     }
   }
 
+  /**
+   * Sauvegarder les modifications (nouvelles features ou existantes)
+   */
   saveChanges(): void {
+    if (this.attributesForm.invalid) {
+      this.markFormGroupTouched(this.attributesForm);
+      this.notifService.showError('Veuillez corriger les erreurs du formulaire');
+      return;
+    }
+
+    if (this.isNewFeature) {
+      this.saveNewFeature();
+    } else {
+      this.updateExistingFeature();
+    }
+  }
+
+  private saveNewFeature(): void {
+    if (!this.feature) return;
+
+    const layerId = this.feature.getProperties()['layerId'];
+    const currentGeometry = this.feature.getGeometry();
+
+    if (!currentGeometry || !layerId) {
+      this.notifService.showError('Données manquantes pour la sauvegarde');
+      return;
+    }
+
+    const format = new GeoJSON();
+    const geometryData = format.writeGeometry(currentGeometry);
+    const formValues = this.attributesForm.value;
+
+    const cleanedProperties = { ...formValues };
+
+    const createRequest: FeatureUpdateRequest = {
+      geometry: geometryData,
+      properties: cleanedProperties,
+    };
+
+    this.loading = true;
+    this.drawApiService.insertFeature(createRequest, layerId).subscribe({
+      next: (createResult: FeatureUpdateResult) => {
+        this.loading = false;
+        if (createResult.success) {
+          // Mettre à jour la feature avec l'ID retourné par le serveur
+          if (createResult.featureId) {
+            this.feature!.setId(createResult.featureId);
+          }
+
+          // Supprimer le marqueur temporaire
+          this.feature!.unset('isNew');
+          this.feature!.unset('tempId');
+
+          this.notifService.showSuccess('Entité ajoutée avec succès');
+          this.layerService.refreshLayerSourceById(layerId);
+          this.mapService.finishNewFeatureEdit(this.feature!);
+        } else {
+          this.notifService.showError('Erreur lors de l\'ajout de l\'entité');
+        }
+      },
+      error: (error: Error) => {
+        this.loading = false;
+        console.error('Erreur lors de la création:', error);
+        this.notifService.showError('Erreur lors de l\'ajout de l\'entité');
+      }
+    });
+  }
+
+  private updateExistingFeature(): void {
     const featureId = this.feature?.getId();
     const layerId = this.feature?.getProperties()['layerId'];
 
@@ -206,7 +264,6 @@ export class FeatureEditSidebarComponent implements OnInit {
 
     const format = new GeoJSON();
     const geometryData = format.writeGeometry(currentGeometry);
-
     const formValues = this.attributesForm.value;
     const cleanedProperties = { ...formValues };
 
@@ -215,50 +272,68 @@ export class FeatureEditSidebarComponent implements OnInit {
       properties: cleanedProperties,
     };
 
-    console.log('Envoi de la requête de mise à jour:', updateRequest.properties);
-
+    this.loading = true;
     this.drawApiService.updateFeature(updateRequest, featureId, layerId).subscribe({
       next: (featureUpdateResult: FeatureUpdateResult) => {
+        this.loading = false;
         if (featureUpdateResult.success) {
           this.mapService.finishEditMode();
           this.layerService.refreshLayerSourceById(layerId);
-          this.notifService.showInfo('Modifications sauvegardées avec succès');
+          this.notifService.showSuccess('Modifications sauvegardées avec succès');
         } else {
           this.notifService.showError('Erreur lors de la sauvegarde');
         }
       },
-      error: () => {
+      error: (error) => {
+        this.loading = false;
+        console.error('Erreur lors de la mise à jour:', error);
         this.notifService.showError('Erreur lors de la sauvegarde des modifications');
       }
     });
   }
 
+  /**
+   * Marquer tous les champs du formulaire comme touchés pour afficher les erreurs
+   */
+  private markFormGroupTouched(formGroup: FormGroup): void {
+    Object.keys(formGroup.controls).forEach(key => {
+      const control = formGroup.get(key);
+      control?.markAsTouched();
+
+      if (control instanceof FormGroup) {
+        this.markFormGroupTouched(control);
+      }
+    });
+  }
+
+  /**
+   * Restaurer la géométrie (seulement pour les features existantes)
+   */
   restoreGeometry(): void {
+    if (this.isNewFeature) {
+      this.notifService.showError('Impossible de restaurer la géométrie d\'une nouvelle entité');
+      return;
+    }
+
     if (this.feature && this.originalGeometry) {
       this.mapService.restoreFeatureGeometry(this.feature.getId(), this.originalGeometry);
-
       this.notifService.showInfo('Géométrie restaurée');
     }
   }
 
+  /**
+   * Restaurer les propriétés (seulement pour les features existantes)
+   */
   restoreProperties(): void {
+    if (this.isNewFeature) {
+      this.notifService.showError('Impossible de restaurer les propriétés d\'une nouvelle entité');
+      return;
+    }
+
     if (this.feature && this.originalProperties && this.layerSchema) {
       this.layerSchema.attributes.forEach(attribute => {
         const key = attribute.label;
-        let originalValue = this.originalProperties[key];
-
-        // Appliquer le même traitement qu'à l'initialisation
-        if (attribute.type === 'datetime-local' && originalValue) {
-          originalValue = this.formatDateTimeLocal(originalValue);
-        } else if (attribute.type === 'date' && originalValue) {
-          const date = new Date(originalValue);
-          if (!isNaN(date.getTime())) {
-            originalValue = date.toISOString().split('T')[0]; // Format YYYY-MM-DD
-          } else {
-            console.warn('Date invalide lors de la restauration:', originalValue);
-          }
-        }
-
+        const originalValue = this.originalProperties[key];
         this.attributesForm.get(key)?.setValue(originalValue);
       });
 
@@ -266,16 +341,52 @@ export class FeatureEditSidebarComponent implements OnInit {
     }
   }
 
-
+  /**
+   * Restaurer tout (seulement pour les features existantes)
+   */
   restoreAll(): void {
+    if (this.isNewFeature) {
+      // Pour les nouvelles features, on remet les valeurs par défaut
+      this.initializeForm();
+      this.notifService.showInfo('Formulaire réinitialisé');
+      return;
+    }
+
     this.restoreGeometry();
     this.restoreProperties();
-
     this.notifService.showInfo('Toutes les modifications sont annulées');
   }
 
+  /**
+   * Annuler l'édition
+   */
   cancelEdit(): void {
-    this.restoreAll();
-    this.mapService.finishEditMode();
+    if (this.isNewFeature) {
+      // Pour les nouvelles features, on les supprime de la carte
+      this.restoreAll();
+      this.mapService.finishNewFeatureEdit(this.feature!);
+      this.notifService.showInfo("Ajout annulé");
+    } else {
+      // Pour les features existantes, on restaure l'état original
+      this.restoreAll();
+      this.mapService.finishEditMode();
+    }
+  }
+
+  /**
+   * Obtenir le titre du sidebar selon le mode
+   */
+  getSidebarTitle(): string {
+    if (this.isNewFeature) {
+      return `Ajouter une entité - ${this.layerName}`;
+    }
+    return `Modifier l'entité - ${this.layerName}`;
+  }
+
+  /**
+   * Obtenir le texte du bouton de sauvegarde
+   */
+  getSaveButtonText(): string {
+    return this.isNewFeature ? 'Ajouter' : 'Enregistrer';
   }
 }

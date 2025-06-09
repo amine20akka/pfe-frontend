@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { ElementRef, Injectable, NgZone } from '@angular/core';
-import { BehaviorSubject, filter, switchMap } from 'rxjs';
+import { BehaviorSubject, filter, map, Observable, switchMap } from 'rxjs';
 import OLMap from 'ol/Map';
 import View from 'ol/View';
 import { defaults as defaultControls } from 'ol/control';
@@ -38,6 +38,11 @@ import { Geometry } from 'ol/geom';
 import { LAYER_CONFIG } from '../mock-layers/style-config';
 import { GEOSERVER_CONFIG } from '../mock-layers/geoserver-wfs-config';
 import { labelize } from '../mock-layers/utils';
+import { Type } from 'ol/geom/Geometry';
+import { DrawApiService } from './draw-api.service';
+import { LayerSchema } from '../interfaces/layer-schema';
+import { formatDate } from '@angular/common';
+import { EntityMode } from '../enums/entity-modes';
 
 @Injectable({
   providedIn: 'root'
@@ -55,6 +60,11 @@ export class MapService {
   private translateInteraction: Translate | null = null;
   private hoverOverlay!: Overlay;
   private sidebarVisibleSubject = new BehaviorSubject<boolean>(false);
+  private drawInteraction: Draw | null = null;
+  private activeEntityModeSubject = new BehaviorSubject<EntityMode | null >(null);
+  activeEntityMode$ = this.activeEntityModeSubject.asObservable();
+  private isDrawingSubject = new BehaviorSubject<boolean>(false);
+  isDrawing$ = this.isDrawingSubject.asObservable();
   private editLayerSubject = new BehaviorSubject<MockLayer | null>(null);
   editLayer$ = this.editLayerSubject.asObservable();
   private editFeatureSubject = new BehaviorSubject<Feature | null>(null);
@@ -71,6 +81,7 @@ export class MapService {
     private imageService: ImageService,
     private imageFileService: ImageFileService,
     private georefApiService: GeorefApiService,
+    private drawApiService: DrawApiService,
     private notifService: NotificationService,
     private ngZone: NgZone,
     private snackBar: MatSnackBar,
@@ -280,8 +291,8 @@ export class MapService {
       source: sources['batiment'],
       style: () => {
         const zoom = this.map.getView().getZoom() || 1;
-        
-        return zoom > 13 ? 
+
+        return zoom > 13 ?
           [styles['batiment']] : styles['batiment'];
       },
       opacity: 1,
@@ -289,7 +300,7 @@ export class MapService {
       minZoom: 11,
       declutter: false // Les bâtiments peuvent se chevaucher naturellement
     });
-  
+
     return {
       cableArtere: {
         layer: cableArtereLayer,
@@ -474,9 +485,13 @@ export class MapService {
     htmlContent += `<h4 class="layer-name">${props['layerName']}</h4>`;
 
     // Filtrer pour ne pas afficher la géométrie
-    for (const [key, value] of Object.entries(props)) {
-      if (key !== 'geometry' && key !== 'layerId' && key !== 'layerName') {
+    // eslint-disable-next-line prefer-const
+    for (let [key, value] of Object.entries(props)) {
+      if (key !== 'geometry' && key !== 'layerId' && key !== 'layerName' && key !== 'isNew') {
         const labelizedKey = labelize(key);
+        if (typeof value === 'string' && !isNaN(Date.parse(value))) {
+          value = formatDate(value, 'dd/MM/yyyy HH:mm', 'en-US');
+        }        
         htmlContent += `<p><strong>${labelizedKey} :</strong> ${value}</p>`;
       }
     }
@@ -531,10 +546,107 @@ export class MapService {
     this.snackBar.dismiss();
   }
 
+  enableDrawForActiveLayer(): void {
+    this.deactivateDrawInteractions();
+
+    const currentEditLayer = this.editLayerSubject.getValue();
+    this.getGeometryTypeFromLayer(currentEditLayer!.layerId).subscribe({
+      next: (geometryType: string) => {
+        if (!geometryType) {
+          this.notifService.showError('Type de géométrie non supporté pour cette couche');
+          return;
+        }
+
+        const source = currentEditLayer!.wfsLayer.getSource() as VectorSource;
+
+        this.drawInteraction = new Draw({
+          source: source,
+          type: geometryType as Type,
+          style: this.getDrawStyle()
+        });
+
+        this.map.addInteraction(this.drawInteraction);
+        this.isDrawingSubject.next(true);
+
+        // Afficher le snackbar d'instruction
+        this.snackBar.open(`Dessinez ${this.getGeometryLabel(geometryType)} sur la carte`, 'Annuler', {
+          duration: Infinity,
+        }).onAction().subscribe(() => {
+          this.cancelDrawing();
+        });
+
+        // Écouter la fin du dessin
+        this.drawInteraction.on('drawend', (event) => {
+          this.onDrawEnd(event.feature, currentEditLayer!);
+        });
+      }
+    });
+  }
+
+  cancelDrawing(): void {
+    this.deactivateDrawInteractions();
+    this.snackBar.dismiss();
+  }
+
+  private getGeometryTypeFromLayer(layerId: string): Observable<string> {
+    return this.drawApiService.getLayerSchema(layerId).pipe(
+      map((schema: LayerSchema) => schema.geometryType));
+  }
+
+  private getDrawStyle(): Style {
+    return new Style({
+      fill: new Fill({
+        color: 'rgba(255, 255, 255, 0.2)'
+      }),
+      stroke: new Stroke({
+        color: '#ff0000',
+        width: 2
+      }),
+      image: new CircleStyle({
+        radius: 7,
+        fill: new Fill({
+          color: '#ff0000'
+        })
+      })
+    });
+  }
+
+  private getGeometryLabel(geometryType: string): string {
+    switch (geometryType) {
+      case 'Point':
+        return 'un point';
+      case 'LineString':
+        return 'une ligne';
+      case 'Polygon':
+        return 'un polygone';
+      default:
+        return 'une géométrie';
+    }
+  }
+
+  private onDrawEnd(feature: Feature, currentMockLayer: MockLayer): void {
+    this.isDrawingSubject.next(false);
+    this.ngZone.run(() => {
+      this.removeInteractionFromMap(this.drawInteraction!);
+      this.snackBar.dismiss();
+
+      const preparedFeature: Feature = this.prepareFeatureForEditing(feature, currentMockLayer);
+
+      this.openSidebarEditor(preparedFeature);
+    });
+  }
+
+  private prepareFeatureForEditing(feature: Feature, mockLayer: MockLayer): Feature {
+    feature.set('layerId', mockLayer.layerId);
+    feature.set('layerName', mockLayer.name);
+    feature.set('isNew', true);
+    return feature;
+  }
+
   private openFeatureActionsDialog(feature: Feature): void {
     const dialogRef = this.dialog.open(FeatureActionsDialogComponent, {
       width: '320px',
-      height: '320px',
+      height: '270px',
       data: { feature },
       panelClass: 'feature-dialog'
     });
@@ -590,12 +702,28 @@ export class MapService {
   private openSidebarEditor(feature: Feature): void {
     this.editFeatureSubject.next(feature);
     this.sidebarVisibleSubject.next(true);
-  }    
+  }
+
+  finishNewFeatureEdit(feature: Feature): void {
+    const currentLayerSource: VectorSource<Feature<Geometry>> | null | undefined = this.editLayerSubject.getValue()?.wfsLayer.getSource();
+    currentLayerSource!.removeFeature(feature);
+    this.editFeatureSubject.next(null);
+    this.sidebarVisibleSubject.next(false);
+    this.enableDrawForActiveLayer();
+  }
 
   finishEditMode(): void {
     this.editFeatureSubject.next(null);
     this.sidebarVisibleSubject.next(false);
     this.enableSelectInteraction();
+  }
+
+  updateDrawingStatus(isDrawing: boolean): void {
+    this.isDrawingSubject.next(isDrawing);
+  }
+
+  updateActiveEntityMode(newMode: EntityMode | null): void {
+    this.activeEntityModeSubject.next(newMode); 
   }
 
   private confirmDelete(feature: Feature): void {

@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
-import { LayerSchema } from '../dto/layer-schema';
+import { LayerSchema } from '../interfaces/layer-schema';
 import { FeatureUpdateRequest } from '../dto/feature-update-request';
 import { FeatureUpdateResult } from '../dto/feature-update-result';
 
@@ -26,7 +26,7 @@ export class DrawApiService {
     return this.http.delete<boolean>(`${this.apiUrl}/${layerId}/${featureId}/delete`);
   }
 
-  insertFeature(insertRequest: FeatureUpdateRequest, layerId: string): Observable<boolean> {
-    return this.http.post<boolean>(`${this.apiUrl}/${layerId}/insert`, insertRequest);
+  insertFeature(insertRequest: FeatureUpdateRequest, layerId: string): Observable<FeatureUpdateResult> {
+    return this.http.post<FeatureUpdateResult>(`${this.apiUrl}/${layerId}/insert`, insertRequest);
   }
 }

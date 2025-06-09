@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { CommonModule } from '@angular/common';
+import { CommonModule, formatDate } from '@angular/common';
 import { Component, Inject, OnInit } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
@@ -7,7 +7,7 @@ import { MatDividerModule } from '@angular/material/divider';
 import { MatIconModule } from '@angular/material/icon';
 import { MatListModule } from '@angular/material/list';
 import { DrawApiService } from '../../services/draw-api.service';
-import { LayerSchema } from '../../dto/layer-schema';
+import { LayerSchema } from '../../interfaces/layer-schema';
 import Feature from 'ol/Feature';
 import { labelize } from '../../mock-layers/utils';
 
@@ -45,11 +45,16 @@ export class FeatureActionsDialogComponent implements OnInit {
   private initializeProperties(): void {
     const props = this.feature.getProperties();
     this.layerName = props['layerName'] || null;
-    
+  
     this.propertyValues = Object.entries(props)
       .filter(([key]) => key !== 'geometry' && key !== 'layerId' && key !== 'layerName')
-      .map(([, value]) => value);
-    
+      .map(([, value]) => {
+        if (typeof value === 'string' && !isNaN(Date.parse(value))) {
+          return formatDate(value, 'dd/MM/yyyy HH:mm', 'en-US');
+        }        
+        return value;
+      });
+  
     const layerId = props['layerId'];
     if (layerId) {
       this.setPropertyKeys(layerId);

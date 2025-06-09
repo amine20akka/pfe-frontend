@@ -19,18 +19,3 @@ html, body {
 }
 
 body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
-
-.error-snackbar {
-  background-color: #d32f2f; // Rouge pour les erreurs
-  color: white;
-}
-
-.success-snackbar {
-  background-color: #388e3c; // Vert pour le succès
-  color: white;
-}
-
-.info-snackbar {
-  background-color: #1976d2; // Bleu pour l'information
-  color: white;
-}

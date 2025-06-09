@@ -67,7 +67,7 @@ export class MapComponent implements OnInit, AfterViewInit {
       this.cursorX = coords.x;
       this.cursorY = coords.y;
     });
-    this.drawService.isDrawing$.subscribe(isDrawing => {
+    this.mapService.isDrawing$.subscribe(isDrawing => {
       this.isDrawing = isDrawing;
     });
 

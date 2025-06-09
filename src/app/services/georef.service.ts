@@ -1,6 +1,5 @@
 import { Injectable } from '@angular/core';
 import { MapService } from './map.service';
-import { DrawService } from './draw.service';
 import { LayerService } from './layer.service';
 import { GeorefLayer } from '../models/georef-layer.model';
 import { GeorefResponse } from '../dto/georef-response';
@@ -31,7 +30,6 @@ export class GeorefService {
     private layerService: LayerService,
     private geoserverService: GeoserverService,
     private gcpService: GcpService,
-    private drawService: DrawService
   ) {
     const saved = localStorage.getItem('isGeorefActive');
     this.isGeorefActive = saved ? JSON.parse(saved) : false;
@@ -88,19 +86,20 @@ export class GeorefService {
   toggleDrawPanel(mockLayer: MockLayer | null) {
     this.mapService.setEditLayer(mockLayer);
     this.isDrawPanelActive = !this.isDrawPanelActive;
-
+    
     if (this.isDrawPanelActive && this.isGeorefActive) {
       this.toggleGeoref();
     }
-
+    
     if (this.isDrawPanelActive && this.isTableActive) {
       this.toggleTable();
     }
-
+    
     if (!this.isDrawPanelActive) {
+      this.mapService.updateActiveEntityMode(null);
       this.mapService.dismissSelectSnackbar();
       this.mapService.disableSelectInteraction();
-      this.drawService.clearDrawInteractions();
+      this.mapService.deactivateDrawInteractions();
     }
   }
 

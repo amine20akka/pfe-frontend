@@ -1,15 +1,18 @@
 .dialog-title {
-  transform: scale(0.9);
-  color: #175a9c;
+  color: white;
+  background: #ff6900;
   text-align: center;
-  border-bottom: 1px solid #e0e0e0;
   font-weight: 500;
-  margin-bottom: 12px;
-  font-size: 18px;
+  padding-top: 0px;
+  padding-bottom: 12px;
+  font-size: 14px;
 }
 
 .mat-dialog-container {
   border-radius: 0px !important;
+  padding: 28px !important;
+  min-width: 320px;
+  max-width: 400px;
 }
 
 .dialog-content {
@@ -17,69 +20,144 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 10px;
+  padding: 2px 20px;
+
+  form {
+    padding-top: 18px;
+    width: 70%;
+  }
 }
 
 .manual-input {
-  margin-top: 8px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-}
+  gap: 12px;
+  width: 100%;
 
-mat-form-field input {
-  height: 22px;
-  font-size: 14px;
-}
+  mat-form-field {
+    --mat-form-field-container-height: 2.4rem !important;
+    --mat-form-field-container-vertical-padding: 0.6rem !important;
+    --mat-form-field-outline-color: #e0e0e0 !important;
+    --mat-form-field-focus-outline-color: #ff6900 !important;
+    --mat-form-field-hover-outline-color: #ff8533 !important;
+    font-size: 11px;
+    width: 100%;
 
-mat-form-field {
-  --mat-form-field-container-height: 2.4rem;
-  --mat-form-field-container-vertical-padding: 0.6rem;
-  font-size: 12px;
-}
+    .mat-mdc-text-field-wrapper {
+      border-radius: 6px;
+    }
 
-mat-select, mat-label, mat-option {
-  font-size: 12px;
-}
+    input {
+      height: auto;
+      font-size: 11px;
+      color: #333;
+    }
 
-mat-error {
-  position: absolute;
-  left: 0;
-  font-size: 9px;
+    mat-label {
+      font-size: 11px;
+      color: #666;
+      font-weight: 500;
+    }
+
+    mat-error {
+      position: absolute;
+      left: 0;
+      font-size: 8px;
+      margin-top: 0;
+      color: #d32f2f;
+    }
+  }
 }
 
 .dialog-actions {
-  transform: scale(0.9);
-  border-top: 1px solid #e0e0e0;
+  border-top: 1px solid #f0f0f0;
+  background: #fafafa;
   display: flex;
   justify-content: space-between;
-  padding: 15px;
+  padding: 12px 16px;
+  gap: 12px;
+
+  button {
+    height: 34px;
+    border-radius: 6px;
+    font-size: 10px;
+    font-weight: 400;
+    text-transform: none;
+    transition: all 0.2s ease;
+    flex: 1;
+    min-width: 76px;
+    max-width: 120px;
+
+    &.mat-mdc-button {
+      box-shadow: none;
+
+      &.cancel-button {
+        color: #666;
+        border: 1px solid #e0e0e0;
+        background: white;
+
+        &:hover {
+          background: #f5f5f5;
+          border-color: #ccc;
+        }
+      }
+
+      &.map-selection-button {
+        background: #fff3e6;
+        color: #ff6900;
+        border: 1px solid #ffe0cc;
+
+        &:hover {
+          background: #ffebdb;
+          border-color: #ffcc99;
+        }
+      }
+
+      &.confirm-button {
+        background: #ff6900;
+        color: white;
+
+        &:hover:not([disabled]) {
+          background: #e55a00;
+        }
+
+        &[disabled] {
+          background: #e0e0e0;
+          color: #999;
+          border: 1px solid #e0e0e0;
+        }
+      }
+    }
+  }
 }
 
-.cancel-button {
-  color: #696969 !important;
-  font-size: 14px;
-}
+// Responsive pour les petits écrans
+@media (max-width: 480px) {
+  .mat-dialog-container {
+    min-width: 280px;
+    max-width: 90vw;
+  }
 
-.cancel-button:hover {
-  background-color: #ececec !important;
-}
+  .dialog-content {
+    padding: 12px 16px;
+  }
 
-.map-selection-button {
-  color: rgb(223, 107, 30) !important;
-  font-size: 14px;
-}
+  .dialog-actions {
+    flex-direction: column;
+    gap: 8px;
 
-.map-selection-button:hover {
-  background-color: rgb(250, 236, 224) !important;
-}
+    button {
+      width: 100%;
+      max-width: none;
+      height: 36px;
+    }
+  }
 
-.confirm-button {
-  color: #175a9c !important;
-  font-size: 14px;
-}
+  .manual-input {
+    gap: 10px;
 
-.confirm-button:disabled {
-  color: #c0c0c0 !important;
-  background-color: #ececec !important;
+    mat-form-field {
+      --mat-form-field-container-height: 42px;
+    }
+  }
 }

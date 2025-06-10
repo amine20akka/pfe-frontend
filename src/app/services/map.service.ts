@@ -4,7 +4,7 @@ import { BehaviorSubject, filter, map, Observable, switchMap } from 'rxjs';
 import OLMap from 'ol/Map';
 import View from 'ol/View';
 import { defaults as defaultControls } from 'ol/control';
-import { defaults as defaultInteractions, Draw, Interaction, Modify, Select, Translate } from 'ol/interaction';
+import { defaults as defaultInteractions, Draw, Interaction, Modify, Select, Snap, Translate } from 'ol/interaction';
 import { singleClick, pointerMove } from 'ol/events/condition';
 import TileLayer from 'ol/layer/Tile';
 // import OSM from 'ol/source/OSM';
@@ -58,6 +58,7 @@ export class MapService {
   private hoverInteraction: Select | null = null;
   private modifyInteraction: Modify | null = null;
   private translateInteraction: Translate | null = null;
+  private snapInteraction: Snap | null = null;
   private hoverOverlay!: Overlay;
   private sidebarVisibleSubject = new BehaviorSubject<boolean>(false);
   private drawInteraction: Draw | null = null;
@@ -70,6 +71,7 @@ export class MapService {
   private editFeatureSubject = new BehaviorSubject<Feature | null>(null);
   sidebarVisible$ = this.sidebarVisibleSubject.asObservable();
   editFeature$ = this.editFeatureSubject.asObservable();
+  private featuresToSnap = new Collection<Feature<Geometry>>;
   map$ = this.mapSubject.asObservable();
   mapCoordinates$ = this.mapCoordinates.asObservable();
   isMapSelection$ = this.isMapSelectionSubject.asObservable();
@@ -142,7 +144,7 @@ export class MapService {
         view: new View({
           projection: 'EPSG:3857', // Projection Web Mercator
           center: [-59598.84, 5339845.08],
-          zoom: 18
+          zoom: 17
         }),
         controls: defaultControls({ zoom: false, attribution: false, rotate: false })
       });
@@ -517,6 +519,34 @@ export class MapService {
     }
   }
 
+  private initializeFeaturesToSnap(): void {
+    this.featuresToSnap.clear();
+    
+    const mockLayers = this.layerService.getMockLayers();
+    mockLayers.forEach(mockLayer => {
+      const vectorLayer = mockLayer.wfsLayer as VectorLayer;
+      const source = vectorLayer.getSource();
+      
+      if (source) {
+        const features = source.getFeatures();
+        features.forEach(feature => {
+          this.featuresToSnap.push(feature);
+        });
+      }
+    });
+    
+    console.log(`FeaturesToSnap initialisé avec ${this.featuresToSnap.getLength()} features`);
+  }
+
+  activateSnapInteraction(): void {
+    this.snapInteraction = new Snap({ features: this.featuresToSnap });
+    this.addInteractionToMap(this.snapInteraction);
+  }
+
+  deactivateSnapInteraction(): void {
+    this.removeInteractionFromMap(this.snapInteraction!);
+  }
+
   enableSelectInteraction(): void {
     if (this.selectInteraction) {
       this.map.removeInteraction(this.selectInteraction);
@@ -572,6 +602,9 @@ export class MapService {
 
         this.map.addInteraction(this.drawInteraction);
         this.isDrawingSubject.next(true);
+        
+        this.initializeFeaturesToSnap();
+        this.activateSnapInteraction();
 
         // Afficher le snackbar d'instruction
         this.snackBar.open(`Dessinez ${this.getGeometryLabel(geometryType)} sur la carte`, 'Annuler', {
@@ -632,6 +665,7 @@ export class MapService {
   private onDrawEnd(feature: Feature, currentMockLayer: MockLayer): void {
     this.isDrawingSubject.next(false);
     this.ngZone.run(() => {
+      this.deactivateSnapInteraction();
       this.removeInteractionFromMap(this.drawInteraction!);
       this.snackBar.dismiss();
 
@@ -690,6 +724,8 @@ export class MapService {
 
     this.map.addInteraction(this.translateInteraction);
     this.map.addInteraction(this.modifyInteraction);
+    this.initializeFeaturesToSnap();
+    this.activateSnapInteraction();
   }
 
   private getFeatureSource(layerId: string): VectorSource {
@@ -700,7 +736,7 @@ export class MapService {
 
   deactivateDrawInteractions(): void {
     this.map.getInteractions().getArray()
-      .filter(interaction => interaction instanceof Modify || interaction instanceof Draw || interaction instanceof Translate)
+      .filter(interaction => interaction instanceof Modify || interaction instanceof Draw || interaction instanceof Translate || interaction instanceof Snap)
       .forEach(interaction => this.removeInteractionFromMap(interaction));
   }
 
@@ -800,8 +836,6 @@ export class MapService {
           feature.setGeometry(clonedGeometry);
 
           feature.changed();
-
-          console.log('Géométrie restaurée pour le feature:', featureId);
         } else {
           console.error('Feature non trouvé avec l\'ID:', featureId);
         }

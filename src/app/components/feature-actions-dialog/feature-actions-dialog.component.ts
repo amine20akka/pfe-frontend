@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { CommonModule, formatDate } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import { Component, Inject, OnInit } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
@@ -50,8 +50,14 @@ export class FeatureActionsDialogComponent implements OnInit {
       .filter(([key]) => key !== 'geometry' && key !== 'layerId' && key !== 'layerName')
       .map(([, value]) => {
         if (typeof value === 'string' && !isNaN(Date.parse(value))) {
-          return formatDate(value, 'dd/MM/yyyy HH:mm', 'en-US');
-        }        
+          const formatted = new Intl.DateTimeFormat('fr-FR', {
+            dateStyle: 'short',
+            timeStyle: 'short',
+            timeZone: 'UTC'
+          }).format(new Date(value));
+          value = formatted;
+          return value;
+        }
         return value;
       });
   

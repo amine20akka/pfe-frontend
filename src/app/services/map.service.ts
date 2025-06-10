@@ -41,8 +41,8 @@ import { labelize } from '../mock-layers/utils';
 import { Type } from 'ol/geom/Geometry';
 import { DrawApiService } from './draw-api.service';
 import { LayerSchema } from '../interfaces/layer-schema';
-import { formatDate } from '@angular/common';
 import { EntityMode } from '../enums/entity-modes';
+import { FeatureUpdateResult } from '../dto/feature-update-result';
 
 @Injectable({
   providedIn: 'root'
@@ -61,7 +61,7 @@ export class MapService {
   private hoverOverlay!: Overlay;
   private sidebarVisibleSubject = new BehaviorSubject<boolean>(false);
   private drawInteraction: Draw | null = null;
-  private activeEntityModeSubject = new BehaviorSubject<EntityMode | null >(null);
+  private activeEntityModeSubject = new BehaviorSubject<EntityMode | null>(null);
   activeEntityMode$ = this.activeEntityModeSubject.asObservable();
   private isDrawingSubject = new BehaviorSubject<boolean>(false);
   isDrawing$ = this.isDrawingSubject.asObservable();
@@ -490,8 +490,13 @@ export class MapService {
       if (key !== 'geometry' && key !== 'layerId' && key !== 'layerName' && key !== 'isNew') {
         const labelizedKey = labelize(key);
         if (typeof value === 'string' && !isNaN(Date.parse(value))) {
-          value = formatDate(value, 'dd/MM/yyyy HH:mm', 'en-US');
-        }        
+          const formatted = new Intl.DateTimeFormat('fr-FR', {
+            dateStyle: 'short',
+            timeStyle: 'short',
+            timeZone: 'UTC'
+          }).format(new Date(value));
+          value = formatted;
+        }
         htmlContent += `<p><strong>${labelizedKey} :</strong> ${value}</p>`;
       }
     }
@@ -536,7 +541,7 @@ export class MapService {
         this.hideHoverTooltip(new ElementRef(this.hoverOverlay.getElement()!));
 
         this.ngZone.run(() => {
-          this.openFeatureActionsDialog(selectedFeature);
+          this.openFeatureActionsDialog(selectedFeature, this.editLayerSubject.getValue()!.layerId);
         });
       }
     });
@@ -643,7 +648,7 @@ export class MapService {
     return feature;
   }
 
-  private openFeatureActionsDialog(feature: Feature): void {
+  private openFeatureActionsDialog(feature: Feature, layerId: string): void {
     const dialogRef = this.dialog.open(FeatureActionsDialogComponent, {
       width: '320px',
       height: '270px',
@@ -655,7 +660,7 @@ export class MapService {
       if (result === 'edit') {
         this.activateEditMode(feature);
       } else if (result === 'delete') {
-        this.confirmDelete(feature);
+        this.confirmDelete(feature.getId()!, layerId);
       } else {
         this.enableSelectInteraction();
       }
@@ -723,10 +728,10 @@ export class MapService {
   }
 
   updateActiveEntityMode(newMode: EntityMode | null): void {
-    this.activeEntityModeSubject.next(newMode); 
+    this.activeEntityModeSubject.next(newMode);
   }
 
-  private confirmDelete(feature: Feature): void {
+  private confirmDelete(featureId: string | number, layerId: string): void {
     const dialogData: ConfirmDialogData = {
       title: 'Êtes-vous sûr de supprimer cette entité ?',
       confirmText: 'Supprimer',
@@ -741,9 +746,15 @@ export class MapService {
 
     dialogRef.afterClosed().subscribe(result => {
       if (result) {
-        console.log(feature);
-        this.snackBar.open('Entité supprimée avec succès', 'Fermer', {
-          duration: 3000,
+        this.drawApiService.deleteFeature(featureId, layerId).subscribe({
+          next: (result: FeatureUpdateResult) => {
+            if (result.success) {
+              this.layerService.refreshLayerSourceById(layerId);
+              this.snackBar.open('Entité supprimée avec succès', 'Fermer', { duration: 3000 });
+            } else {
+              this.snackBar.open("Erreur lors de la suppression de l'entité", 'Fermer', { duration: 3000 });
+            }
+          }
         });
       }
     });

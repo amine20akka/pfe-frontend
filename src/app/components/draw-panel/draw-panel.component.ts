@@ -80,6 +80,8 @@ export class DrawPanelComponent implements OnInit {
       return;
     }
 
+    this.mapService.disableSelectInteraction();
+    this.mapService.dismissSelectSnackbar();
     this.mapService.deactivateDrawInteractions();
     this.mapService.dismissDrawSnackbar();
     this.mapService.updateActiveEntityMode(mode);

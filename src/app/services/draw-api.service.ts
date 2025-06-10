@@ -19,14 +19,14 @@ export class DrawApiService {
   }
 
   updateFeature(updateRequest: FeatureUpdateRequest, featureId: string | number, layerId: string): Observable<FeatureUpdateResult> {
-    return this.http.put<FeatureUpdateResult>(`${this.apiUrl}/${layerId}/${featureId}/update`, updateRequest);
+    return this.http.put<FeatureUpdateResult>(`${this.apiUrl}/${layerId}/features/${featureId}`, updateRequest);
   }
 
-  deleteFeature(featureId: string | number, layerId: string): Observable<boolean> {
-    return this.http.delete<boolean>(`${this.apiUrl}/${layerId}/${featureId}/delete`);
+  deleteFeature(featureId: string | number, layerId: string): Observable<FeatureUpdateResult> {
+    return this.http.delete<FeatureUpdateResult>(`${this.apiUrl}/${layerId}/features/${featureId}`);
   }
 
   insertFeature(insertRequest: FeatureUpdateRequest, layerId: string): Observable<FeatureUpdateResult> {
-    return this.http.post<FeatureUpdateResult>(`${this.apiUrl}/${layerId}/insert`, insertRequest);
+    return this.http.post<FeatureUpdateResult>(`${this.apiUrl}/${layerId}/features`, insertRequest);
   }
 }

@@ -371,7 +371,7 @@ export class DrawService {
   private openFeatureActionsDialog(feature: Feature, layerId: string): void {
     const dialogRef = this.dialog.open(FeatureActionsDialogComponent, {
       width: '320px',
-      height: '270px',
+      height: 'auto',
       data: { feature },
       panelClass: 'feature-dialog'
     });

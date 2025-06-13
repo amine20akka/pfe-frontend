@@ -185,8 +185,8 @@ export class LayerTableComponent implements OnInit {
   ReGeorefImage(georefLayer: GeorefLayer): void {
     this.georefService.isReGeoref = true;
     georefLayer.layer!.setVisible(false);
-    this.georefService.toggleTable();
-    this.georefService.toggleGeoref();
+    this.georefService.isGeorefActive = true;
+    this.georefService.isTableActive = false;
 
     this.georefService.updateRegeorefIds(georefLayer.imageId, georefLayer);
 

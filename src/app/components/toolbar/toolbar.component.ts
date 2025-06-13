@@ -157,6 +157,8 @@ export class ToolbarComponent {
         compressionType: this.georefImage.settings.compressionType,
         outputFilename: this.georefImage.settings.outputFilename
       },
+      width: 'auto',
+      height: 'auto',
       disableClose: true,
       panelClass: 'custom-dialog'
     });
@@ -170,8 +172,9 @@ export class ToolbarComponent {
 
   openResetConfirmDialog(): void {
     const dialogData: ConfirmDialogData = {
-      title: 'Êtes-vous sûr de réinitialiser votre image importée ?',
-      confirmText: 'Réinitialiser',
+      title: this.isReGeoref ? "Êtes-vous sûr d'avorter le re-géoréférencement de cette image ?" :
+                              'Êtes-vous sûr de réinitialiser votre image importée ?',
+      confirmText: this.isReGeoref ? 'Avorter' : 'Réinitialiser',
       cancelText: 'Annuler',
       icon: 'refresh'
     };

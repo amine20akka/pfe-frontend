@@ -1,18 +1,47 @@
 /* Styles généraux du dialogue */
 .geo-dialog {
+  padding: 0;
+  overflow: hidden;
   max-width: 900px;
-  height: fit-content;
+  min-width: fit-content;
   width: 100%;
   border-radius: 0 !important;
 }
 
 .geo-dialog-title {
-  color: #175a9c;
-  text-align: center;
-  border-bottom: 1px solid #e0e0e0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 16px;
   font-weight: 500;
-  margin-bottom: 12px;
-  font-size: 18px;
+  padding: 8px;
+  background-color: #ff7f23;
+  color: white;
+  margin: 0;
+  border-bottom: none;
+  text-align: center;
+}
+
+mat-dialog-content {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 338px;
+  overflow-y: auto;
+  background: #ffffff;
+
+  &::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: #f8f8f8;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: #ff6900;
+    border-radius: 2px;
+  }
 }
 
 /* Mise en forme du formulaire */
@@ -24,76 +53,233 @@
 .settings-container {
   display: flex;
   flex-direction: row;
-  gap: 10px;
+  gap: 5px;
 }
 
 .settings-group {
   flex: 1;
-  padding: 10px;
-  background-color: rgba(0, 0, 0, 0.03);
-  border-radius: 4px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+  padding: 18px;
+  margin: 0px 2px;
+  background-color: #fff8f5;
+  border-radius: 6px;
+  border: 1px solid #ffe0cc;
+  box-shadow: 0 1px 3px rgba(255, 106, 0, 0.1);
+  transition: all 0.2s ease;
+
+  &:hover {
+    background-color: #fff3e6;
+    border-color: #ffcc99;
+    box-shadow: 0 2px 6px rgba(255, 106, 0, 0.15);
+  }
 }
 
 .settings-group-title {
-  font-weight: 500;
-  color: #175a9c;
-  margin-bottom: 12px;
-  padding-bottom: 4px;
-  border-bottom: 1px solid #e0e0e0;
-  font-size: 12px;
+  font-weight: 600;
+  color: #ff6900;
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #ffe0cc;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
+.full-width {
+  width: 100%;
+  margin-bottom: 4px;
+}
+
+/* Styles des champs de formulaire */
 mat-form-field {
-  --mat-form-field-container-height: 2.4rem;
-  --mat-form-field-container-vertical-padding: 0.6rem;
+  --mat-form-field-container-height: 2.6rem;
+  --mat-form-field-container-vertical-padding: 0.7rem;
   font-size: 12px;
+
+  &.mat-form-field-appearance-outline {
+    .mat-form-field-outline {
+      color: #e0e0e0;
+    }
+
+    &.mat-focused .mat-form-field-outline-thick {
+      color: #ff6900;
+    }
+
+    &:hover .mat-form-field-outline {
+      color: #ffcc99;
+    }
+  }
+
+  .mat-form-field-label {
+    color: #666;
+    font-size: 12px;
+  }
+
+  &.mat-focused .mat-form-field-label {
+    color: #ff6900;
+  }
 }
 
-mat-select, mat-label, mat-option {
+mat-select {
   font-size: 12px;
+  color: #333;
+
+  .mat-select-arrow {
+    color: #ff6900;
+  }
+}
+
+mat-label {
+  font-size: 12px;
+  color: #666;
+}
+
+mat-option {
+  font-size: 12px;
+  color: #333;
+
+  &:hover {
+    background-color: #fff8f5;
+    color: #ff6900;
+  }
+
+  &.mat-selected {
+    background-color: #fff3e6;
+    color: #ff6900;
+  }
+}
+
+input[matInput] {
+  font-size: 12px;
+  color: #333;
+
+  &:focus {
+    color: #ff6900;
+  }
+
+  &::placeholder {
+    color: #999;
+    font-size: 12px;
+  }
 }
 
 mat-error {
   position: absolute;
   left: 0;
-  font-size: 9px;
+  font-size: 10px;
+  color: #d32f2f;
+  margin-top: 2px;
 }
 
 /* Boutons d'action */
 mat-dialog-actions {
   display: flex;
   justify-content: space-between;
-  padding: 8px 24px;
-  margin-bottom: 0;
-}
-
-.cancel-button,
-.save-button {
-  line-height: 28px;
-  padding: 0 12px;
-  font-size: 14px;
-}
-
-.save-button {
-  color: #175a9c !important;
+  padding: 12px 26px 16px 26px;
+  margin: 0;
+  border-top: 1px solid #f0f0f0;
+  background: #fafafa;
 }
 
 .cancel-button {
-  color: #5f5f5f !important;
+  height: 34px;
+  min-width: 80px;
+  padding: 0 16px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 400;
+  text-transform: none;
+  color: #666 !important;
+  border: 1px solid #e0e0e0;
+  background: white;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: #f5f5f5 !important;
+    border-color: #ccc;
+    color: #333 !important;
+  }
 }
 
-.cancel-button:hover {
-  background: #eaeaea !important;
+.save-button {
+  height: 34px;
+  min-width: 80px;
+  padding: 0 16px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 400;
+  text-transform: none;
+  background: #fff3e6 !important;
+  color: #ff6900 !important;
+  border: 1px solid #ffe0cc;
+  transition: all 0.2s ease;
+
+  &:hover:not(:disabled) {
+    background: #ffebdb !important;
+    border-color: #ffcc99;
+    color: #ff5500 !important;
+  }
+
+  &:disabled {
+    background: #f5f5f5 !important;
+    color: #ccc !important;
+    border-color: #e0e0e0;
+    cursor: not-allowed;
+  }
 }
 
 /* Adaptation pour mobile */
 @media (max-width: 768px) {
+  .geo-dialog {
+    min-width: 320px;
+    max-width: 95vw;
+  }
+
+  mat-dialog-content {
+    padding: 12px;
+    max-height: 400px;
+  }
+
   .settings-container {
     flex-direction: column;
+    gap: 12px;
   }
 
   .settings-group {
     min-width: 100%;
+    padding: 12px;
+  }
+
+  .settings-group-title {
+    font-size: 12px;
+    margin-bottom: 12px;
+  }
+
+  mat-form-field {
+    --mat-form-field-container-height: 2.4rem;
+    margin-bottom: 8px;
+  }
+
+  mat-dialog-actions {
+    flex-direction: column-reverse;
+    gap: 8px;
+    padding: 8px 12px 12px 12px;
+  }
+
+  .cancel-button,
+  .save-button {
+    width: 100%;
+    min-width: auto;
+    height: 32px;
+  }
+}
+
+/* Style pour les erreurs de validation */
+mat-form-field.mat-form-field-invalid {
+  .mat-form-field-outline-thick {
+    color: #d32f2f;
+  }
+  
+  .mat-form-field-label {
+    color: #d32f2f;
   }
 }

@@ -213,6 +213,8 @@ export class ImageService {
         this.resetLoadingState();
         if (err.status === 415) {
           this.notifService.showError("Format d'image non supporté");
+        } else if (err.status === 409) {
+          this.notifService.showError("Image déjà géoréférencée. Veuillez la consulter dans la TDM");
         }
         return;
       }

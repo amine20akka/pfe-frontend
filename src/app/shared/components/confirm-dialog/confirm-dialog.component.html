@@ -1,13 +1,17 @@
-<mat-dialog-content class="dialog-content">
-    <mat-icon class="dialog-icon">{{ data.icon || 'help_outline' }}</mat-icon>
-    <p id="dialog-title">{{ data.title }}</p>
-</mat-dialog-content>
-
-<mat-dialog-actions class="dialog-actions">
-    <button mat-button (click)="onCancel()" id="cancel-button">
+<div class="dialog-container">
+    <mat-dialog-content class="dialog-content">
+      <div class="icon-container">
+        <mat-icon class="dialog-icon">{{ data.icon || 'help_outline' }}</mat-icon>
+      </div>
+      <h2 class="dialog-title">{{ data.title }}</h2>
+    </mat-dialog-content>
+  
+    <mat-dialog-actions class="dialog-actions">
+      <button mat-stroked-button class="cancel-button" (click)="onCancel()">
         {{ data.cancelText || 'Annuler' }}
-    </button>
-    <button mat-button (click)="onConfirm()" id="confirm-button">
+      </button>
+      <button mat-flat-button class="confirm-button" (click)="onConfirm()">
         {{ data.confirmText || 'Confirmer' }}
-    </button>
-</mat-dialog-actions>
+      </button>
+    </mat-dialog-actions>
+  </div>

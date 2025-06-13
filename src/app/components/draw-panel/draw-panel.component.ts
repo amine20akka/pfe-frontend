@@ -49,7 +49,7 @@ export class DrawPanelComponent implements OnInit, AfterViewInit {
 
     this.drawService.sidebarVisible$.subscribe((visible: boolean) => {
       this.isModifying = visible;
-      if (!visible) {
+      if (!visible && this.editLayer) {
         this.mapService.initHoverInteraction(this.editLayer!.wfsLayer, this.hoverPopupElement, this.hoverPopupContentElement);
       }
     });

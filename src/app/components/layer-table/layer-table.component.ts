@@ -24,6 +24,8 @@ import { MockLayer } from '../../interfaces/mock-layer';
 import { MatCardModule } from '@angular/material/card';
 import { MatExpansionModule } from '@angular/material/expansion';
 import BaseLayer from 'ol/layer/Base';
+import { DrawService } from '../../services/draw.service';
+import { Extent } from 'ol/extent';
 
 @Component({
   selector: 'app-layer-table',
@@ -62,6 +64,7 @@ export class LayerTableComponent implements OnInit {
     private georefApiService: GeorefApiService,
     private layerService: LayerService,
     private imageApiService: ImageApiService,
+    private drawService: DrawService,
     private dialog: MatDialog,
   ) { }
 
@@ -95,17 +98,17 @@ export class LayerTableComponent implements OnInit {
 
   toggleDrawPanel(mockLayer: MockLayer): void {
     this.georefService.toggleDrawPanel(mockLayer);
-    this.mapService.activateDrawSnackbar();
+    this.drawService.activateDrawSnackbar();
   }
 
   toggleLayerVisibility(layer: BaseLayer): void {
-    this.mapService.toggleLayerVisibility(layer!);
+    this.layerService.toggleLayerVisibility(layer!);
   }
 
   zoomToLayer(georeflayer: GeorefLayer): void {
-    const extent = georeflayer.layer!.getExtent();
+    const extent: Extent | undefined = georeflayer.layer!.getExtent();
     if (extent) {
-      this.mapService.getMap()!.getView().fit(extent, { duration: 1000, padding: [50, 50, 50, 50] });
+      this.mapService.zoomToExtent(extent);
     }
   }
 

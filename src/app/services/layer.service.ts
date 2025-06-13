@@ -15,7 +15,7 @@ import { BehaviorSubject, forkJoin, map, Observable, tap } from 'rxjs';
 import Static from 'ol/source/ImageStatic';
 import Feature from 'ol/Feature';
 import View from 'ol/View';
-import { Point } from 'ol/geom';
+import { Geometry, Point } from 'ol/geom';
 import { Projection } from 'ol/proj';
 import Text from 'ol/style/Text';
 import TileLayer from 'ol/layer/Tile';
@@ -26,6 +26,7 @@ import { ImageFileService } from './image-file.service';
 import { GeorefLayer } from '../models/georef-layer.model';
 import { GeoserverService } from './geoserver.service';
 import { MockLayer } from '../interfaces/mock-layer';
+import Collection from 'ol/Collection';
 
 @Injectable({
   providedIn: 'root'
@@ -55,6 +56,7 @@ export class LayerService {
   // Mock Layers
   private mockLayersSubject = new BehaviorSubject<MockLayer[]>([]);
   mockLayers$ = this.mockLayersSubject.asObservable();
+  private featuresToSnap = new Collection<Feature<Geometry>>;
 
   constructor(
     private imageFileService: ImageFileService,
@@ -106,7 +108,15 @@ export class LayerService {
     this.imageMap.setTarget('');
   }
 
+  toggleLayerVisibility(layer: BaseLayer): void {
+    layer.setVisible(!layer.getVisible());
+  }
+
+
+
   // GCP Image Layers Operations
+
+
 
   clearAllGcpImageLayers(): void {
     for (; this.imageLayers.size > 0;) {
@@ -290,7 +300,11 @@ export class LayerService {
   }
 
 
+
+
   // GCP Map Layers Operations
+
+
 
   syncMapLayers(map: OLMap, OSMLayer: BaseLayer): void {
     if (!map) return;
@@ -442,7 +456,11 @@ export class LayerService {
   }
 
 
+
+
   // Georef Layer Operations
+
+
 
   addGeorefLayertoList(georefLayer: GeorefLayer): void {
     const currentGeorefLayers = this.georefLayersSubject.getValue();
@@ -499,8 +517,11 @@ export class LayerService {
 
 
 
+
   // Mock Layers Operations
+
   
+
   addToMockLayers(mockLayer: MockLayer) {
     const currentMockLayers = this.mockLayersSubject.getValue();
     const isLayerPresent = currentMockLayers.some(layer => layer.layerId === mockLayer.layerId);
@@ -534,6 +555,65 @@ export class LayerService {
   refreshLayerSourceById(layerId: string): void {
     const source = this.getLayerSourceById(layerId);
     source!.refresh();
+  }
+
+  restoreFeatureGeometry(featureId: string | number | undefined, originalGeometry: Geometry, layerId: string): void {
+    if (!featureId || !originalGeometry) {
+      console.error('Feature ID ou géométrie manquante');
+      return;
+    }
+
+    const mockLayer = this.getMockLayers().find(layer =>
+      layer.layerId === layerId
+    );
+
+    if (mockLayer) {
+      const vectorLayer = mockLayer.wfsLayer as VectorLayer;
+      const source = vectorLayer.getSource();
+
+      if (source) {
+        const feature = source.getFeatureById(featureId);
+
+        if (feature) {
+          const clonedGeometry = originalGeometry.clone();
+
+          feature.setGeometry(clonedGeometry);
+
+          feature.changed();
+        } else {
+          console.error('Feature non trouvé avec l\'ID:', featureId);
+        }
+      }
+    } else {
+      console.error('Couche non trouvée');
+    }
+  }
+
+  getFeatureSource(layerId: string): VectorSource {
+    const mockLayer = this.getMockLayers().find(layer => layer.layerId === layerId);
+    const vectorLayer = mockLayer!.wfsLayer as VectorLayer;
+    return vectorLayer.getSource() as VectorSource;
+  }
+
+  initializeFeaturesToSnap(): void {
+    this.featuresToSnap.clear();
+    
+    const mockLayers = this.getMockLayers();
+    mockLayers.forEach(mockLayer => {
+      const vectorLayer = mockLayer.wfsLayer as VectorLayer;
+      const source = vectorLayer.getSource();
+      
+      if (source) {
+        const features = source.getFeatures();
+        features.forEach(feature => {
+          this.featuresToSnap.push(feature);
+        });
+      }
+    });
+  }
+
+  getFeaturesToSnap(): Collection<Feature<Geometry>> {
+    return this.featuresToSnap;
   }
 }
 

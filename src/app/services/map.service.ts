@@ -1,11 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { ElementRef, Injectable, NgZone } from '@angular/core';
-import { BehaviorSubject, filter, map, Observable, switchMap } from 'rxjs';
+import { ElementRef, Injectable } from '@angular/core';
+import { BehaviorSubject, filter, switchMap } from 'rxjs';
 import OLMap from 'ol/Map';
 import View from 'ol/View';
 import { defaults as defaultControls } from 'ol/control';
 import { defaults as defaultInteractions, Draw, Interaction, Modify, Select, Snap, Translate } from 'ol/interaction';
-import { singleClick, pointerMove } from 'ol/events/condition';
+import { pointerMove } from 'ol/events/condition';
 import TileLayer from 'ol/layer/Tile';
 // import OSM from 'ol/source/OSM';
 import { MatDialog, MatDialogRef } from '@angular/material/dialog';
@@ -29,21 +29,13 @@ import { MockLayer } from '../interfaces/mock-layer';
 import Feature from 'ol/Feature';
 import Overlay from 'ol/Overlay';
 import Point from 'ol/geom/Point';
-import { FeatureActionsDialogComponent } from '../components/feature-actions-dialog/feature-actions-dialog.component';
-import { ConfirmDialogComponent } from '../shared/components/confirm-dialog/confirm-dialog.component';
-import { ConfirmDialogData } from '../shared/components/confirm-dialog/confirm-dialog-data';
-import { MatSnackBar } from '@angular/material/snack-bar';
-import Collection from 'ol/Collection';
-import { Geometry } from 'ol/geom';
 import { LAYER_CONFIG } from '../mock-layers/style-config';
 import { GEOSERVER_CONFIG } from '../mock-layers/geoserver-wfs-config';
 import { labelize } from '../mock-layers/utils';
-import { Type } from 'ol/geom/Geometry';
-import { DrawApiService } from './draw-api.service';
-import { LayerSchema } from '../interfaces/layer-schema';
-import { EntityMode } from '../enums/entity-modes';
-import { FeatureUpdateResult } from '../dto/feature-update-result';
-
+import { Extent } from 'ol/extent';
+import { EventsKey } from 'ol/events';
+import { unByKey } from 'ol/Observable';
+import { MultiPolygon, Polygon } from 'ol/geom';
 @Injectable({
   providedIn: 'root'
 })
@@ -51,28 +43,17 @@ export class MapService {
 
   private map!: OLMap;
   private OSMLayer: TileLayer = new TileLayer();
-  private mapSubject = new BehaviorSubject<OLMap | null>(null);
   private isMapSelectionSubject = new BehaviorSubject<boolean>(false);
   private mapCoordinates = new BehaviorSubject<{ x: number, y: number }>({ x: 0, y: 0 });
   private selectInteraction: Select | null = null;
-  private hoverInteraction: Select | null = null;
-  private modifyInteraction: Modify | null = null;
   private translateInteraction: Translate | null = null;
+  private pointerMoveListener: EventsKey | null = null;
+  private grabbingListener: EventsKey | null = null;
+  private grabListener: EventsKey | null = null;
+  private hoverInteraction: Select | null = null;
   private snapInteraction: Snap | null = null;
   private hoverOverlay!: Overlay;
-  private sidebarVisibleSubject = new BehaviorSubject<boolean>(false);
   private drawInteraction: Draw | null = null;
-  private activeEntityModeSubject = new BehaviorSubject<EntityMode | null>(null);
-  activeEntityMode$ = this.activeEntityModeSubject.asObservable();
-  private isDrawingSubject = new BehaviorSubject<boolean>(false);
-  isDrawing$ = this.isDrawingSubject.asObservable();
-  private editLayerSubject = new BehaviorSubject<MockLayer | null>(null);
-  editLayer$ = this.editLayerSubject.asObservable();
-  private editFeatureSubject = new BehaviorSubject<Feature | null>(null);
-  sidebarVisible$ = this.sidebarVisibleSubject.asObservable();
-  editFeature$ = this.editFeatureSubject.asObservable();
-  private featuresToSnap = new Collection<Feature<Geometry>>;
-  map$ = this.mapSubject.asObservable();
   mapCoordinates$ = this.mapCoordinates.asObservable();
   isMapSelection$ = this.isMapSelectionSubject.asObservable();
 
@@ -83,10 +64,7 @@ export class MapService {
     private imageService: ImageService,
     private imageFileService: ImageFileService,
     private georefApiService: GeorefApiService,
-    private drawApiService: DrawApiService,
     private notifService: NotificationService,
-    private ngZone: NgZone,
-    private snackBar: MatSnackBar,
   ) {
     this.isMapSelection$
       .pipe(
@@ -149,8 +127,6 @@ export class MapService {
         controls: defaultControls({ zoom: false, attribution: false, rotate: false })
       });
 
-      this.mapSubject.next(this.map);
-
       this.map.on('pointermove', (event) => {
         const coords = event.coordinate;
         this.mapCoordinates.next({
@@ -161,7 +137,6 @@ export class MapService {
     } else {
       this.map.setTarget(target);
     }
-    this.mapSubject.next(this.map);
   }
 
   addWfsLayers(): void {
@@ -379,12 +354,65 @@ export class MapService {
     }
   }
 
-  setEditLayer(mockLayer: MockLayer | null): void {
-    this.editLayerSubject.next(mockLayer);
+  setDefaultMapCursor(): void {
+    const mapElement = this.map.getTargetElement();
+    mapElement.style.cursor = 'default';
   }
 
-  getModifyInteraction(): Modify | null {
-    return this.modifyInteraction;
+  setDrawCursor(): void {
+    const mapElement = this.map.getTargetElement();
+    mapElement.style.cursor = 'crosshair';
+  }
+
+  setupEditCursorListeners(feature: Feature): void {
+    this.pointerMoveListener = this.map.on('pointermove', (e) => {
+      const pixel = this.map.getEventPixel(e.originalEvent);
+      const featuresAtPixel = this.map.getFeaturesAtPixel(pixel);
+  
+      if (featuresAtPixel.length > 0) {
+        // Vérifier si on survole la feature principale
+        const isMainFeature = featuresAtPixel.some(f => f.getId() === feature.getId());
+        
+        // Vérifier si on survole un vertex (les vertex ont généralement un style différent)
+        const isVertex = featuresAtPixel.some(f => 
+          f.getGeometry()?.getType() === 'Point' && f !== feature
+        );
+  
+        if (isVertex) {
+          this.setMapCursor('pointer');
+        } else if (isMainFeature) {
+          this.setMapCursor('grab');
+        } else {
+          this.setMapCursor('default');
+        }
+      } else {
+        this.setMapCursor('default');
+      }
+    });
+
+    if (feature.getGeometry() instanceof Polygon || feature.getGeometry() instanceof MultiPolygon) {
+      this.grabListener = this.translateInteraction!.on('translatestart', () => this.setMapCursor('grabbing'));
+      this.grabbingListener = this.translateInteraction!.on('translating', () => this.setMapCursor('grabbing'));
+    }
+  }
+
+  cleanupModifyCursorListeners(): void {
+    if (this.pointerMoveListener) {
+      unByKey(this.pointerMoveListener);
+      this.pointerMoveListener = null;
+    }
+
+    if (this.grabbingListener) {
+      unByKey(this.grabbingListener);
+      this.grabbingListener = null;
+    }
+
+    if (this.grabListener) {
+      unByKey(this.grabListener);
+      this.grabListener = null;
+    }
+
+    this.setMapCursor('default');
   }
 
   getSelectInteraction(): Select | null {
@@ -393,6 +421,18 @@ export class MapService {
 
   setSelectInteraction(selectInteraction: Select | null): void {
     this.selectInteraction = selectInteraction;
+  }
+
+  setTranslateInteraction(translateInteraction: Translate | null): void {
+    this.translateInteraction = translateInteraction;
+  }
+
+  getDrawInteraction(): Draw | null {
+    return this.drawInteraction;
+  }
+
+  setDrawInteraction(drawInteraction: Draw | null): void {
+    this.drawInteraction = drawInteraction;
   }
 
   addInteractionToMap(interaction: Interaction): void {
@@ -417,7 +457,7 @@ export class MapService {
     this.map.addOverlay(this.hoverOverlay);
   }
 
-  initHoverInteraction(vectorLayers: VectorLayer[], hoverPopupElement: ElementRef, hoverPopupContentElement: ElementRef): void {
+  initHoverInteraction(vectorLayer: VectorLayer, hoverPopupElement: ElementRef, hoverPopupContentElement: ElementRef): void {
     if (this.hoverInteraction) {
       this.map.removeInteraction(this.hoverInteraction);
       this.hoverInteraction = null;
@@ -425,47 +465,32 @@ export class MapService {
 
     this.hoverInteraction = new Select({
       condition: pointerMove,
-      layers: vectorLayers,
+      layers: [vectorLayer],
       style: null,
     });
 
     this.map.addInteraction(this.hoverInteraction);
 
     this.hoverInteraction.on('select', (e) => {
-      const mapElement = this.map.getTargetElement();
       const hoveredFeature = e.selected[0];
       if (hoveredFeature) {
-        mapElement.style.cursor = 'pointer';
+        this.setMapCursor('pointer');
         this.displayHoverTooltip(hoveredFeature, hoverPopupElement, hoverPopupContentElement);
       } else {
-        mapElement.style.cursor = 'default';
-        this.hideHoverTooltip(hoverPopupElement);
+        this.setMapCursor('default');
+        this.hideHoverTooltip();
       }
     });
+  }
+
+  getHoverInteracion(): Select | null {
+    return this.hoverInteraction;
   }
 
   deactivateHoverInteraction(): void {
     if (this.hoverInteraction) {
       this.removeInteractionFromMap(this.hoverInteraction);
       this.hoverInteraction = null;
-    }
-  }
-
-  activateHoverInteraction(hoverPopupElement: ElementRef, hoverPopupContentElement: ElementRef): void {
-    if (this.hoverInteraction) {
-      this.map.addInteraction(this.hoverInteraction);
-
-      this.hoverInteraction.on('select', (e) => {
-        const mapElement = this.map.getTargetElement();
-        const hoveredFeature = e.selected[0];
-        if (hoveredFeature) {
-          mapElement.style.cursor = 'pointer';
-          this.displayHoverTooltip(hoveredFeature, hoverPopupElement, hoverPopupContentElement);
-        } else {
-          mapElement.style.cursor = 'default';
-          this.hideHoverTooltip(hoverPopupElement);
-        }
-      });
     }
   }
 
@@ -512,34 +537,16 @@ export class MapService {
     hoverPopupElement.nativeElement.style.display = 'block';
   }
 
-  hideHoverTooltip(hoverPopupElement: ElementRef): void {
+  hideHoverTooltip(): void {
+    const hoverPopupElement: ElementRef = new ElementRef(this.hoverOverlay.getElement()!);
     if (hoverPopupElement) {
       hoverPopupElement.nativeElement.style.display = 'none';
       this.hoverOverlay.setPosition(undefined);
     }
   }
 
-  private initializeFeaturesToSnap(): void {
-    this.featuresToSnap.clear();
-    
-    const mockLayers = this.layerService.getMockLayers();
-    mockLayers.forEach(mockLayer => {
-      const vectorLayer = mockLayer.wfsLayer as VectorLayer;
-      const source = vectorLayer.getSource();
-      
-      if (source) {
-        const features = source.getFeatures();
-        features.forEach(feature => {
-          this.featuresToSnap.push(feature);
-        });
-      }
-    });
-    
-    console.log(`FeaturesToSnap initialisé avec ${this.featuresToSnap.getLength()} features`);
-  }
-
   activateSnapInteraction(): void {
-    this.snapInteraction = new Snap({ features: this.featuresToSnap });
+    this.snapInteraction = new Snap({ features: this.layerService.getFeaturesToSnap() });
     this.addInteractionToMap(this.snapInteraction);
   }
 
@@ -547,253 +554,10 @@ export class MapService {
     this.removeInteractionFromMap(this.snapInteraction!);
   }
 
-  enableSelectInteraction(): void {
-    if (this.selectInteraction) {
-      this.map.removeInteraction(this.selectInteraction);
-      this.selectInteraction = null;
-    }
-
-    this.selectInteraction = new Select({
-      layers: this.editLayerSubject.getValue() ? [this.editLayerSubject.getValue()!.wfsLayer] : [],
-      condition: singleClick
-    });
-
-    this.map.addInteraction(this.selectInteraction);
-
-    this.snackBar.open('Sélectionner une entité sur la carte', 'Fermer', {
-      duration: Infinity,
-    });
-
-    this.selectInteraction.on('select', (e) => {
-      const selectedFeature = e.selected[0];
-      if (selectedFeature) {
-        this.dismissSelectSnackbar();
-        this.hideHoverTooltip(new ElementRef(this.hoverOverlay.getElement()!));
-
-        this.ngZone.run(() => {
-          this.openFeatureActionsDialog(selectedFeature, this.editLayerSubject.getValue()!.layerId);
-        });
-      }
-    });
-  }
-
-  dismissSelectSnackbar(): void {
-    this.snackBar.dismiss();
-  }
-
-  enableDrawForActiveLayer(): void {
-    this.deactivateDrawInteractions();
-
-    const currentEditLayer = this.editLayerSubject.getValue();
-    this.getGeometryTypeFromLayer(currentEditLayer!.layerId).subscribe({
-      next: (geometryType: string) => {
-        if (!geometryType) {
-          this.notifService.showError('Type de géométrie non supporté pour cette couche');
-          return;
-        }
-
-        const source = currentEditLayer!.wfsLayer.getSource() as VectorSource;
-
-        this.drawInteraction = new Draw({
-          source: source,
-          type: geometryType as Type,
-          style: this.getDrawStyle()
-        });
-
-        this.map.addInteraction(this.drawInteraction);
-        this.isDrawingSubject.next(true);
-        
-        this.initializeFeaturesToSnap();
-        this.activateSnapInteraction();
-
-        // Afficher le snackbar d'instruction
-        this.snackBar.open(`Dessinez ${this.getGeometryLabel(geometryType)} sur la carte`, 'Annuler', {
-          duration: Infinity,
-        }).onAction().subscribe(() => {
-          this.cancelDrawing();
-        });
-
-        // Écouter la fin du dessin
-        this.drawInteraction.on('drawend', (event) => {
-          this.onDrawEnd(event.feature, currentEditLayer!);
-        });
-      }
-    });
-  }
-
-  cancelDrawing(): void {
-    this.deactivateDrawInteractions();
-    this.snackBar.dismiss();
-  }
-
-  private getGeometryTypeFromLayer(layerId: string): Observable<string> {
-    return this.drawApiService.getLayerSchema(layerId).pipe(
-      map((schema: LayerSchema) => schema.geometryType));
-  }
-
-  private getDrawStyle(): Style {
-    return new Style({
-      fill: new Fill({
-        color: 'rgba(255, 255, 255, 0.2)'
-      }),
-      stroke: new Stroke({
-        color: '#ff0000',
-        width: 2
-      }),
-      image: new CircleStyle({
-        radius: 7,
-        fill: new Fill({
-          color: '#ff0000'
-        })
-      })
-    });
-  }
-
-  private getGeometryLabel(geometryType: string): string {
-    switch (geometryType) {
-      case 'Point':
-        return 'un point';
-      case 'LineString':
-        return 'une ligne';
-      case 'Polygon':
-        return 'un polygone';
-      default:
-        return 'une géométrie';
-    }
-  }
-
-  private onDrawEnd(feature: Feature, currentMockLayer: MockLayer): void {
-    this.isDrawingSubject.next(false);
-    this.ngZone.run(() => {
-      this.deactivateSnapInteraction();
-      this.removeInteractionFromMap(this.drawInteraction!);
-      this.snackBar.dismiss();
-
-      const preparedFeature: Feature = this.prepareFeatureForEditing(feature, currentMockLayer);
-
-      this.openSidebarEditor(preparedFeature);
-    });
-  }
-
-  private prepareFeatureForEditing(feature: Feature, mockLayer: MockLayer): Feature {
-    feature.set('layerId', mockLayer.layerId);
-    feature.set('layerName', mockLayer.name);
-    feature.set('isNew', true);
-    return feature;
-  }
-
-  private openFeatureActionsDialog(feature: Feature, layerId: string): void {
-    const dialogRef = this.dialog.open(FeatureActionsDialogComponent, {
-      width: '320px',
-      height: '270px',
-      data: { feature },
-      panelClass: 'feature-dialog'
-    });
-
-    dialogRef.afterClosed().subscribe(result => {
-      if (result === 'edit') {
-        this.activateEditMode(feature);
-      } else if (result === 'delete') {
-        this.confirmDelete(feature.getId()!, layerId);
-      } else {
-        this.enableSelectInteraction();
-      }
-    });
-  }
-
-  private activateEditMode(feature: Feature): void {
-    const mapElement = this.map.getTargetElement();
-    mapElement.style.cursor = 'default';
-
-    this.openSidebarEditor(feature);
-
-    this.disableSelectInteraction();
-    this.removeInteractionFromMap(this.hoverInteraction!);
-    this.deactivateDrawInteractions();
-
-    const featureSource = this.getFeatureSource(feature.getProperties()['layerId']);
-
-    this.modifyInteraction = new Modify({
-      source: featureSource!,
-      features: new Collection([feature])
-    });
-
-    this.translateInteraction = new Translate({
-      features: new Collection([feature])
-    });
-
-    this.map.addInteraction(this.translateInteraction);
-    this.map.addInteraction(this.modifyInteraction);
-    this.initializeFeaturesToSnap();
-    this.activateSnapInteraction();
-  }
-
-  private getFeatureSource(layerId: string): VectorSource {
-    const mockLayer = this.layerService.getMockLayers().find(layer => layer.layerId === layerId);
-    const vectorLayer = mockLayer!.wfsLayer as VectorLayer;
-    return vectorLayer.getSource() as VectorSource;
-  }
-
   deactivateDrawInteractions(): void {
     this.map.getInteractions().getArray()
       .filter(interaction => interaction instanceof Modify || interaction instanceof Draw || interaction instanceof Translate || interaction instanceof Snap)
       .forEach(interaction => this.removeInteractionFromMap(interaction));
-  }
-
-  private openSidebarEditor(feature: Feature): void {
-    this.editFeatureSubject.next(feature);
-    this.sidebarVisibleSubject.next(true);
-  }
-
-  finishNewFeatureEdit(feature: Feature): void {
-    const currentLayerSource: VectorSource<Feature<Geometry>> | null | undefined = this.editLayerSubject.getValue()?.wfsLayer.getSource();
-    currentLayerSource!.removeFeature(feature);
-    this.editFeatureSubject.next(null);
-    this.sidebarVisibleSubject.next(false);
-    this.enableDrawForActiveLayer();
-  }
-
-  finishEditMode(): void {
-    this.editFeatureSubject.next(null);
-    this.sidebarVisibleSubject.next(false);
-    this.enableSelectInteraction();
-  }
-
-  updateDrawingStatus(isDrawing: boolean): void {
-    this.isDrawingSubject.next(isDrawing);
-  }
-
-  updateActiveEntityMode(newMode: EntityMode | null): void {
-    this.activeEntityModeSubject.next(newMode);
-  }
-
-  private confirmDelete(featureId: string | number, layerId: string): void {
-    const dialogData: ConfirmDialogData = {
-      title: 'Êtes-vous sûr de supprimer cette entité ?',
-      confirmText: 'Supprimer',
-      cancelText: 'Annuler',
-      icon: 'delete'
-    };
-
-    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
-      width: '350px',
-      data: dialogData
-    });
-
-    dialogRef.afterClosed().subscribe(result => {
-      if (result) {
-        this.drawApiService.deleteFeature(featureId, layerId).subscribe({
-          next: (result: FeatureUpdateResult) => {
-            if (result.success) {
-              this.layerService.refreshLayerSourceById(layerId);
-              this.snackBar.open('Entité supprimée avec succès', 'Fermer', { duration: 3000 });
-            } else {
-              this.snackBar.open("Erreur lors de la suppression de l'entité", 'Fermer', { duration: 3000 });
-            }
-          }
-        });
-      }
-    });
   }
 
   disableSelectInteraction(): void {
@@ -803,58 +567,22 @@ export class MapService {
     }
   }
 
-  activateDrawSnackbar(): void {
-    this.snackBar.open('Choisissez un mode dans le panneau', 'Fermer', {
-      duration: Infinity,
-    });
-  }
-
-  dismissDrawSnackbar(): void {
-    this.snackBar.dismiss();
-  }
-
-  restoreFeatureGeometry(featureId: string | number | undefined, originalGeometry: Geometry): void {
-    if (!featureId || !originalGeometry) {
-      console.error('Feature ID ou géométrie manquante');
-      return;
-    }
-
-    const mockLayer = this.layerService.getMockLayers().find(layer =>
-      layer.layerId === this.editLayerSubject.getValue()?.layerId
-    );
-
-    if (mockLayer) {
-      const vectorLayer = mockLayer.wfsLayer as VectorLayer;
-      const source = vectorLayer.getSource();
-
-      if (source) {
-        const feature = source.getFeatureById(featureId);
-
-        if (feature) {
-          const clonedGeometry = originalGeometry.clone();
-
-          feature.setGeometry(clonedGeometry);
-
-          feature.changed();
-        } else {
-          console.error('Feature non trouvé avec l\'ID:', featureId);
-        }
-      }
-    } else {
-      console.error('Couche non trouvée');
+  setMapCursor(cursorType: string): void {
+    if (this.map) {
+      this.map.getViewport().style.cursor = cursorType;
     }
   }
 
-  removeFeatureFromMap(feature: Feature): void {
-    const mockLayer = this.layerService.getMockLayers().find(layer => layer.layerId === this.editLayerSubject.getValue()?.layerId);
-    if (mockLayer) {
-      const vectorLayer = mockLayer.wfsLayer as VectorLayer;
-      vectorLayer.getSource()!.removeFeature(feature);
-    }
+  zoomToExtent(extent: Extent): void {
+    this.map!.getView().fit(extent, { duration: 1000, padding: [50, 50, 50, 50] });
   }
 
-  getMap(): OLMap | null {
-    return this.mapSubject.getValue();
+  mapExists(): boolean {
+    return this.map !== null;
+  }
+
+  updateSize(): void {
+    this.map.updateSize();
   }
 
   addLayerToMap(newlayer: BaseLayer): void {
@@ -908,9 +636,4 @@ export class MapService {
       data: { x, y }
     });
   }
-
-  toggleLayerVisibility(layer: BaseLayer): void {
-    layer.setVisible(!layer.getVisible());
-  }
-
 }

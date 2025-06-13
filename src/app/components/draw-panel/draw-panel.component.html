@@ -1,36 +1,54 @@
-<div cdkDrag [cdkDragBoundary]="'.container'" (cdkDragEnded)="onDragEnded($event)" class="drawing-tools-panel"
-    *ngIf="isDrawPanelActive" [style.top.px]="panelPosition.top" [style.left.px]="panelPosition.left"
-    [style.right.px]="panelPosition.right" [style.bottom.px]="panelPosition.bottom" [ngClass]="anchoredClass">
-
+<div cdkDrag 
+     [cdkDragBoundary]="'.container'" 
+     (cdkDragEnded)="onDragEnded($event)" 
+     class="drawing-tools-panel"     
+     *ngIf="isDrawPanelActive" 
+     [style.left.px]="panelPosition.left"     
+     [style.right.px]="panelPosition.right" 
+     [style.top.px]="panelPosition.top"
+     [ngClass]="anchoredClass">
+    
     <div class="panel-content">
         <mat-icon cdkDragHandle id="drag-handle">drag_indicator</mat-icon>
-
+        
         <!-- Bouton retour au mode curseur normal -->
         <div class="disable-drawing-button">
-            <button mat-icon-button matTooltip="Annuler le dessin" (click)="toggleEntityMode(null)" 
-            [disabled]="isModifying">
+            <button mat-icon-button 
+                    matTooltip="Annuler le dessin" 
+                    (click)="toggleEntityMode(null)"
+                    [disabled]="isModifying">
                 <mat-icon>close</mat-icon>
             </button>
         </div>
-
+        
         <!-- Séparateur -->
         <div class="tools-separator"></div>
-
+        
         <!-- Section des entités -->
         <div class="tool-section entity-tools">
             <!-- Ajouter une entité -->
-            <button mat-icon-button matTooltip="Ajouter une entité" [disabled]="isModifying"
-                [ngClass]="{'active-tool': activeEntityMode === EntityModes.ADD}"
-                (click)="toggleEntityMode(EntityModes.ADD)">
+            <button mat-icon-button 
+                    matTooltip="Ajouter une entité" 
+                    [disabled]="isModifying"
+                    [ngClass]="{'active-tool': activeEntityMode === EntityModes.ADD}"
+                    (click)="toggleEntityMode(EntityModes.ADD)">
                 <mat-icon>add_circle</mat-icon>
             </button>
-
+            
             <!-- Activer la sélection d'une entité -->
-            <button mat-icon-button matTooltip="Sélectionner une entité" [disabled]="isModifying"
-                [ngClass]="{'active-tool': activeEntityMode === EntityModes.SELECT}"
-                (click)="toggleEntityMode(EntityModes.SELECT)">
+            <button mat-icon-button 
+                    matTooltip="Sélectionner une entité" 
+                    [disabled]="isModifying"
+                    [ngClass]="{'active-tool': activeEntityMode === EntityModes.SELECT}"
+                    (click)="toggleEntityMode(EntityModes.SELECT)">
                 <mat-icon>pan_tool</mat-icon>
             </button>
         </div>
     </div>
+</div>
+
+<div #hoverPopup id="hover-popup" class="hover-popup mat-elevation-z4">
+    <mat-card>
+      <mat-card-content #hoverPopupContent></mat-card-content>
+    </mat-card>
 </div>

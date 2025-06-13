@@ -8,7 +8,7 @@ import { GeorefService } from '../../services/georef.service';
 import { MatDialog } from '@angular/material/dialog';
 import { LayerTableComponent } from "../layer-table/layer-table.component";
 import { DrawPanelComponent } from "../draw-panel/draw-panel.component";
-import { MapService } from '../../services/map.service';
+import { DrawService } from '../../services/draw.service';
 
 @Component({
   selector: 'app-sidenav',
@@ -30,12 +30,12 @@ export class SidenavComponent implements OnInit {
 
   constructor(
     private georefService: GeorefService,
-    private mapService: MapService,
+    private drawService: DrawService,
     public dialog: MatDialog,
   ) { }
   
   ngOnInit(): void {
-    this.mapService.sidebarVisible$.subscribe((visible: boolean) => {
+    this.drawService.sidebarVisible$.subscribe((visible: boolean) => {
       this.isModifying = visible;
     });
   }

@@ -16,6 +16,7 @@ import { GeorefApiService } from './georef-api.service';
 import { GeorefRequest } from '../dto/georef-request';
 import { LayerStatus } from '../enums/layer-status';
 import { MockLayer } from '../interfaces/mock-layer';
+import { DrawService } from './draw.service';
 @Injectable({
   providedIn: 'root'
 })
@@ -30,6 +31,7 @@ export class GeorefService {
     private layerService: LayerService,
     private geoserverService: GeoserverService,
     private gcpService: GcpService,
+    private drawService: DrawService,
   ) {
     const saved = localStorage.getItem('isGeorefActive');
     this.isGeorefActive = saved ? JSON.parse(saved) : false;
@@ -84,7 +86,7 @@ export class GeorefService {
   }
 
   toggleDrawPanel(mockLayer: MockLayer | null) {
-    this.mapService.setEditLayer(mockLayer);
+    this.drawService.setEditLayer(mockLayer);
     this.isDrawPanelActive = !this.isDrawPanelActive;
     
     if (this.isDrawPanelActive && this.isGeorefActive) {
@@ -96,10 +98,11 @@ export class GeorefService {
     }
     
     if (!this.isDrawPanelActive) {
-      this.mapService.updateActiveEntityMode(null);
-      this.mapService.dismissSelectSnackbar();
+      this.drawService.updateActiveEntityMode(null);
+      this.drawService.dismissSelectSnackbar();
       this.mapService.disableSelectInteraction();
       this.mapService.deactivateDrawInteractions();
+      this.mapService.deactivateHoverInteraction();
     }
   }
 

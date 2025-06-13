@@ -15,7 +15,6 @@ import { MatNativeDateModule } from '@angular/material/core';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { CommonModule } from '@angular/common';
-import { MapService } from '../../services/map.service';
 import { Geometry } from 'ol/geom';
 import GeoJSON from 'ol/format/GeoJSON';
 import { FeatureUpdateRequest } from '../../dto/feature-update-request';
@@ -23,6 +22,8 @@ import { NotificationService } from '../../services/notification.service';
 import { FeatureUpdateResult } from '../../dto/feature-update-result';
 import { LayerService } from '../../services/layer.service';
 import { labelize } from '../../mock-layers/utils';
+import { DrawService } from '../../services/draw.service';
+import { Style } from 'ol/style';
 
 @Component({
   selector: 'app-feature-edit-sidebar',
@@ -52,6 +53,7 @@ export class FeatureEditSidebarComponent implements OnInit {
   feature: Feature | null = null;
   originalGeometry!: Geometry;
   originalProperties: any = {};
+  defaultStyle!: Style;
   attributesForm: FormGroup;
   formFields: any[] = [];
   loading = false;
@@ -64,19 +66,19 @@ export class FeatureEditSidebarComponent implements OnInit {
   constructor(
     private fb: FormBuilder,
     private drawApiService: DrawApiService,
-    private mapService: MapService,
     private notifService: NotificationService,
-    private layerService: LayerService
+    private layerService: LayerService,
+    private drawService: DrawService,
   ) {
     this.attributesForm = this.fb.group({});
   }
 
   ngOnInit(): void {
-    this.mapService.sidebarVisible$.subscribe((visible: boolean) => {
+    this.drawService.sidebarVisible$.subscribe((visible: boolean) => {
       this.isVisible = visible;
     });
 
-    this.mapService.editFeature$.subscribe((feature: Feature | null) => {
+    this.drawService.editFeature$.subscribe((feature: Feature | null) => {
       if (feature) {
         this.feature = feature;
         console.log("active feature : ", feature);
@@ -100,6 +102,8 @@ export class FeatureEditSidebarComponent implements OnInit {
 
     this.drawApiService.getLayerSchema(this.feature?.getProperties()['layerId']).subscribe({
       next: (schema: LayerSchema) => {
+        this.defaultStyle = this.feature?.getStyle() as Style;
+        this.drawService.setSelectedFeatureStyle(this.feature!);
         this.layerSchema = schema;
         this.initializeForm();
         this.loading = false;
@@ -232,7 +236,7 @@ export class FeatureEditSidebarComponent implements OnInit {
 
           this.notifService.showSuccess('Entité ajoutée avec succès');
           this.layerService.refreshLayerSourceById(layerId);
-          this.mapService.finishNewFeatureEdit(this.feature!);
+          this.drawService.finishNewFeatureEdit(this.feature!);
         } else {
           this.notifService.showError('Erreur lors de l\'ajout de l\'entité');
         }
@@ -277,7 +281,8 @@ export class FeatureEditSidebarComponent implements OnInit {
       next: (featureUpdateResult: FeatureUpdateResult) => {
         this.loading = false;
         if (featureUpdateResult.success) {
-          this.mapService.finishEditMode();
+          this.drawService.finishEditMode();
+          this.drawService.restoreDefaultStyle(this.feature!, this.defaultStyle);
           this.layerService.refreshLayerSourceById(layerId);
           this.notifService.showSuccess('Modifications sauvegardées avec succès');
         } else {
@@ -316,7 +321,7 @@ export class FeatureEditSidebarComponent implements OnInit {
     }
 
     if (this.feature && this.originalGeometry) {
-      this.mapService.restoreFeatureGeometry(this.feature.getId(), this.originalGeometry);
+      this.layerService.restoreFeatureGeometry(this.feature.getId(), this.originalGeometry, this.feature?.getProperties()['layerId']);
       this.notifService.showInfo('Géométrie restaurée');
     }
   }
@@ -364,12 +369,13 @@ export class FeatureEditSidebarComponent implements OnInit {
     if (this.isNewFeature) {
       // Pour les nouvelles features, on les supprime de la carte
       this.restoreAll();
-      this.mapService.finishNewFeatureEdit(this.feature!);
+      this.drawService.finishNewFeatureEdit(this.feature!);
       this.notifService.showInfo("Ajout annulé");
     } else {
       // Pour les features existantes, on restaure l'état original
       this.restoreAll();
-      this.mapService.finishEditMode();
+      this.drawService.finishEditMode();
+      this.drawService.restoreDefaultStyle(this.feature!, this.defaultStyle);
     }
   }
 

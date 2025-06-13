@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, ElementRef, OnInit, ViewChild } from '@angular/core';
+import { AfterViewInit, Component, OnInit } from '@angular/core';
 import { MapService } from '../../services/map.service';
 import { CommonModule } from '@angular/common';
 import { DrawService } from '../../services/draw.service';
@@ -22,8 +22,6 @@ import { FeatureEditSidebarComponent } from '../feature-edit-sidebar/feature-edi
   ],
 })
 export class MapComponent implements OnInit, AfterViewInit {
-  @ViewChild('hoverPopup') hoverPopupElement!: ElementRef;
-  @ViewChild('hoverPopupContent') hoverPopupContentElement!: ElementRef;
 
   isMapSelection = false;
   isDrawing = false;
@@ -67,14 +65,14 @@ export class MapComponent implements OnInit, AfterViewInit {
       this.cursorX = coords.x;
       this.cursorY = coords.y;
     });
-    this.mapService.isDrawing$.subscribe(isDrawing => {
+    
+    this.drawService.isDrawing$.subscribe(isDrawing => {
       this.isDrawing = isDrawing;
     });
 
-    this.mapService.sidebarVisible$.subscribe((visible: boolean) => {
+    this.drawService.sidebarVisible$.subscribe((visible: boolean) => {
       if (!visible) {
         this.mapService.deactivateDrawInteractions();
-        this.mapService.activateHoverInteraction(this.hoverPopupElement, this.hoverPopupContentElement);
       }
     });
   }
@@ -83,18 +81,9 @@ export class MapComponent implements OnInit, AfterViewInit {
     fromEvent(window, 'resize')
       .pipe(debounceTime(200))
       .subscribe(() => {
-        if (this.mapService.getMap()) {
-          this.mapService.getMap()!.updateSize();
+        if (this.mapService.mapExists()) {
+          this.mapService.updateSize();
         }
       });
-
-    this.mapService.initOverlays(this.hoverPopupElement);
-    this.mapService.editLayer$.subscribe((layer) => {
-      if (layer) {
-        this.mapService.initHoverInteraction([layer.wfsLayer], this.hoverPopupElement, this.hoverPopupContentElement);
-      } else {
-        this.mapService.deactivateHoverInteraction();
-      }
-    });
   }
 }

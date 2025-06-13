@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, OnInit, ViewChild } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSidenavModule } from '@angular/material/sidenav';
@@ -10,6 +10,8 @@ import { EntityMode, EntityModes } from '../../enums/entity-modes';
 import { MapService } from '../../services/map.service';
 import { DrawService } from '../../services/draw.service';
 import { PanelPosition } from '../../interfaces/panel-position';
+import { MatCardModule } from '@angular/material/card';
+import { MockLayer } from '../../interfaces/mock-layer';
 
 @Component({
   selector: 'app-draw-panel',
@@ -20,11 +22,14 @@ import { PanelPosition } from '../../interfaces/panel-position';
     MatIconModule,
     MatTooltipModule,
     CommonModule,
+    MatCardModule,
   ],
   templateUrl: './draw-panel.component.html',
   styleUrl: './draw-panel.component.scss'
 })
-export class DrawPanelComponent implements OnInit {
+export class DrawPanelComponent implements OnInit, AfterViewInit {
+  @ViewChild('hoverPopup') hoverPopupElement!: ElementRef;
+  @ViewChild('hoverPopupContent') hoverPopupContentElement!: ElementRef;
 
   constructor(
     private georefService: GeorefService,
@@ -35,14 +40,30 @@ export class DrawPanelComponent implements OnInit {
   activeEntityMode: EntityMode | null = null;
   EntityModes = EntityModes;
   isModifying = false;
+  private editLayer: MockLayer| null = null;
 
   ngOnInit() {
-    this.mapService.activeEntityMode$.subscribe((mode: EntityMode | null) => {
+    this.drawService.activeEntityMode$.subscribe((mode: EntityMode | null) => {
       this.activeEntityMode = mode;
     })
 
-    this.mapService.sidebarVisible$.subscribe((visible: boolean) => {
+    this.drawService.sidebarVisible$.subscribe((visible: boolean) => {
       this.isModifying = visible;
+      if (!visible) {
+        this.mapService.initHoverInteraction(this.editLayer!.wfsLayer, this.hoverPopupElement, this.hoverPopupContentElement);
+      }
+    });
+  }
+
+  ngAfterViewInit(): void {
+    this.mapService.initOverlays(this.hoverPopupElement);
+    this.drawService.editLayer$.subscribe((layer: MockLayer | null) => {
+      this.editLayer = layer;
+      if (layer) {
+        this.mapService.initHoverInteraction(layer.wfsLayer, this.hoverPopupElement, this.hoverPopupContentElement);
+      } else {
+        this.mapService.deactivateHoverInteraction();
+      }
     });
   }
 
@@ -62,50 +83,53 @@ export class DrawPanelComponent implements OnInit {
 
   toggleEntityMode(mode: EntityMode | null): void {
     if (mode === null) {
-      this.mapService.updateActiveEntityMode(null);
+      this.mapService.setDefaultMapCursor();
+      this.drawService.updateActiveEntityMode(null);
       this.mapService.deactivateDrawInteractions();
-      this.mapService.dismissSelectSnackbar();
+      this.drawService.dismissSelectSnackbar();
       this.mapService.deactivateHoverInteraction();
-      this.mapService.updateDrawingStatus(false);
+      this.drawService.updateDrawingStatus(false);
       this.georefService.toggleDrawPanel(null);
       return;
     }
 
     if (mode === this.activeEntityMode) {
-      this.mapService.updateActiveEntityMode(null);
+      this.mapService.setDefaultMapCursor();
+      this.drawService.updateActiveEntityMode(null);
       this.mapService.deactivateDrawInteractions();
-      this.mapService.dismissSelectSnackbar();
+      this.drawService.dismissSelectSnackbar();
       this.mapService.disableSelectInteraction();
-      this.mapService.updateDrawingStatus(false);
+      this.mapService.initHoverInteraction(this.editLayer!.wfsLayer, this.hoverPopupElement, this.hoverPopupContentElement);
+      this.drawService.updateDrawingStatus(false);
       return;
     }
 
     this.mapService.disableSelectInteraction();
-    this.mapService.dismissSelectSnackbar();
+    this.drawService.dismissSelectSnackbar();
     this.mapService.deactivateDrawInteractions();
-    this.mapService.dismissDrawSnackbar();
-    this.mapService.updateActiveEntityMode(mode);
+    this.drawService.dismissDrawSnackbar();
+    this.drawService.updateActiveEntityMode(mode);
+    this.mapService.initHoverInteraction(this.editLayer!.wfsLayer, this.hoverPopupElement, this.hoverPopupContentElement);
 
     switch (mode) {
       case EntityModes.ADD:
         this.handleAddEntityMode();
         break;
       case EntityModes.SELECT:
-        this.mapService.updateDrawingStatus(false);
+        this.drawService.updateDrawingStatus(false);
         this.handleEditEntityMode();
         break;
     }
   }
   
   private handleAddEntityMode(): void {    
-    this.mapService.enableDrawForActiveLayer();
+    this.drawService.enableDrawForActiveLayer();
   }
   
   private handleEditEntityMode(): void {
-    this.mapService.enableSelectInteraction();
+    this.drawService.enableSelectInteraction();
   }
   
-
   onDragEnded(event: CdkDragEnd): void {
     this.drawService.onDragEnded(event);
   }

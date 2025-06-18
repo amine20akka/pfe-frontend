@@ -149,7 +149,7 @@ export class GeorefService {
     this.geoserverService.createWMSLayer(newGeorefLayer.layerName, newGeorefLayer.wmsUrl, newGeorefLayer.workspace)
       .subscribe((layer: TileLayer) => {
         newGeorefLayer.layer = layer;
-        newGeorefLayer.opacity = 1;
+        newGeorefLayer.opacity = 0.5;
 
         this.layerService.addGeorefLayertoList(newGeorefLayer);
         this.imageService.clearImage();

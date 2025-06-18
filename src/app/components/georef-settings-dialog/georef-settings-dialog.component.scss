@@ -53,7 +53,7 @@ mat-dialog-content {
 .settings-container {
   display: flex;
   flex-direction: row;
-  gap: 5px;
+  gap: 4px;
 }
 
 .settings-group {
@@ -151,10 +151,6 @@ mat-option {
 input[matInput] {
   font-size: 12px;
   color: #333;
-
-  &:focus {
-    color: #ff6900;
-  }
 
   &::placeholder {
     color: #999;
